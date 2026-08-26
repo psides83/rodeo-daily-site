@@ -1,0 +1,38 @@
+{
+  "name": "Rodeo Daily",
+  "short_name": "Rodeo Daily",
+  "description": "Rodeo schedules, results, standings, and athlete watchlists.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f4ee",
+  "theme_color": "#15130f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["sports", "news", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Today's Rodeos",
+      "short_name": "Today",
+      "url": "/#today"
+    },
+    {
+      "name": "World Standings",
+      "short_name": "Standings",
+      "url": "/#standings"
+    }
+  ]
+}

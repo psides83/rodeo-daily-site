@@ -1,0 +1,682 @@
+import type {
+  ApiAthleteBioResponse,
+  ApiAthleteSearchResponse,
+  ApiBusinessJournalListing,
+  ApiBusinessJournalResponse,
+  ApiDaysheetResponse,
+  ApiNfrContestant,
+  ApiNfrStandingsResponse,
+  ApiPosition,
+  ApiRodeo,
+  ApiRodeoResults,
+  ApiRound,
+  AthleteBio,
+  AthleteSearchRow,
+  BusinessJournalRow,
+  DateRange,
+  DaysheetEntry,
+  DaysheetEventGroup,
+  DaysheetRow,
+  EventCode,
+  EventName,
+  NfrContestant,
+  PastChampion,
+  RodeoRow,
+  StandingRow,
+  StandingType
+} from "./types";
+
+export const events: EventName[] = [
+  "Bareback Riding",
+  "Steer Wrestling",
+  "Team Roping",
+  "Saddle Bronc Riding",
+  "Tie-Down Roping",
+  "Barrel Racing",
+  "Bull Riding",
+  "Breakaway Roping"
+];
+
+export const eventCodes: Record<EventName, EventCode> = {
+  "Bareback Riding": "BB",
+  "Steer Wrestling": "SW",
+  "Team Roping": "TR",
+  "Saddle Bronc Riding": "SB",
+  "Tie-Down Roping": "TD",
+  "Barrel Racing": "GB",
+  "Bull Riding": "BR",
+  "Breakaway Roping": "LB"
+};
+
+export const standingTypes: Record<StandingType, string> = {
+  "World Standings": "world",
+  "Circuit Standings": "circuit",
+  "Rookie Standings": "rookie"
+};
+
+export async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Request failed with ${response.status}`);
+  return response.json() as Promise<T>;
+}
+
+export function dateRangeParams(resource: "results-rodeos" | "schedule", range: DateRange, searchText = "", index = 1) {
+  const params = new URLSearchParams({ resource });
+  params.set("index", String(index));
+  if (range.start) params.set("start", range.start);
+  if (range.end) params.set("end", range.end);
+  const query = searchText.trim();
+  if (query) params.set("search", query);
+  return params;
+}
+
+export function mapPosition(position: ApiPosition): StandingRow {
+  const id = position.ContestantId ?? position.StandingId ?? position.Place ?? Math.random();
+  const first = position.FirstName?.trim() ?? "";
+  const last = position.LastName?.trim() ?? "";
+  const nick = position.NickName?.trim();
+  const name = `${nick || first} ${last}`.trim() || "Unknown Athlete";
+  const isPoints = position.TourId === 2;
+
+  return {
+    id,
+    place: position.Place ?? 0,
+    name,
+    hometown: position.Hometown?.trim() ?? "",
+    imageUrl: normalizeAthleteImageUrl(position.SidearmPhotoUrl),
+    metric: isPoints ? formatNumber(position.Points ?? 0) : formatCurrency(position.Earnings ?? 0),
+    metricLabel: isPoints ? "Points" : "Earnings",
+    followed: false,
+    favorite: false
+  };
+}
+
+export function mapAthleteBio(payload: ApiAthleteBioResponse): AthleteBio | null {
+  const bio = payload.data;
+  if (!bio?.ContestantId) return null;
+  const first = bio.FirstName?.trim() ?? "";
+  const last = bio.LastName?.trim() ?? "";
+  const nick = bio.NickName?.trim();
+  const name = `${nick || first} ${last}`.trim();
+
+  return {
+    id: bio.ContestantId,
+    name,
+    hometown: bio.Hometown?.trim() ?? "",
+    imageUrl: normalizeAthleteImageUrl(bio.image_315_url ?? bio.PhotoUrl),
+    age: bio.Age ?? null,
+    totalEarnings: bio.TotalEarnings ? formatCurrency(bio.TotalEarnings) : "",
+    yearEarnings: bio.YearEarnings ? formatCurrency(bio.YearEarnings) : "",
+    worldTitles: bio.WorldTitles ?? null,
+    nfrQualifications: bio.NFRQualifications ?? null,
+    dateJoined: formatDate(bio.DateJoined ?? undefined),
+    biographyText: bio.BiographyText?.trim() ?? "",
+    events: bio.EventTypes ?? [],
+    rankings: (bio.Rankings ?? []).slice(0, 6).map((ranking, index) => ({
+      id: `${ranking.EventName ?? "event"}-${ranking.Season ?? index}-${ranking.RankType ?? "rank"}`,
+      rank: ranking.Rank?.trim() ?? "Unranked",
+      rankType: ranking.RankType?.trim() ?? "",
+      eventName: ranking.EventName?.trim() ?? "",
+      season: ranking.Season ?? 0
+    })),
+    recentResults: (bio.Results ?? [])
+      .slice()
+      .sort((left, right) => (right.EndDate ?? "").localeCompare(left.EndDate ?? ""))
+      .slice(0, 5)
+      .map((result, index) => ({
+        id: `${result.RodeoResultId ?? result.RodeoId ?? index}`,
+        rodeoName: result.RodeoName?.trim() ?? "Unnamed Rodeo",
+        location: [result.City, result.StateAbbrv].filter(Boolean).join(", "),
+        eventType: result.EventType?.trim() ?? "",
+        place: result.Place ?? 0,
+        payoff: formatCurrency(result.Payoff ?? 0),
+        resultValue: formatAthleteResultValue(result.Time, result.Score),
+        round: result.Round?.trim() ?? "",
+        endDate: formatDate(result.EndDate)
+      }))
+  };
+}
+
+export function mapAthleteSearchRows(payload: ApiAthleteSearchResponse, favoriteIds: number[]): AthleteSearchRow[] {
+  const favorites = new Set(favoriteIds);
+  return (payload.data ?? []).flatMap((athlete) => {
+    const id = athlete.ContestantId ?? 0;
+    if (!id) return [];
+    const first = athlete.FirstName?.trim() ?? "";
+    const last = athlete.LastName?.trim() ?? "";
+    const nick = athlete.NickName?.trim();
+    const name = `${nick || first} ${last}`.trim();
+    if (!name) return [];
+    return [
+      {
+        id,
+        name,
+        hometown: athlete.Hometown?.trim() ?? "",
+        imageUrl: normalizeAthleteImageUrl(athlete.image_315_url ?? athlete.PhotoUrl),
+        metric: "",
+        metricLabel: "Profile",
+        favorite: favorites.has(id)
+      }
+    ];
+  });
+}
+
+export function mapPastChampions(payload: PastChampion[]): PastChampion[] {
+  return payload
+    .filter((champion) => champion.id && champion.year && champion.event && champion.athlete)
+    .sort((left, right) => {
+      if (left.year !== right.year) return right.year - left.year;
+      if (left.event !== right.event) return left.event.localeCompare(right.event);
+      return left.athlete.localeCompare(right.athlete);
+    });
+}
+
+export function mapNfrStandings(payload: ApiNfrStandingsResponse): NfrContestant[] {
+  return (payload.data?.data ?? [])
+    .filter((contestant) => contestant.Id && contestant.ContestantId)
+    .map((contestant) => {
+      const averagePlace = contestant.AveragePlace ?? 0;
+      const averageScore = cleanText(contestant.AverageScore);
+      const currentRound = contestant.CurrentGo ?? 0;
+      const eventType = cleanText(contestant.EventType);
+      const firstName = cleanText(contestant.FirstName);
+      const lastName = cleanText(contestant.LastName);
+      const rounds = makeNfrRounds(contestant, currentRound, isRoughStockCode(eventType));
+
+      return {
+        id: contestant.Id ?? contestant.ContestantId ?? 0,
+        worldPlace: contestant.WorldPlace ?? 0,
+        currentRound,
+        contestantId: contestant.ContestantId ?? 0,
+        averagePlace,
+        averageScore,
+        eventType,
+        imageUrl: normalizeAthleteImageUrl(contestant.SidearmPhotoUrl),
+        name: `${firstName} ${lastName}`.trim() || "Unknown Athlete",
+        averageDisplayValue: `${ordinal(averagePlace)} in the AVG with ${averageScore || "-"} on ${rounds.filter((round) => round.hasResult).length}`,
+        rounds
+      };
+    });
+}
+
+export function championEvents(champions: PastChampion[]) {
+  return ["All Events", ...Array.from(new Set(champions.map((champion) => champion.event))).sort()];
+}
+
+export function filterChampions(champions: PastChampion[], event: string, query: string) {
+  const normalizedQuery = query.trim().toLowerCase();
+  return champions.filter((champion) => {
+    const matchesEvent = event === "All Events" || champion.event === event;
+    const matchesSearch =
+      !normalizedQuery ||
+      champion.athlete.toLowerCase().includes(normalizedQuery) ||
+      champion.event.toLowerCase().includes(normalizedQuery) ||
+      champion.hometown.toLowerCase().includes(normalizedQuery) ||
+      String(champion.year).includes(normalizedQuery);
+    return matchesEvent && matchesSearch;
+  });
+}
+
+export function topChampionCounts(champions: PastChampion[], event: string) {
+  if (event === "All Events") return [];
+  const counts = new Map<string, number>();
+  for (const champion of champions.filter((item) => item.event === event)) {
+    counts.set(champion.athlete, (counts.get(champion.athlete) ?? 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .map(([name, titles]) => ({ name, titles }))
+    .sort((left, right) => (left.titles === right.titles ? left.name.localeCompare(right.name) : right.titles - left.titles))
+    .slice(0, 5);
+}
+
+export function normalizeAthleteImageUrl(value?: string | null) {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+  if (trimmed.startsWith("/")) return `https://d1kfpvgfupbmyo.cloudfront.net${trimmed}`;
+  return `https://d1kfpvgfupbmyo.cloudfront.net/${trimmed}`;
+}
+
+function formatAthleteResultValue(time?: number, score?: number) {
+  if (time && time > 0) return `${time.toFixed(2)} sec`;
+  if (score && score > 0) return `${score.toFixed(1)} pts`;
+  return "";
+}
+
+export function normalizeWebsiteUrl(value?: string | null) {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  const fixed = trimmed.replace(/^http:\/\/https:\/\//i, "https://");
+  if (fixed.startsWith("http://") || fixed.startsWith("https://")) return fixed;
+  return `https://${fixed}`;
+}
+
+export function mapBusinessJournalRows(payload: ApiBusinessJournalResponse): BusinessJournalRow[] {
+  const seen = new Set<string>();
+  return (payload.listings ?? []).flatMap((listing, index) => {
+    const item = makeBusinessJournalRow(listing, index, payload.source);
+    if (!item || seen.has(item.id)) return [];
+    seen.add(item.id);
+    return [item];
+  });
+}
+
+export function makeBusinessJournalRow(listing: ApiBusinessJournalListing, fallbackIndex: number, sourceUrl?: string): BusinessJournalRow | null {
+  const fields = listing.fields;
+  const eventStartDate = cleanText(fields?.eventDateRange?.startDate);
+  const eventEndDate = cleanText(fields?.eventDateRange?.endDate);
+  const locationText = cleanText(listing.location);
+  const subtitle = cleanText(listing.eventName) || cleanText(listing.summaryText);
+  const title = locationText || subtitle;
+  if (!title) return null;
+
+  const eventsRows = fields?.events ?? [];
+  const addedMoneyTotal = eventsRows.length > 0 ? eventsRows.reduce((sum, event) => sum + (event.addedMoney ?? 0), 0) : null;
+  const eventsText = formatBusinessJournalEvents(eventsRows);
+  const specialEntryFeesText = formatBusinessJournalEntryFees(fields?.entryFees ?? []);
+  const perfsText = formatBusinessJournalPerfs(fields?.perfs);
+  const slacksText = formatBusinessJournalSlacks(fields?.slacks);
+  const openText = formatBusinessJournalDateTime(fields?.entriesOpen) || cleanText(fields?.entriesOpen);
+  const closeText = formatBusinessJournalDateTime(fields?.entriesClose) || cleanText(fields?.entriesClose);
+  const entryWindowText = [openText, closeText].filter(Boolean).join(" - ");
+  const dateText = makeBusinessJournalDateText(eventStartDate, eventEndDate, cleanText(listing.eventDates) || cleanText(listing.publishDate));
+  const detailFields = [
+    detailField("publish_date", "Publish Date", formatBusinessJournalDate(listing.publishDate) || listing.publishDate),
+    detailField("rodeo_name", "Rodeo Name", subtitle),
+    detailField("arena", "Arena", fields?.arena),
+    detailField("address", "Address", fields?.address),
+    detailField("perfs", "Perfs", perfsText),
+    detailField("slacks", "Slacks", slacksText),
+    detailField("events", "Events", eventsText),
+    detailField("special_entry_fees", "Special Entry Fees", specialEntryFeesText),
+    detailField("permits", "Permits", fields?.permits),
+    detailField("ground_rules", "Ground Rules", fields?.groundRules),
+    detailField("stock_contractor", "Stk Cont.", fields?.stockContractor),
+    detailField("sub_contractors", "Sub Contractors", fields?.subContractors),
+    detailField("entries_open", "EO", openText),
+    detailField("entries_close", "EC", closeText)
+  ].filter(Boolean) as BusinessJournalRow["detailFields"];
+
+  return {
+    id: `pbj-${listing.index ?? fallbackIndex}-${title}`,
+    title,
+    subtitle: subtitle === title ? "" : subtitle,
+    dateText,
+    eventStartDate,
+    eventEndDate,
+    locationText,
+    eventsText,
+    perfsText,
+    specialEntryFeesText,
+    addedMoneyText: addedMoneyTotal ? formatCurrency(addedMoneyTotal) : "",
+    addedMoneyTotal,
+    entryWindowText,
+    source: cleanText(listing.tour) || cleanText(fields?.tour),
+    link: sourceUrl ?? "https://pbj.prorodeo.org/",
+    detailFields
+  };
+}
+
+export function mapScheduleToBusinessJournalRow(rodeo: RodeoRow): BusinessJournalRow {
+  return {
+    id: `schedule-${rodeo.id}`,
+    title: rodeo.name,
+    subtitle: rodeo.venueName,
+    dateText: `${rodeo.startDate} - ${rodeo.endDate}`,
+    eventStartDate: parseDisplayDateToISO(rodeo.startDate),
+    eventEndDate: parseDisplayDateToISO(rodeo.endDate),
+    locationText: rodeo.location,
+    eventsText: "",
+    perfsText: "",
+    specialEntryFeesText: "",
+    addedMoneyText: rodeo.payout,
+    addedMoneyTotal: moneyToNumber(rodeo.payout),
+    entryWindowText: "",
+    source: "Schedule",
+    link: rodeo.websiteUrl,
+    detailFields: [
+      detailField("venue", "Arena", rodeo.venueName),
+      detailField("location", "Address", rodeo.location),
+      detailField("dates", "Event Dates", `${rodeo.startDate} - ${rodeo.endDate}`),
+      detailField("payout", "Added Money", rodeo.payout)
+    ].filter(Boolean) as BusinessJournalRow["detailFields"]
+  };
+}
+
+export function businessJournalMatchesSearch(item: BusinessJournalRow, query: string) {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return true;
+  return [item.title, item.subtitle, item.locationText, item.eventsText, item.source]
+    .filter(Boolean)
+    .some((value) => value.toLowerCase().includes(normalized));
+}
+
+export function businessJournalMatchesDate(item: BusinessJournalRow, mode: string, range: DateRange) {
+  if (mode !== "Date Range" || (!range.start && !range.end)) return true;
+  const itemStart = item.eventStartDate ?? item.eventEndDate;
+  const itemEnd = item.eventEndDate ?? item.eventStartDate;
+  if (!itemStart || !itemEnd) return false;
+  const start = range.start || "0001-01-01";
+  const end = range.end || "9999-12-31";
+  return itemStart <= end && itemEnd >= start;
+}
+
+export function sortBusinessJournalRows(left: BusinessJournalRow, right: BusinessJournalRow, sortOption: string) {
+  if (sortOption === "Added Money (High-Low)" || sortOption === "Added Money (Low-High)") {
+    const leftMoney = left.addedMoneyTotal ?? -1;
+    const rightMoney = right.addedMoneyTotal ?? -1;
+    if (leftMoney !== rightMoney) {
+      return sortOption === "Added Money (High-Low)" ? rightMoney - leftMoney : leftMoney - rightMoney;
+    }
+  }
+
+  const leftDate = left.eventStartDate ?? left.eventEndDate ?? "";
+  const rightDate = right.eventStartDate ?? right.eventEndDate ?? "";
+  if (leftDate !== rightDate) {
+    return sortOption === "Event Date (Latest)" ? rightDate.localeCompare(leftDate) : leftDate.localeCompare(rightDate);
+  }
+
+  return left.title.localeCompare(right.title);
+}
+
+export function formatBusinessJournalEvents(eventsRows: NonNullable<ApiBusinessJournalListing["fields"]>["events"]) {
+  const grouped = new Map<string, string[]>();
+  for (const row of eventsRows ?? []) {
+    const event = cleanText(row.event);
+    if (!event) continue;
+    const money = row.addedMoney ? formatCurrency(row.addedMoney) : "";
+    grouped.set(money, [...(grouped.get(money) ?? []), event]);
+  }
+  return Array.from(grouped.entries())
+    .map(([money, eventNames]) => (money ? `${eventNames.join(" ")} @ ${money}` : eventNames.join(" ")))
+    .join(" ");
+}
+
+export function formatBusinessJournalEntryFees(fees: NonNullable<ApiBusinessJournalListing["fields"]>["entryFees"]) {
+  return (fees ?? [])
+    .map((row) => {
+      const event = cleanText(row.event);
+      const fee = cleanText(row.fees);
+      return event && fee ? `${event}-${fee}` : "";
+    })
+    .filter(Boolean)
+    .join("; ");
+}
+
+export function formatBusinessJournalPerfs(perfs?: NonNullable<ApiBusinessJournalListing["fields"]>["perfs"]) {
+  const dates = (perfs?.perfDates ?? []).map((date) => formatBusinessJournalDateTime(date) || date).filter(Boolean);
+  if (dates.length === 0) return "";
+  return `${perfs?.perfsCount ?? dates.length} Perfs: ${dates.join("; ")}`;
+}
+
+export function formatBusinessJournalSlacks(slacks?: NonNullable<ApiBusinessJournalListing["fields"]>["slacks"]) {
+  const dates = (slacks?.isoDateTimes ?? []).map((date) => formatBusinessJournalDateTime(date) || date).filter(Boolean);
+  return dates.join("; ") || cleanText(slacks?.raw);
+}
+
+export function makeBusinessJournalDateText(start?: string, end?: string, fallback?: string) {
+  const startText = formatBusinessJournalDate(start);
+  const endText = formatBusinessJournalDate(end);
+  if (startText && endText && startText !== endText) return `${startText} - ${endText}`;
+  return startText || endText || fallback || "";
+}
+
+export function formatBusinessJournalDate(value?: string) {
+  const date = parseDate(value);
+  if (!date) return "";
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(date);
+}
+
+export function formatBusinessJournalDateTime(value?: string) {
+  const date = parseDate(value);
+  if (!date) return "";
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(date);
+}
+
+export function parseDate(value?: string) {
+  const cleaned = cleanText(value);
+  if (!cleaned) return null;
+  const parsed = new Date(cleaned);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+export function parseDisplayDateToISO(value: string) {
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(0, 10);
+}
+
+export function moneyToNumber(value: string) {
+  const parsed = Number(value.replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function detailField(id: string, label: string, value?: string | null) {
+  const cleanValue = cleanText(value);
+  return cleanValue ? { id, label, value: cleanValue } : null;
+}
+
+export function cleanText(value?: string | null) {
+  return value?.trim() ?? "";
+}
+
+function makeNfrRounds(contestant: ApiNfrContestant, currentRound: number, isRoughStock: boolean) {
+  return Array.from({ length: 10 }, (_, index) => {
+    const round = index + 1;
+    const result = cleanText(contestant[`Go${round}Result` as keyof ApiNfrContestant] as string | undefined);
+    const placeValue = cleanText(contestant[`Go${round}Place` as keyof ApiNfrContestant] as string | undefined);
+    const place = Number.parseInt(placeValue, 10);
+    const pending = round > currentRound;
+    const numericResult = Number.parseFloat(result);
+    const hasResult = Number.isFinite(numericResult) && numericResult !== 0;
+
+    return {
+      round,
+      pending,
+      hasResult,
+      displayValue: pending
+        ? "Pending"
+        : hasResult
+          ? Number.isFinite(place)
+            ? `${ordinal(place)} - ${result}`
+            : result
+          : isRoughStock
+            ? "NS"
+            : "NT"
+    };
+  });
+}
+
+function isRoughStockCode(eventType: string) {
+  return ["BB", "SB", "BR"].includes(eventType);
+}
+
+function ordinal(value: number) {
+  if (!value) return "-";
+  const remainder = value % 100;
+  if (remainder >= 11 && remainder <= 13) return `${value}th`;
+  switch (value % 10) {
+    case 1:
+      return `${value}st`;
+    case 2:
+      return `${value}nd`;
+    case 3:
+      return `${value}rd`;
+    default:
+      return `${value}th`;
+  }
+}
+
+export function initialsFor(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
+
+export function mapRodeo(rodeo: ApiRodeo): RodeoRow {
+  return {
+    id: rodeo.RodeoId ?? 0,
+    name: rodeo.Name?.trim() || "Unnamed Rodeo",
+    location: [rodeo.City, rodeo.StateAbbrv].filter(Boolean).join(", "),
+    venueName: rodeo.VenueName?.trim() ?? "",
+    websiteUrl: normalizeWebsiteUrl(rodeo.WebsiteUrl),
+    startDate: formatDate(rodeo.StartDate),
+    endDate: formatDate(rodeo.EndDate),
+    payout: formatCurrency(rodeo.Payout ?? 0),
+    hasDaysheets: Boolean(rodeo.HasDaysheets),
+    inProgress: Boolean(rodeo.InProgress),
+    winners: []
+  };
+}
+
+export function rodeoHasEvent(rodeo: ApiRodeo, event: EventName) {
+  const html = rodeo.ApResults?.toLowerCase() ?? "";
+  if (!html) return true;
+
+  const phrases: Record<EventName, string[]> = {
+    "Bareback Riding": ["bareback"],
+    "Steer Wrestling": ["steer wrestling"],
+    "Team Roping": ["team roping"],
+    "Saddle Bronc Riding": ["saddle bronc"],
+    "Tie-Down Roping": ["tie-down", "tie down"],
+    "Barrel Racing": ["barrel racing"],
+    "Bull Riding": ["bull riding"],
+    "Breakaway Roping": ["breakaway"]
+  };
+
+  return phrases[event].some((phrase) => html.includes(phrase));
+}
+
+export function mapWinners(payload: ApiRodeoResults, event: EventCode): Array<[string, string, string]> {
+  const eventRounds = payload.data?.[0]?.Events?.[event];
+  if (!eventRounds) return [];
+
+  const rounds = Object.entries(eventRounds)
+    .flatMap(([roundId, rows]) => rows.map((row) => ({ ...row, roundId })))
+    .filter((row) => row.Contestant?.length);
+
+  const unique = new Map<number, ApiRound & { roundId: string }>();
+  for (const row of rounds) {
+    const contestantId = row.Contestant?.[0]?.ContestantId;
+    if (!contestantId || unique.has(contestantId)) continue;
+    unique.set(contestantId, row);
+  }
+
+  return Array.from(unique.values())
+    .filter((row) => Boolean(row.Payoff) || Boolean(row.Score) || Boolean(row.Time))
+    .sort((a, b) => {
+      const aPlace = a.Place && a.Place > 0 ? a.Place : Number.MAX_SAFE_INTEGER;
+      const bPlace = b.Place && b.Place > 0 ? b.Place : Number.MAX_SAFE_INTEGER;
+      if (aPlace !== bPlace) return aPlace - bPlace;
+      return event === "BB" || event === "SB" || event === "BR"
+        ? (b.Score ?? 0) - (a.Score ?? 0)
+        : (a.Time ?? Number.MAX_SAFE_INTEGER) - (b.Time ?? Number.MAX_SAFE_INTEGER);
+    })
+    .slice(0, 5)
+    .map((row, index) => {
+      const contestant = row.Contestant?.[0];
+      const name = `${contestant?.NickName || contestant?.FirstName || ""} ${contestant?.LastName || ""}`.trim();
+      return [`#${row.Place && row.Place > 0 ? row.Place : index + 1}`, name || "Unknown Athlete", resultValue(row, event)];
+    });
+}
+
+export function resultValue(row: ApiRound, event: EventCode) {
+  if (event === "BB" || event === "SB" || event === "BR") {
+    return row.Score ? formatNumber(row.Score) : "-";
+  }
+
+  return row.Time ? formatNumber(row.Time) : "-";
+}
+
+export function mapDaysheets(payload: ApiDaysheetResponse): DaysheetRow[] {
+  return Object.entries(payload.data ?? {})
+    .map(([startDate, performances]) => {
+      const roundEntries = Object.entries(performances);
+      const roundDisplay = roundEntries.map(([round]) => normalizeRoundName(round)).join(" - ");
+      const eventsByName = roundEntries.reduce<Record<string, DaysheetEventGroup>>((merged, [, eventsByName]) => {
+        for (const [eventName, group] of Object.entries(eventsByName)) {
+          const normalizedEvent = eventName.trim();
+          const existing = merged[normalizedEvent] ?? { Events: [], Rerides: [] };
+          merged[normalizedEvent] = {
+            Events: [...(existing.Events ?? []), ...(group.Events ?? [])],
+            Rerides: [...(existing.Rerides ?? []), ...(group.Rerides ?? [])]
+          };
+        }
+        return merged;
+      }, {});
+
+      return {
+        id: startDate,
+        startDisplay: formatDateTime(startDate),
+        roundDisplay: roundDisplay || "Daysheet",
+        eventNames: Object.keys(eventsByName).sort(),
+        eventsByName
+      };
+    })
+    .sort((left, right) => new Date(left.id).getTime() - new Date(right.id).getTime());
+}
+
+export function makeDaysheetDisplayRows(entries: DaysheetEntry[]) {
+  const sorted = [...entries].sort((left, right) => {
+    const leftPosition = left.GoPosition ?? Number.MAX_SAFE_INTEGER;
+    const rightPosition = right.GoPosition ?? Number.MAX_SAFE_INTEGER;
+    if (leftPosition !== rightPosition) return leftPosition - rightPosition;
+    return (left.Name ?? "").localeCompare(right.Name ?? "");
+  });
+
+  let drawOrder = 1;
+  return sorted.map((entry) => {
+    const row = {
+      entry,
+      drawOrder: entry.HasTurnout ? null : drawOrder
+    };
+
+    if (!entry.HasTurnout) drawOrder += 1;
+    return row;
+  });
+}
+
+export function normalizeRoundName(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "Round";
+  return trimmed.replace(/\bgo\b/gi, "Round");
+}
+
+export function formatCurrency(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0
+  }).format(value);
+}
+
+export function formatNumber(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 2
+  }).format(value);
+}
+
+export function formatDate(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric"
+  }).format(date);
+}
+
+export function formatDateTime(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(date);
+}
