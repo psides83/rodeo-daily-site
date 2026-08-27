@@ -54,6 +54,21 @@ export type RodeoRow = {
   hasDaysheets: boolean;
   inProgress: boolean;
   winners: Array<[string, string, string]>;
+  resultRounds: RodeoResultRound[];
+};
+
+export type RodeoResultRound = {
+  id: string;
+  label: string;
+  rows: RodeoResultRow[];
+};
+
+export type RodeoResultRow = {
+  id: string;
+  place: string;
+  name: string;
+  payoff: string;
+  value: string;
 };
 
 export type BusinessJournalRow = {

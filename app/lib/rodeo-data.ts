@@ -21,6 +21,7 @@ import type {
   EventName,
   NfrContestant,
   PastChampion,
+  RodeoResultRound,
   RodeoRow,
   StandingRow,
   StandingType
@@ -122,9 +123,8 @@ export function mapAthleteBio(payload: ApiAthleteBioResponse): AthleteBio | null
     recentResults: (bio.Results ?? [])
       .slice()
       .sort((left, right) => (right.EndDate ?? "").localeCompare(left.EndDate ?? ""))
-      .slice(0, 5)
       .map((result, index) => ({
-        id: `${result.RodeoResultId ?? result.RodeoId ?? index}`,
+        id: `${result.RodeoResultId ?? result.RodeoId ?? "result"}-${index}`,
         rodeoName: result.RodeoName?.trim() ?? "Unnamed Rodeo",
         location: [result.City, result.StateAbbrv].filter(Boolean).join(", "),
         eventType: result.EventType?.trim() ?? "",
@@ -675,7 +675,8 @@ export function mapRodeo(rodeo: ApiRodeo): RodeoRow {
     payout: formatCurrency(rodeo.Payout ?? 0),
     hasDaysheets: Boolean(rodeo.HasDaysheets),
     inProgress: Boolean(rodeo.InProgress),
-    winners: []
+    winners: [],
+    resultRounds: []
   };
 }
 
@@ -727,6 +728,51 @@ export function mapWinners(payload: ApiRodeoResults, event: EventCode): Array<[s
       const contestant = row.Contestant?.[0];
       const name = `${contestant?.NickName || contestant?.FirstName || ""} ${contestant?.LastName || ""}`.trim();
       return [`#${row.Place && row.Place > 0 ? row.Place : index + 1}`, name || "Unknown Athlete", resultValue(row, event)];
+    });
+}
+
+export function mapResultRounds(payload: ApiRodeoResults, event: EventCode): RodeoResultRound[] {
+  const eventRounds = payload.data?.[0]?.Events?.[event];
+  if (!eventRounds) return [];
+
+  return Object.entries(eventRounds)
+    .map(([roundId, rows]) => {
+      const sortedRows = [...rows]
+        .filter((row) => row.Contestant?.length)
+        .filter((row) => Boolean(row.Payoff) || Boolean(row.Score) || Boolean(row.Time))
+        .sort((a, b) => {
+          const aPlace = a.Place && a.Place > 0 ? a.Place : Number.MAX_SAFE_INTEGER;
+          const bPlace = b.Place && b.Place > 0 ? b.Place : Number.MAX_SAFE_INTEGER;
+          if (aPlace !== bPlace) return aPlace - bPlace;
+          return event === "BB" || event === "SB" || event === "BR"
+            ? (b.Score ?? 0) - (a.Score ?? 0)
+            : (a.Time ?? Number.MAX_SAFE_INTEGER) - (b.Time ?? Number.MAX_SAFE_INTEGER);
+        });
+      const firstRow = sortedRows[0];
+      const label = firstRow?.GoRoundLabel?.trim() || (firstRow?.GoRound ? `Round ${firstRow.GoRound}` : roundId);
+
+      return {
+        id: roundId,
+        label,
+        rows: sortedRows.map((row, index) => {
+          const contestant = row.Contestant?.[0];
+          const name = `${contestant?.NickName || contestant?.FirstName || ""} ${contestant?.LastName || ""}`.trim();
+          return {
+            id: `${roundId}-${contestant?.ContestantId ?? index}`,
+            place: `#${row.Place && row.Place > 0 ? row.Place : index + 1}`,
+            name: name || "Unknown Athlete",
+            payoff: row.Payoff ? formatCurrency(row.Payoff) : "-",
+            value: resultValue(row, event)
+          };
+        })
+      };
+    })
+    .filter((round) => round.rows.length > 0)
+    .sort((a, b) => {
+      const aNumber = Number(a.id.replace(/\D/g, ""));
+      const bNumber = Number(b.id.replace(/\D/g, ""));
+      if (Number.isFinite(aNumber) && Number.isFinite(bNumber) && aNumber !== bNumber) return aNumber - bNumber;
+      return a.label.localeCompare(b.label);
     });
 }
 

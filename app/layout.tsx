@@ -1,10 +1,19 @@
 import type { Metadata, Viewport } from "next";
+import { absoluteUrl, seoKeywords, siteDescription, siteUrl } from "./lib/seo";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Rodeo Daily",
-  description: "A fast PWA for rodeo schedules, results, standings, and athlete watchlists.",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Rodeo Daily | PRCA Results, PRCA Standings & Rodeo Standings",
+    template: "%s | Rodeo Daily"
+  },
+  description: siteDescription,
+  keywords: seoKeywords,
   applicationName: "Rodeo Daily",
+  alternates: {
+    canonical: absoluteUrl("/")
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -14,6 +23,29 @@ export const metadata: Metadata = {
   icons: {
     icon: "/icon.svg",
     apple: "/apple-touch-icon.svg"
+  },
+  openGraph: {
+    type: "website",
+    url: absoluteUrl("/"),
+    siteName: "Rodeo Daily",
+    title: "Rodeo Daily | PRCA Results, PRCA Standings & Rodeo Standings",
+    description: siteDescription
+  },
+  twitter: {
+    card: "summary",
+    title: "Rodeo Daily | PRCA Results, PRCA Standings & Rodeo Standings",
+    description: siteDescription
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1
+    }
   },
   other: {
     "google-adsense-account": "ca-pub-4837925489125062"
@@ -32,9 +64,38 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Rodeo Daily",
+    url: siteUrl,
+    description: siteDescription,
+    applicationCategory: "SportsApplication",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${absoluteUrl("/")}?tab=standings&q={search_term_string}`,
+      "query-input": "required name=search_term_string"
+    },
+    about: [
+      "PRCA results",
+      "PRCA standings",
+      "rodeo results",
+      "rodeo standings",
+      "NFR standings"
+    ]
+  };
+
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c")
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

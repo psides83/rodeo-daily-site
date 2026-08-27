@@ -12,6 +12,7 @@ import {
   CircleDollarSign,
   ExternalLink,
   Heart,
+  Mail,
   ListOrdered,
   MapPin,
   Newspaper,
@@ -30,6 +31,7 @@ import { useEffect, useState } from "react";
 import type {
   AppSettings,
   AthleteBio,
+  AthleteBioResult,
   AthleteSearchRow,
   BusinessJournalRow,
   DateRange,
@@ -108,6 +110,7 @@ const nfrEvents: EventName[] = [
 
 const athleteProfileTabs = ["Stats", "Results", "Career", "Highlights"] as const;
 type AthleteProfileTab = (typeof athleteProfileTabs)[number];
+type AthleteResultSort = "Date" | "Rodeo" | "Result" | "Earnings";
 
 export function RodeoDailyLogoMark() {
   return (
@@ -218,16 +221,28 @@ export function StandingsView({
 }) {
   return (
     <div className="stack">
-      <section className="app-card header-card">
-        <span>Standings</span>
+      <section className="app-card header-card standings-filter-card">
         <div>
-          <h2>{standingEvent}</h2>
-          <strong className="season-label">{standingYear}</strong>
+          <span>Standings</span>
+          <h2>
+            {standingEvent}
+            <br />
+            {standingType}
+          </h2>
         </div>
+        <label className="standing-year-picker">
+          <select value={standingYear} onChange={(event) => setStandingYear(event.target.value)} aria-label="Season">
+            {standingYears.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+          <ChevronDown size={20} />
+        </label>
       </section>
 
-      <div className="chip-grid">
-        <SelectChip label="Season" value={standingYear} options={standingYears} onChange={setStandingYear} />
+      <div className="chip-grid standings-filter-grid">
         <SelectChip
           label="Type"
           value={standingType}
@@ -237,12 +252,7 @@ export function StandingsView({
         <SelectChip label="Event" value={standingEvent} options={events} onChange={(value) => setStandingEvent(value as EventName)} />
       </div>
 
-      <div className="sticky-pill">
-        <strong>{standingEvent}</strong>
-        <span>{standingYear} {standingType}</span>
-      </div>
-
-      <div className="list-stack">
+      <div className="list-stack standings-list">
         {state === "loading" ? (
           <LoadingState title="Loading standings" />
         ) : state === "error" ? (
@@ -384,24 +394,7 @@ export function ResultsView({
         ) : rows.length > 0 ? (
           <>
             {rows.map((rodeo) => (
-              <button
-                className="app-card rodeo-card"
-                key={rodeo.id}
-                onClick={() => onOpenRodeo(rodeo)}
-              >
-                <div>
-                  <h3>{rodeo.name}</h3>
-                  <p>
-                    <MapPin size={14} /> {rodeo.location}
-                  </p>
-                </div>
-                <div className="rodeo-meta">
-                  <strong>{rodeo.payout}</strong>
-                  <span>{rodeo.inProgress ? "In Progress" : `Ended ${rodeo.endDate}`}</span>
-                  {rodeo.hasDaysheets && <em>Daysheets</em>}
-                </div>
-                <ChevronRight size={18} />
-              </button>
+              <RodeoListCard key={rodeo.id} rodeo={rodeo} mode="results" onOpen={() => onOpenRodeo(rodeo)} />
             ))}
             <button className="load-more-button" onClick={onLoadMore} disabled={isLoadingMore}>
               {isLoadingMore ? "Loading..." : "Load More"}
@@ -454,26 +447,7 @@ export function ScheduleView({
         ) : rows.length > 0 ? (
           <>
             {rows.map((rodeo) => (
-              <button
-                className="app-card rodeo-card"
-                key={rodeo.id}
-                onClick={() => onOpenRodeo(rodeo)}
-              >
-                <div>
-                  <h3>{rodeo.name}</h3>
-                  <p>
-                    <MapPin size={14} /> {rodeo.location}
-                  </p>
-                </div>
-                <div className="rodeo-meta">
-                  <strong>
-                    {rodeo.startDate} - {rodeo.endDate}
-                  </strong>
-                  <span>{rodeo.payout}</span>
-                  {rodeo.hasDaysheets && <em>Daysheets</em>}
-                </div>
-                <ChevronRight size={18} />
-              </button>
+              <RodeoListCard key={rodeo.id} rodeo={rodeo} mode="schedule" onOpen={() => onOpenRodeo(rodeo)} />
             ))}
             <button className="load-more-button" onClick={onLoadMore} disabled={isLoadingMore}>
               {isLoadingMore ? "Loading..." : "Load More"}
@@ -484,6 +458,40 @@ export function ScheduleView({
         )}
       </div>
     </div>
+  );
+}
+
+function RodeoListCard({ rodeo, mode, onOpen }: { rodeo: RodeoRow; mode: "results" | "schedule"; onOpen: () => void }) {
+  const dateText = rodeo.startDate && rodeo.startDate !== rodeo.endDate ? `${rodeo.startDate} - ${rodeo.endDate}` : rodeo.endDate || rodeo.startDate || "Dates TBD";
+  const tags = [
+    rodeo.hasDaysheets ? "Daysheets" : "",
+    rodeo.inProgress ? "In Progress" : "",
+    mode === "results" && rodeo.winners.length > 0 ? `${rodeo.winners.length} leaders` : ""
+  ].filter(Boolean);
+
+  return (
+    <button className="app-card rodeo-card" onClick={onOpen}>
+      <div className="rodeo-card-main">
+        <h3>{rodeo.name}</h3>
+        <p className="rodeo-card-subtitle">
+          <span>{rodeo.location || "Location TBD"}</span>
+          <i />
+          <span>Added: {rodeo.payout || "$0"}</span>
+        </p>
+        {tags.length > 0 && (
+          <div className="rodeo-card-tags">
+            {tags.map((tag) => (
+              <span key={tag}>{tag}</span>
+            ))}
+          </div>
+        )}
+        <div className="rodeo-card-date-row">
+          <strong>{mode === "results" && !rodeo.inProgress ? `Ended ${rodeo.endDate || dateText}` : dateText}</strong>
+          {rodeo.inProgress && <em>In Progress</em>}
+        </div>
+      </div>
+      <ChevronRight size={19} />
+    </button>
   );
 }
 
@@ -626,6 +634,27 @@ export function RodeoDetailView({
             <LoadingState title="Loading results" />
           ) : state === "error" ? (
             <EmptyState title="Results Unavailable" subtitle="This rodeo detail feed could not be loaded." icon={CircleDollarSign} />
+          ) : rodeo.resultRounds.length > 0 ? (
+            <div className="result-round-list">
+              {rodeo.resultRounds.map((round) => (
+                <section className="result-round-card" key={round.id}>
+                  <div className="result-round-title">
+                    <strong>{round.label}</strong>
+                    <span>{round.rows.length} result{round.rows.length === 1 ? "" : "s"}</span>
+                  </div>
+                  <div className="winner-list round-winner-list">
+                    {round.rows.map((row) => (
+                      <div key={row.id}>
+                        <span>{row.place}</span>
+                        <strong>{row.name}</strong>
+                        <em>{row.value}</em>
+                        <p>{row.payoff}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
           ) : rodeo.winners.length > 0 ? (
             <div className="winner-list">
               {rodeo.winners.map(([place, name, score]) => (
@@ -899,6 +928,45 @@ function SettingsView({
 
   return (
     <div className="settings-grid">
+      <section className="app-card settings-section settings-summary-section">
+        <div className="settings-section-title">
+          <ListOrdered size={20} />
+          <div>
+            <strong>Favorite Events</strong>
+            <span>
+              Standings: {settings.favoriteStandingsEvent} - Results: {settings.favoriteResultsEvent}
+            </span>
+          </div>
+        </div>
+        <label className="settings-select-row">
+          <span>Standings Event</span>
+          <select
+            value={settings.favoriteStandingsEvent}
+            onChange={(event) => updateSettings({ favoriteStandingsEvent: event.target.value as EventName })}
+          >
+            {events.map((event) => (
+              <option key={event} value={event}>
+                {event}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="settings-select-row">
+          <span>Results Event</span>
+          <select
+            value={settings.favoriteResultsEvent}
+            onChange={(event) => updateSettings({ favoriteResultsEvent: event.target.value as EventName })}
+          >
+            {events.map((event) => (
+              <option key={event} value={event}>
+                {event}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p>Used as defaults when Rodeo Daily opens on this device.</p>
+      </section>
+
       <section className="app-card settings-section">
         <div className="settings-section-title">
           <Settings size={20} />
@@ -939,42 +1007,6 @@ function SettingsView({
             checked={settings.followAlertsEnabled}
             onChange={(event) => updateSettings({ followAlertsEnabled: event.target.checked })}
           />
-        </label>
-      </section>
-
-      <section className="app-card settings-section">
-        <div className="settings-section-title">
-          <ListOrdered size={20} />
-          <div>
-            <strong>Favorite Events</strong>
-            <span>Set the default events for standings and results.</span>
-          </div>
-        </div>
-        <label className="settings-select-row">
-          <span>Standings Event</span>
-          <select
-            value={settings.favoriteStandingsEvent}
-            onChange={(event) => updateSettings({ favoriteStandingsEvent: event.target.value as EventName })}
-          >
-            {events.map((event) => (
-              <option key={event} value={event}>
-                {event}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="settings-select-row">
-          <span>Results Event</span>
-          <select
-            value={settings.favoriteResultsEvent}
-            onChange={(event) => updateSettings({ favoriteResultsEvent: event.target.value as EventName })}
-          >
-            {events.map((event) => (
-              <option key={event} value={event}>
-                {event}
-              </option>
-            ))}
-          </select>
         </label>
       </section>
 
@@ -1023,6 +1055,38 @@ function SettingsView({
           >
             Decline Ads
           </button>
+        </div>
+      </section>
+
+      <section className="app-card settings-section">
+        <div className="settings-section-title">
+          <ExternalLink size={20} />
+          <div>
+            <strong>Data Sources & Feedback</strong>
+            <span>Credits and contact links from the iOS app.</span>
+          </div>
+        </div>
+        <div className="settings-link-list">
+          <a href="mailto:thewaymediaco@gmail.com">
+            <Mail size={17} />
+            <span>Submit Feedback</span>
+            <ChevronRight size={16} />
+          </a>
+          <a href="https://prorodeo.com" target="_blank" rel="noreferrer">
+            <ExternalLink size={17} />
+            <span>PRCA Results & Standings Data</span>
+            <ChevronRight size={16} />
+          </a>
+          <a href="https://wpra.com" target="_blank" rel="noreferrer">
+            <ExternalLink size={17} />
+            <span>WPRA Barrel Racing & Breakaway Data</span>
+            <ChevronRight size={16} />
+          </a>
+          <a href="https://iconscout.com/icons/cowboy" target="_blank" rel="noreferrer">
+            <ExternalLink size={17} />
+            <span>Cowboy Icon Credit</span>
+            <ChevronRight size={16} />
+          </a>
         </div>
       </section>
     </div>
@@ -1678,12 +1742,21 @@ function AthleteStatsTab({
   hasBio: boolean;
   onOpenBio: () => void;
 }) {
-  const stats = [
-    { label: "Season Rank", value: athlete.place ? `#${athlete.place}` : bio.rankings[0]?.rank ? `#${bio.rankings[0].rank}` : "Unranked" },
-    { label: athlete.metricLabel || "This Year", value: athlete.metric || bio.yearEarnings || "-" },
-    { label: "Career Earnings", value: bio.totalEarnings || "-" },
-    { label: "Date Joined", value: bio.dateJoined || "-" }
-  ];
+  const seasons = Array.from(
+    new Set([
+      ...bio.career.map((season) => String(season.season)).filter((season) => season !== "0"),
+      ...bio.rankings.map((ranking) => String(ranking.season)).filter((season) => season !== "0")
+    ])
+  ).sort((left, right) => Number(right) - Number(left));
+  const [selectedSeason, setSelectedSeason] = useState(seasons[0] ?? new Date().getFullYear().toString());
+  const activeSeason = seasons.includes(selectedSeason) ? selectedSeason : seasons[0] ?? selectedSeason;
+  const seasonCareer = bio.career.find((season) => String(season.season) === activeSeason);
+  const seasonRanking = bio.rankings.find((ranking) => String(ranking.season) === activeSeason) ?? bio.rankings[0];
+  const bestResult = bio.recentResults.find((result) => result.resultValue && result.resultValue !== "-");
+  const bestPayingGo = [...bio.recentResults].sort((left, right) => currencyNumber(right.payoff) - currencyNumber(left.payoff))[0];
+  const monthlyRows = monthlyEarningsRows(bio.recentResults);
+  const monthlyTotal = monthlyRows.reduce((total, row) => total + row.total, 0);
+  const maxMonthTotal = Math.max(...monthlyRows.map((row) => row.total), 1);
 
   return (
     <div className="athlete-profile-stack">
@@ -1698,60 +1771,331 @@ function AthleteStatsTab({
           </button>
         )}
       </section>
-      <div className="athlete-stat-grid">
-        {stats.map((stat) => (
-          <div key={stat.label}>
-            <span>{stat.label}</span>
-            <strong>{stat.value}</strong>
-          </div>
-        ))}
-      </div>
-      <section className="app-card athlete-performance-card">
-        <strong>Best Available Snapshot</strong>
-        <div>
-          <span>World Titles</span>
-          <p>{bio.worldTitles ?? 0}</p>
+
+      {seasons.length > 0 && (
+        <div className="athlete-season-chip-row" aria-label="Stats season">
+          {seasons.map((season) => (
+            <button className={activeSeason === season ? "active" : undefined} key={season} onClick={() => setSelectedSeason(season)}>
+              {season}
+            </button>
+          ))}
         </div>
+      )}
+
+      <section className="app-card athlete-season-overview-card">
+        <div>
+          <span>Season {activeSeason}</span>
+          <strong>{seasonRanking?.rank ? `#${seasonRanking.rank}` : athlete.place ? `#${athlete.place}` : "Unranked"}</strong>
+        </div>
+        <div>
+          <span>Earnings</span>
+          <strong>{seasonCareer?.earnings || (activeSeason === new Date().getFullYear().toString() ? athlete.metric || bio.yearEarnings : "-")}</strong>
+        </div>
+      </section>
+
+      <section className="app-card athlete-performance-card athlete-best-performance-card">
+        <strong>Best Performances</strong>
+        <AthleteStatRow title="Best Result" rodeo={bestResult?.rodeoName || "No result listed"} trailing={bestResult?.resultValue || "-"} />
+        <AthleteStatRow
+          title="Best Paying Go"
+          rodeo={bestPayingGo?.rodeoName || "No payoff listed"}
+          trailing={bestPayingGo ? `${bestPayingGo.resultValue || "-"} • ${bestPayingGo.payoff}` : "-"}
+        />
+        <AthleteStatRow title="Best Paying Rodeo" rodeo={bestPayingGo?.rodeoName || "No payoff listed"} trailing={bestPayingGo?.payoff || "-"} />
+      </section>
+
+      <section className="app-card athlete-performance-card">
+        <strong>NFR Summary</strong>
         <div>
           <span>NFR Qualifications</span>
           <p>{bio.nfrQualifications ?? 0}</p>
         </div>
         <div>
-          <span>This Year</span>
-          <p>{bio.yearEarnings || "-"}</p>
+          <span>World Titles</span>
+          <p>{bio.worldTitles ?? 0}</p>
+        </div>
+        <div>
+          <span>NFR Earnings</span>
+          <p>{seasonCareer?.nfrQualified ? seasonCareer.earnings : "No NFR stats for this season"}</p>
+        </div>
+      </section>
+
+      <section className="app-card athlete-monthly-card">
+        <div className="athlete-monthly-heading">
+          <strong>Monthly Earnings</strong>
+          <span>Regular Season: {formatMoneyFromNumber(monthlyTotal)}</span>
+        </div>
+        <div className="athlete-monthly-list">
+          {monthlyRows.map((row) => (
+            <div className="athlete-month-row" key={row.month}>
+              <span>{row.month}</span>
+              <i>
+                <b style={{ width: `${Math.max(4, (row.total / maxMonthTotal) * 100)}%` }} />
+              </i>
+              <strong>{formatMoneyFromNumber(row.total)}</strong>
+            </div>
+          ))}
         </div>
       </section>
     </div>
   );
 }
 
+function AthleteStatRow({ title, rodeo, trailing }: { title: string; rodeo: string; trailing: string }) {
+  return (
+    <div className="athlete-stat-row">
+      <span>{title}</span>
+      <div>
+        <p>{rodeo}</p>
+        <strong>{trailing}</strong>
+      </div>
+    </div>
+  );
+}
+
+function currencyNumber(value: string) {
+  const parsed = Number(value.replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatMoneyFromNumber(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0
+  }).format(value);
+}
+
+function monthlyEarningsRows(results: AthleteBio["recentResults"]) {
+  const monthKeys = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct"];
+  return monthKeys.map((month) => ({
+    month,
+    total: results
+      .filter((result) => result.endDate.startsWith(month))
+      .reduce((total, result) => total + currencyNumber(result.payoff), 0)
+  }));
+}
+
 function AthleteResultsTab({ bio }: { bio: AthleteBio }) {
+  const [query, setQuery] = useState("");
+  const [sortBy, setSortBy] = useState<AthleteResultSort>("Date");
+  const [isSearching, setIsSearching] = useState(false);
+  const results = bio.recentResults.filter((result) => athleteResultMatches(result, query));
+  const sortedResults = results.slice().sort((left, right) => sortAthleteResults(left, right, sortBy));
+  const usesFlatResultList = sortBy === "Result" || sortBy === "Earnings";
+  const groupedResults = groupAthleteResults(sortedResults);
+  const resultCount = sortedResults.length;
+  const resultMetricLabel = roughstockEventTypes.has((bio.events[0] ?? "").toUpperCase()) ? "Score" : "Time";
+  const summaryText = usesFlatResultList ? `${resultCount} results` : `${groupedResults.length} rodeos • ${resultCount} results`;
+
   if (bio.recentResults.length === 0) {
     return <EmptyState title="No Results Found" subtitle="No recent rodeo results are available for this athlete." icon={ListOrdered} />;
   }
 
   return (
     <div className="athlete-profile-stack">
-      <section className="app-card athlete-tab-header-card">
-        <div>
-          <h2>Results</h2>
-          <p>{bio.recentResults.length} recent results</p>
+      <section className="app-card athlete-results-header-card">
+        <div className="athlete-results-title-row">
+          <div>
+            <h2>Results</h2>
+            <p>{[bio.events[0], summaryText].filter(Boolean).join(" • ")}</p>
+          </div>
+          <button
+            type="button"
+            className="circle-icon-button"
+            aria-label={isSearching ? "Close results search" : "Search results"}
+            onClick={() => {
+              setIsSearching((current) => !current);
+              if (isSearching) setQuery("");
+            }}
+          >
+            {isSearching ? <X size={17} /> : <Search size={17} />}
+          </button>
+        </div>
+
+        {isSearching ? (
+          <label className="athlete-results-search">
+            <Search size={16} />
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search rodeo, location, or result"
+            />
+            {query ? (
+              <button type="button" aria-label="Clear results search" onClick={() => setQuery("")}>
+                <X size={15} />
+              </button>
+            ) : null}
+          </label>
+        ) : null}
+
+        <div className="athlete-results-filter-row">
+          <label>
+            <span>Sort</span>
+            <select value={sortBy} onChange={(event) => setSortBy(event.target.value as AthleteResultSort)}>
+              <option>Date</option>
+              <option>Rodeo</option>
+              <option>Result</option>
+              <option>Earnings</option>
+            </select>
+          </label>
+          <div>
+            <span>Season</span>
+            <strong>{bio.career[0]?.season || new Date().getFullYear()}</strong>
+          </div>
         </div>
       </section>
-      <div className="athlete-result-list">
-        {bio.recentResults.map((result) => (
-          <div className="app-card athlete-result-row" key={result.id}>
-            <div>
-              <h3>{result.rodeoName}</h3>
-              <p>{[result.location, result.endDate, result.round].filter(Boolean).join(" - ")}</p>
-            </div>
-            <span>{result.place ? `#${result.place}` : "Result"}</span>
-            <strong>{result.resultValue || result.payoff}</strong>
+
+      {resultCount === 0 ? (
+        <EmptyState title="No Results Found" subtitle="Try a different sort option or search term." icon={ListOrdered} />
+      ) : (
+        <>
+          <div className="athlete-result-column-header" aria-hidden="true">
+            <span>Round</span>
+            <span>Place</span>
+            <span>{resultMetricLabel}</span>
+            <span>Earnings</span>
           </div>
-        ))}
-      </div>
+
+          {usesFlatResultList ? (
+            <div className="athlete-flat-result-list">
+              {sortedResults.map((result) => (
+                <AthleteFlatResultCard key={result.id} result={result} />
+              ))}
+            </div>
+          ) : (
+            <div className="athlete-result-group-list">
+              {groupedResults.map((group) => (
+                <AthleteResultGroupCard key={group.id} group={group} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
+}
+
+const roughstockEventTypes = new Set(["BB", "SB", "BR"]);
+
+type AthleteResultGroup = {
+  id: string;
+  rodeoName: string;
+  location: string;
+  endDate: string;
+  eventType: string;
+  results: AthleteBioResult[];
+};
+
+function AthleteResultGroupCard({ group }: { group: AthleteResultGroup }) {
+  return (
+    <section className="app-card athlete-result-group-card">
+      <div className="athlete-result-group-heading">
+        <div>
+          <h3>{group.rodeoName}</h3>
+          <p>{[group.location, group.endDate].filter(Boolean).join(" • ")}</p>
+        </div>
+        <span>{group.results.length}</span>
+      </div>
+      <div className="athlete-result-table">
+        {group.results.map((result) => (
+          <AthleteResultDetailRow key={result.id} result={result} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function AthleteFlatResultCard({ result }: { result: AthleteBioResult }) {
+  return (
+    <section className="app-card athlete-result-group-card">
+      <div className="athlete-result-group-heading">
+        <div>
+          <h3>{result.rodeoName}</h3>
+          <p>{[result.location, result.endDate].filter(Boolean).join(" • ")}</p>
+        </div>
+      </div>
+      <div className="athlete-result-table">
+        <AthleteResultDetailRow result={result} />
+      </div>
+    </section>
+  );
+}
+
+function AthleteResultDetailRow({ result }: { result: AthleteBioResult }) {
+  return (
+    <div className="athlete-result-detail-row">
+      <span>{result.round || "Round"}</span>
+      <strong>{result.place ? `#${result.place}` : "-"}</strong>
+      <em>{result.resultValue || "-"}</em>
+      <p>{result.payoff || "-"}</p>
+    </div>
+  );
+}
+
+function athleteResultMatches(result: AthleteBioResult, query: string) {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return true;
+  return [result.rodeoName, result.location, result.endDate, result.round, result.resultValue, result.payoff, result.eventType]
+    .join(" ")
+    .toLowerCase()
+    .includes(normalizedQuery);
+}
+
+function sortAthleteResults(left: AthleteBioResult, right: AthleteBioResult, sortBy: AthleteResultSort) {
+  switch (sortBy) {
+    case "Rodeo":
+      return left.rodeoName.localeCompare(right.rodeoName) || compareResultDates(right, left);
+    case "Result":
+      return resultNumber(left.resultValue) - resultNumber(right.resultValue);
+    case "Earnings":
+      return currencyNumber(right.payoff) - currencyNumber(left.payoff);
+    case "Date":
+    default:
+      return compareResultDates(right, left);
+  }
+}
+
+function compareResultDates(left: AthleteBioResult, right: AthleteBioResult) {
+  return resultDateNumber(left.endDate) - resultDateNumber(right.endDate);
+}
+
+function resultDateNumber(value: string) {
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function resultNumber(value: string) {
+  const parsed = Number(value.replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
+}
+
+function groupAthleteResults(results: AthleteBioResult[]) {
+  const groups: AthleteResultGroup[] = [];
+  const indexByKey = new Map<string, number>();
+
+  results.forEach((result) => {
+    const key = `${result.rodeoName}-${result.endDate}-${result.eventType}`;
+    const existingIndex = indexByKey.get(key);
+
+    if (existingIndex === undefined) {
+      indexByKey.set(key, groups.length);
+      groups.push({
+        id: key,
+        rodeoName: result.rodeoName,
+        location: result.location,
+        endDate: result.endDate,
+        eventType: result.eventType,
+        results: [result]
+      });
+      return;
+    }
+
+    groups[existingIndex].results.push(result);
+  });
+
+  return groups;
 }
 
 function AthleteCareerTab({ bio }: { bio: AthleteBio }) {

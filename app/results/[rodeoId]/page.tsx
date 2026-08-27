@@ -3,7 +3,7 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { RodeoDetailView } from "../../components/rodeo-views";
-import { eventCodes, events, fetchJson, mapDaysheets, mapWinners } from "../../lib/rodeo-data";
+import { eventCodes, events, fetchJson, mapDaysheets, mapResultRounds, mapWinners } from "../../lib/rodeo-data";
 import type { ApiDaysheetResponse, ApiRodeoResults, DaysheetRow, EventName, LoadState, RodeoRow } from "../../lib/types";
 
 function paramValue(value: string | string[] | undefined) {
@@ -34,7 +34,8 @@ export default function ResultsRodeoRoutePage() {
     payout: searchParams.get("payout") || "",
     hasDaysheets: searchParams.get("daysheets") === "true",
     inProgress: false,
-    winners: []
+    winners: [],
+    resultRounds: []
   });
 
   useEffect(() => {
@@ -46,8 +47,9 @@ export default function ResultsRodeoRoutePage() {
         const query = new URLSearchParams({ resource: "rodeo-results", rodeoId: String(rodeoId) });
         const payload = await fetchJson<ApiRodeoResults>(`/api/rodeo?${query}`);
         const winners = mapWinners(payload, eventCodes[event]);
+        const resultRounds = mapResultRounds(payload, eventCodes[event]);
         if (!cancelled) {
-          setRodeo((current) => ({ ...current, winners }));
+          setRodeo((current) => ({ ...current, winners, resultRounds }));
           setState("loaded");
         }
       } catch {

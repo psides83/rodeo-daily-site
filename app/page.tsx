@@ -135,6 +135,17 @@ function readAppRoute() {
   return { tab, section };
 }
 
+function updateDocumentSeo(title: string, description: string) {
+  document.title = title;
+  let descriptionTag = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+  if (!descriptionTag) {
+    descriptionTag = document.createElement("meta");
+    descriptionTag.name = "description";
+    document.head.appendChild(descriptionTag);
+  }
+  descriptionTag.content = description;
+}
+
 export default function Home() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("Standings");
@@ -187,6 +198,37 @@ export default function Home() {
     if (activeTab === "Schedule") return "Search upcoming rodeos...";
     return "Search...";
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === "Standings") {
+      updateDocumentSeo(
+        `${standingYear} PRCA Standings & Rodeo Standings | Rodeo Daily`,
+        `Follow ${standingYear} PRCA standings, rodeo standings, world standings, circuit standings, rookie standings, and athlete rankings by event.`
+      );
+      return;
+    }
+
+    if (activeTab === "Results") {
+      updateDocumentSeo(
+        "PRCA Results & Rodeo Results | Rodeo Daily",
+        `View PRCA results and rodeo results for ${resultEvent}, including leaders, round results, payouts, and rodeo detail pages.`
+      );
+      return;
+    }
+
+    if (activeTab === "Schedule") {
+      updateDocumentSeo(
+        "Rodeo Schedule, Daysheets & Upcoming Rodeos | Rodeo Daily",
+        "Find upcoming rodeos, PRCA rodeo schedules, daysheets, venues, dates, payouts, and rodeo detail pages."
+      );
+      return;
+    }
+
+    updateDocumentSeo(
+      "NFR Standings, Rodeo Listings & Past Champions | Rodeo Daily",
+      "Explore NFR standings, rodeo listings, past world champions, favorite athletes, and Rodeo Daily settings."
+    );
+  }, [activeTab, resultEvent, standingYear]);
 
   useEffect(() => {
     function syncFromRoute() {
