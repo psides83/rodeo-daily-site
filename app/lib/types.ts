@@ -49,6 +49,8 @@ export type RodeoRow = {
   websiteUrl: string | null;
   startDate: string;
   endDate: string;
+  startDateRaw?: string;
+  endDateRaw?: string;
   payout: string;
   event?: EventName;
   hasDaysheets: boolean;
@@ -65,10 +67,14 @@ export type RodeoResultRound = {
 
 export type RodeoResultRow = {
   id: string;
+  contestantId: number;
   place: string;
   name: string;
+  hometown: string;
+  imageUrl: string | null;
   payoff: string;
   value: string;
+  teamId: number | null;
 };
 
 export type BusinessJournalRow = {
@@ -180,6 +186,7 @@ export type AthleteBioResult = {
   resultValue: string;
   round: string;
   endDate: string;
+  season: number;
 };
 
 export type AthleteCareerSeason = {
@@ -245,7 +252,12 @@ export type ApiRound = {
     FirstName?: string;
     LastName?: string;
     NickName?: string;
+    Hometown?: string | null;
+    SidearmPhotoUrl?: string | null;
+    PhotoUrl?: string | null;
+    image_315_url?: string | null;
   }>;
+  TeamId?: number | null;
 };
 
 export type ApiRodeoResults = {

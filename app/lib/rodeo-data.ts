@@ -113,7 +113,7 @@ export function mapAthleteBio(payload: ApiAthleteBioResponse): AthleteBio | null
     dateJoined: formatDate(bio.DateJoined ?? undefined),
     biography: parseAthleteBiography(bio.BiographyText),
     events: bio.EventTypes ?? [],
-    rankings: (bio.Rankings ?? []).slice(0, 6).map((ranking, index) => ({
+    rankings: (bio.Rankings ?? []).map((ranking, index) => ({
       id: `${ranking.EventName ?? "event"}-${ranking.Season ?? index}-${ranking.RankType ?? "rank"}`,
       rank: ranking.Rank?.trim() ?? "Unranked",
       rankType: ranking.RankType?.trim() ?? "",
@@ -132,7 +132,8 @@ export function mapAthleteBio(payload: ApiAthleteBioResponse): AthleteBio | null
         payoff: formatCurrency(result.Payoff ?? 0),
         resultValue: formatAthleteResultValue(result.Time, result.Score),
         round: result.Round?.trim() ?? "",
-        endDate: formatDate(result.EndDate)
+        endDate: formatDate(result.EndDate),
+        season: resultSeason(result.EndDate)
       })),
     career: (bio.Career ?? [])
       .slice()
@@ -272,6 +273,14 @@ function formatAthleteResultValue(time?: number, score?: number) {
   if (time && time > 0) return `${time.toFixed(2)} sec`;
   if (score && score > 0) return `${score.toFixed(1)} pts`;
   return "";
+}
+
+function resultSeason(value?: string) {
+  if (!value) return 0;
+  const date = new Date(value);
+  if (!Number.isNaN(date.getTime())) return date.getFullYear();
+  const match = value.match(/\b(19|20)\d{2}\b/);
+  return match ? Number(match[0]) : 0;
 }
 
 export function normalizeWebsiteUrl(value?: string | null) {
@@ -672,6 +681,8 @@ export function mapRodeo(rodeo: ApiRodeo): RodeoRow {
     websiteUrl: normalizeWebsiteUrl(rodeo.WebsiteUrl),
     startDate: formatDate(rodeo.StartDate),
     endDate: formatDate(rodeo.EndDate),
+    startDateRaw: rodeo.StartDate,
+    endDateRaw: rodeo.EndDate,
     payout: formatCurrency(rodeo.Payout ?? 0),
     hasDaysheets: Boolean(rodeo.HasDaysheets),
     inProgress: Boolean(rodeo.InProgress),
@@ -759,10 +770,14 @@ export function mapResultRounds(payload: ApiRodeoResults, event: EventCode): Rod
           const name = `${contestant?.NickName || contestant?.FirstName || ""} ${contestant?.LastName || ""}`.trim();
           return {
             id: `${roundId}-${contestant?.ContestantId ?? index}`,
+            contestantId: contestant?.ContestantId ?? 0,
             place: `#${row.Place && row.Place > 0 ? row.Place : index + 1}`,
             name: name || "Unknown Athlete",
+            hometown: contestant?.Hometown?.trim() ?? "",
+            imageUrl: normalizeAthleteImageUrl(contestant?.SidearmPhotoUrl ?? contestant?.image_315_url ?? contestant?.PhotoUrl),
             payoff: row.Payoff ? formatCurrency(row.Payoff) : "-",
-            value: resultValue(row, event)
+            value: resultValue(row, event),
+            teamId: row.TeamId ?? null
           };
         })
       };

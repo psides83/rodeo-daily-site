@@ -4,6 +4,7 @@ import { Bell, Calendar, CircleDollarSign, Ellipsis, ListOrdered, Menu, Search, 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { PwaRegister } from "./pwa-register";
+import { GoogleAdsController } from "./components/google-ads";
 import {
   CookieConsentBanner,
   FollowAlertsPanel,
@@ -681,8 +682,9 @@ export default function Home() {
 
   return (
     <main className="browser-stage">
-      <PwaRegister />
-      <section className="app-window" aria-label="Rodeo Daily web app">
+        <PwaRegister />
+        {preferencesLoaded && <GoogleAdsController consent={appSettings.adConsent} />}
+        <section className="app-window" aria-label="Rodeo Daily web app">
         {preferencesLoaded && <CookieConsentBanner consent={appSettings.adConsent} onChoose={updateAdConsent} />}
         <header className="top-toolbar">
           <div className="identity">
@@ -826,29 +828,34 @@ export default function Home() {
             </div>
 
             <nav className={searchExpanded ? "tab-bar search-mode" : "tab-bar"} aria-label="Bottom tabs">
-              <div className="tab-items">
-                {tabs.map((tab) => {
-                  const Icon = tab.icon;
-                  return (
-                    <button
-                      className={activeTab === tab.label ? "tab-button active" : "tab-button"}
-                      key={tab.label}
-                      onClick={() => selectTab(tab.label)}
-                    >
-                      <Icon size={21} />
-                      <span>{tab.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="bottom-search">
+              {!searchExpanded && (
+                <div className="tab-items">
+                  {tabs.map((tab) => {
+                    const Icon = tab.icon;
+                    return (
+                      <button
+                        className={activeTab === tab.label ? "tab-button active" : "tab-button"}
+                        key={tab.label}
+                        onClick={() => selectTab(tab.label)}
+                      >
+                        <Icon size={21} />
+                        <span>{tab.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <div className={searchExpanded ? "bottom-search expanded" : "bottom-search"}>
                 {searchExpanded && (
-                  <input
-                    autoFocus
-                    value={searchText}
-                    onChange={(event) => setSearchText(event.target.value)}
-                    placeholder={searchPlaceholder}
-                  />
+                  <>
+                    <Search size={18} />
+                    <input
+                      autoFocus
+                      value={searchText}
+                      onChange={(event) => setSearchText(event.target.value)}
+                      placeholder={searchPlaceholder}
+                    />
+                  </>
                 )}
                 <button
                   aria-label={searchExpanded ? "Close search" : "Search"}

@@ -28,6 +28,8 @@ import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 import type { KeyboardEvent, ReactNode } from "react";
 import { useEffect, useState } from "react";
+import { GoogleAdSlot } from "./google-ads";
+import { shouldShowBottomAd, shouldShowListAd } from "../lib/ads";
 import type {
   AppSettings,
   AthleteBio,
@@ -44,6 +46,8 @@ import type {
   MoreSection,
   NfrContestant,
   PastChampion,
+  RodeoResultRound,
+  RodeoResultRow,
   RodeoDetailSource,
   RodeoRow,
   SavedAthlete,
@@ -57,6 +61,7 @@ import {
   championEvents,
   events,
   filterChampions,
+  formatDate,
   initialsFor,
   makeDaysheetDisplayRows,
   mapScheduleToBusinessJournalRow,
@@ -72,12 +77,6 @@ const moreItems = [
     subtitle: "Browse your selected favorite athlete bios"
   },
   {
-    id: "nfr",
-    icon: Trophy,
-    title: "NFR Standings",
-    subtitle: "Round-by-round NFR average rankings"
-  },
-  {
     id: "listings",
     icon: Newspaper,
     title: "Rodeo Listings",
@@ -85,7 +84,7 @@ const moreItems = [
   },
   {
     id: "champions",
-    icon: Trophy,
+    icon: ShieldCheck,
     title: "Past World Champions",
     subtitle: "Historic PRCA world champions"
   },
@@ -258,15 +257,20 @@ export function StandingsView({
         ) : state === "error" ? (
           <EmptyState title="Standings Unavailable" subtitle="The live standings feed could not be loaded." icon={ListOrdered} />
         ) : rows.length > 0 ? (
-          rows.map((position) => (
-            <StandingCard
-              key={position.id}
-              position={position}
-              onOpenProfile={() => onOpenAthlete(position)}
-              onToggleFavorite={() => toggleFavoriteAthlete(position)}
-              onToggleFollow={() => toggleFollowedAthlete(position.id)}
-            />
-          ))
+          <>
+            {rows.map((position, index) => (
+              <div className="ad-list-item-group" key={position.id}>
+                {shouldShowListAd(index, 10, 10) && <GoogleAdSlot placement="standingsListInline" />}
+                <StandingCard
+                  position={position}
+                  onOpenProfile={() => onOpenAthlete(position)}
+                  onToggleFavorite={() => toggleFavoriteAthlete(position)}
+                  onToggleFollow={() => toggleFollowedAthlete(position.id)}
+                />
+              </div>
+            ))}
+            {shouldShowBottomAd(rows.length, 10) && <GoogleAdSlot placement="standingsListInline" />}
+          </>
         ) : (
           <EmptyState title="No Standings Found" subtitle="Try a different event, type, or search." icon={ListOrdered} />
         )}
@@ -366,25 +370,32 @@ export function ResultsView({
 }) {
   const isInitialLoading = state === "loading" && rows.length === 0;
   const isLoadingMore = state === "loading" && rows.length > 0;
+  const inProgressRows = rows.filter((rodeo) => rodeo.inProgress);
+  const completedRows = rows.filter((rodeo) => !rodeo.inProgress);
+  const hasDateFilter = Boolean(dateRange.start || dateRange.end);
+  const dateFilterText = [dateRange.start, dateRange.end].filter(Boolean).join(" - ");
 
   return (
     <div className="stack">
-      <section className="app-card header-card">
-        <span>Results</span>
-        <div>
-          <h2>{resultEvent} Rodeo Results</h2>
-        </div>
+      <section className="app-card header-card results-list-header-card">
+        <h1>Results</h1>
+        <h2>{resultEvent} Rodeo Results</h2>
       </section>
 
-      <div className="chip-row">
+      <div className="chip-row results-filter-row">
         <SelectChip label="Event" value={resultEvent} options={events} onChange={(value) => setResultEvent(value as EventName)} />
         <DateRangeFilter value={dateRange} onChange={setDateRange} />
       </div>
 
-      <div className="sticky-pill">
-        <strong>{resultEvent}</strong>
-        <span>Latest rodeos</span>
-      </div>
+      {hasDateFilter && (
+        <div className="active-date-filter-chip">
+          <span>Current Range</span>
+          <strong>{dateFilterText}</strong>
+          <button aria-label="Clear date filter" onClick={() => setDateRange({ start: "", end: "" })}>
+            <X size={15} />
+          </button>
+        </div>
+      )}
 
       <div className="list-stack">
         {isInitialLoading ? (
@@ -393,9 +404,31 @@ export function ResultsView({
           <EmptyState title="Results Unavailable" subtitle="The live results feed could not be loaded." icon={CircleDollarSign} />
         ) : rows.length > 0 ? (
           <>
-            {rows.map((rodeo) => (
-              <RodeoListCard key={rodeo.id} rodeo={rodeo} mode="results" onOpen={() => onOpenRodeo(rodeo)} />
-            ))}
+            {inProgressRows.length > 0 && (
+              <section className="rodeo-list-section">
+                <h2>In Progress</h2>
+                <div className="list-stack">
+                  {inProgressRows.map((rodeo) => (
+                    <RodeoListCard key={rodeo.id} rodeo={rodeo} mode="results" onOpen={() => onOpenRodeo(rodeo)} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {completedRows.length > 0 && (
+              <section className="rodeo-list-section">
+                <h2>Completed Rodeos</h2>
+                <div className="list-stack">
+                  {completedRows.map((rodeo, index) => (
+                    <div className="ad-list-item-group" key={rodeo.id}>
+                      {shouldShowListAd(index, 8, 20) && <GoogleAdSlot placement="resultsListInline" />}
+                      <RodeoListCard rodeo={rodeo} mode="results" onOpen={() => onOpenRodeo(rodeo)} />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+            {shouldShowBottomAd(rows.length, 10) && <GoogleAdSlot placement="resultsListInline" />}
             <button className="load-more-button" onClick={onLoadMore} disabled={isLoadingMore}>
               {isLoadingMore ? "Loading..." : "Load More"}
             </button>
@@ -425,30 +458,62 @@ export function ScheduleView({
 }) {
   const isInitialLoading = state === "loading" && rows.length === 0;
   const isLoadingMore = state === "loading" && rows.length > 0;
+  const hasDateFilter = Boolean(dateRange.start || dateRange.end);
+  const dateFilterText = [dateRange.start, dateRange.end].filter(Boolean).join(" - ");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const displayedRows = [...rows]
+    .filter((rodeo) => {
+      if (hasDateFilter || rodeo.inProgress) return true;
+      const endTime = parseRodeoDate(rodeo.endDateRaw ?? rodeo.endDate)?.getTime();
+      return !endTime || endTime >= today.getTime();
+    })
+    .sort((left, right) => {
+      const leftTime = parseRodeoDate(left.startDateRaw ?? left.startDate)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+      const rightTime = parseRodeoDate(right.startDateRaw ?? right.startDate)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+      return leftTime - rightTime;
+    });
 
   return (
     <div className="stack">
-      <section className="app-card header-card">
-        <span>Schedule</span>
-        <div>
-          <h2>Upcoming Rodeos</h2>
-        </div>
+      <section className="app-card header-card results-list-header-card">
+        <h1>Schedule</h1>
+        <h2>Upcoming Rodeos</h2>
       </section>
 
-      <div className="chip-row">
+      <div className="chip-row results-filter-row">
         <DateRangeFilter value={dateRange} onChange={setDateRange} />
       </div>
+
+      <div className="schedule-info-note">
+        <CircleHelp size={16} />
+        <p>Day sheets for “In Progress” rodeos can be viewed in Rodeo Results.</p>
+      </div>
+
+      {hasDateFilter && (
+        <div className="active-date-filter-chip">
+          <span>Current Range</span>
+          <strong>{dateFilterText}</strong>
+          <button aria-label="Clear date filter" onClick={() => setDateRange({ start: "", end: "" })}>
+            <X size={15} />
+          </button>
+        </div>
+      )}
 
       <div className="list-stack">
         {isInitialLoading ? (
           <LoadingState title="Loading schedule" />
         ) : state === "error" ? (
           <EmptyState title="Schedule Unavailable" subtitle="The live schedule feed could not be loaded." icon={Calendar} />
-        ) : rows.length > 0 ? (
+        ) : displayedRows.length > 0 ? (
           <>
-            {rows.map((rodeo) => (
-              <RodeoListCard key={rodeo.id} rodeo={rodeo} mode="schedule" onOpen={() => onOpenRodeo(rodeo)} />
+            {displayedRows.map((rodeo, index) => (
+              <div className="ad-list-item-group" key={rodeo.id}>
+                {shouldShowListAd(index, 8, 20) && <GoogleAdSlot placement="scheduleListInline" />}
+                <RodeoListCard rodeo={rodeo} mode="schedule" onOpen={() => onOpenRodeo(rodeo)} />
+              </div>
             ))}
+            {shouldShowBottomAd(displayedRows.length, 10) && <GoogleAdSlot placement="scheduleListInline" />}
             <button className="load-more-button" onClick={onLoadMore} disabled={isLoadingMore}>
               {isLoadingMore ? "Loading..." : "Load More"}
             </button>
@@ -461,8 +526,25 @@ export function ScheduleView({
   );
 }
 
+function parseRodeoDate(value?: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function displayRodeoDate(value?: string) {
+  return formatDate(value) || "TBD";
+}
+
 function RodeoListCard({ rodeo, mode, onOpen }: { rodeo: RodeoRow; mode: "results" | "schedule"; onOpen: () => void }) {
-  const dateText = rodeo.startDate && rodeo.startDate !== rodeo.endDate ? `${rodeo.startDate} - ${rodeo.endDate}` : rodeo.endDate || rodeo.startDate || "Dates TBD";
+  const startDate = displayRodeoDate(rodeo.startDateRaw ?? rodeo.startDate);
+  const endDate = displayRodeoDate(rodeo.endDateRaw ?? rodeo.endDate);
+  const dateText =
+    startDate === "TBD" && endDate === "TBD"
+      ? "Dates TBD"
+      : startDate === endDate
+        ? startDate
+        : `${startDate} - ${endDate}`;
   const tags = [
     rodeo.hasDaysheets ? "Daysheets" : "",
     rodeo.inProgress ? "In Progress" : "",
@@ -486,7 +568,7 @@ function RodeoListCard({ rodeo, mode, onOpen }: { rodeo: RodeoRow; mode: "result
           </div>
         )}
         <div className="rodeo-card-date-row">
-          <strong>{mode === "results" && !rodeo.inProgress ? `Ended ${rodeo.endDate || dateText}` : dateText}</strong>
+          <strong>{mode === "results" && !rodeo.inProgress ? `Ended ${endDate}` : dateText}</strong>
           {rodeo.inProgress && <em>In Progress</em>}
         </div>
       </div>
@@ -544,83 +626,138 @@ export function RodeoDetailView({
     );
   }, [selectedDaysheet]);
 
+  const dateRange =
+    rodeo.startDate && rodeo.startDate !== rodeo.endDate
+      ? `${displayRodeoDate(rodeo.startDateRaw ?? rodeo.startDate)} - ${displayRodeoDate(rodeo.endDateRaw ?? rodeo.endDate)}`
+      : displayRodeoDate(rodeo.endDateRaw ?? rodeo.startDateRaw ?? (rodeo.endDate || rodeo.startDate));
+
+  if (source === "schedule") {
+    return (
+      <div className="stack schedule-detail-view">
+        <section className="app-card schedule-detail-hero">
+          <button onClick={onBack}>
+            <ArrowLeft size={16} />
+            Back
+          </button>
+          <div className="schedule-detail-title">
+            <div>
+              <h2>{rodeo.name}</h2>
+              <p>
+                {rodeo.location}
+                <span />
+                {dateRange}
+              </p>
+            </div>
+            {rodeo.inProgress && <em>In Progress</em>}
+          </div>
+          <div className="schedule-detail-money">
+            <span>Added Money</span>
+            <strong>{rodeo.payout}</strong>
+          </div>
+        </section>
+
+        <section className="app-card detail-section venue-section schedule-venue-card">
+          <div className="section-title-row">
+            <div>
+              <span>Venue</span>
+              <h3>{rodeo.venueName || "Venue not listed"}</h3>
+            </div>
+            {rodeo.websiteUrl && (
+              <a href={rodeo.websiteUrl} target="_blank" rel="noreferrer" aria-label="Open rodeo website">
+                <ExternalLink size={18} />
+              </a>
+            )}
+          </div>
+          <p>{rodeo.location}</p>
+        </section>
+
+        <section className="app-card detail-section schedule-daysheet-card">
+          <div className="section-title-row">
+            <div>
+              <span>Daysheets</span>
+              <h3>{rodeo.hasDaysheets ? "Draw" : "Not Posted"}</h3>
+            </div>
+          </div>
+          {daysheetState === "loading" ? (
+            <LoadingState title="Loading daysheets" />
+          ) : daysheetState === "error" ? (
+            <EmptyState title="Daysheets Unavailable" subtitle="Unable to load daysheets right now." icon={Calendar} />
+          ) : rodeo.hasDaysheets && daysheets.length > 0 && selectedDaysheet ? (
+            <DaysheetViewer
+              daysheets={daysheets}
+              selectedDaysheet={selectedDaysheet}
+              selectedEvent={selectedDaysheetEvent}
+              setSelectedDaysheetId={setSelectedDaysheetId}
+              setSelectedEvent={setSelectedDaysheetEvent}
+            />
+          ) : rodeo.hasDaysheets ? (
+            <EmptyState title="No Daysheets Returned" subtitle="No daysheets were returned yet for this rodeo." icon={Calendar} />
+          ) : (
+            <EmptyState title="No Daysheets" subtitle="This rodeo has not posted daysheets in the feed." icon={Calendar} />
+          )}
+        </section>
+
+        {rodeo.websiteUrl && (
+          <a className="schedule-website-link" href={rodeo.websiteUrl} target="_blank" rel="noreferrer">
+            <ExternalLink size={17} />
+            Open Rodeo Website
+          </a>
+        )}
+
+        <GoogleAdSlot placement="scheduleDetailBottom" />
+      </div>
+    );
+  }
+
   return (
     <div className="stack">
-      <section className="app-card detail-screen-header">
+      <section className="app-card detail-screen-header results-detail-header">
         <button onClick={onBack}>
           <ArrowLeft size={16} />
           Back
         </button>
         <div>
-          <span>{source === "results" ? "Results" : "Schedule"}</span>
+          <span>{event}</span>
           <h2>{rodeo.name}</h2>
           <p>{rodeo.location}</p>
         </div>
+        <button
+          className="detail-help-button"
+          aria-label="Bracket results help"
+          onClick={() => setShowResultsHelp((show) => !show)}
+          type="button"
+        >
+          <CircleHelp size={18} />
+        </button>
       </section>
 
-      <div className="detail-event-filter">
-        <SelectChip label="Event" value={event} options={events} onChange={(value) => setEvent(value as EventName)} />
-      </div>
-
-      <div className="detail-screen-metrics">
-        <div className="app-card">
-          <span>Dates</span>
-          <strong>
-            {rodeo.startDate ? `${rodeo.startDate} - ${rodeo.endDate}` : rodeo.endDate}
-          </strong>
-        </div>
-        <div className="app-card">
-          <span>Payout</span>
-          <strong>{rodeo.payout}</strong>
-        </div>
-        <div className="app-card">
-          <span>Status</span>
-          <strong>{rodeo.inProgress ? "In Progress" : "Posted"}</strong>
+      <div className="result-event-filter" aria-label="Select Results Event">
+        <span>Event</span>
+        <div>
+          {events.map((option) => (
+            <button className={event === option ? "active" : undefined} key={option} onClick={() => setEvent(option)}>
+              {option}
+            </button>
+          ))}
         </div>
       </div>
-
-      <section className="app-card detail-section venue-section">
-        <div className="section-title-row">
-          <div>
-            <span>Venue</span>
-            <h3>{rodeo.venueName || "Venue not listed"}</h3>
-          </div>
-          {rodeo.websiteUrl && (
-            <a href={rodeo.websiteUrl} target="_blank" rel="noreferrer" aria-label="Open rodeo website">
-              <ExternalLink size={18} />
-            </a>
-          )}
-        </div>
-        <p>{rodeo.location}</p>
-      </section>
 
       {canShowDaysheets && (
-        <div className="detail-toggle" aria-label="Rodeo detail view">
-          <button className={view === "results" ? "active" : undefined} onClick={() => setView("results")}>
-            Results
-          </button>
-          <button className={view === "daysheets" ? "active" : undefined} onClick={() => setView("daysheets")}>
-            Daysheets
-          </button>
+        <div className="detail-view-picker" aria-label="Show results or daysheets">
+          <span>View</span>
+          <div>
+            <button className={view === "results" ? "active" : undefined} onClick={() => setView("results")}>
+              Results
+            </button>
+            <button className={view === "daysheets" ? "active" : undefined} onClick={() => setView("daysheets")}>
+              Daysheets
+            </button>
+          </div>
         </div>
       )}
 
       {view === "results" ? (
-        <section className="app-card detail-section">
-          <div className="section-title-row">
-            <div>
-              <span>{event}</span>
-              <h3>Leaders</h3>
-            </div>
-            <button
-              className="detail-help-button"
-              aria-label="Bracket results help"
-              onClick={() => setShowResultsHelp((show) => !show)}
-              type="button"
-            >
-              <CircleHelp size={18} />
-            </button>
-          </div>
+        <section className="detail-results-section">
           {showResultsHelp && (
             <div className="detail-help-note">
               <strong>Important</strong>
@@ -635,33 +772,22 @@ export function RodeoDetailView({
           ) : state === "error" ? (
             <EmptyState title="Results Unavailable" subtitle="This rodeo detail feed could not be loaded." icon={CircleDollarSign} />
           ) : rodeo.resultRounds.length > 0 ? (
-            <div className="result-round-list">
-              {rodeo.resultRounds.map((round) => (
-                <section className="result-round-card" key={round.id}>
-                  <div className="result-round-title">
-                    <strong>{round.label}</strong>
-                    <span>{round.rows.length} result{round.rows.length === 1 ? "" : "s"}</span>
-                  </div>
-                  <div className="winner-list round-winner-list">
-                    {round.rows.map((row) => (
-                      <div key={row.id}>
-                        <span>{row.place}</span>
-                        <strong>{row.name}</strong>
-                        <em>{row.value}</em>
-                        <p>{row.payoff}</p>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
+            <ResultRoundsList event={event} rounds={rodeo.resultRounds} />
           ) : rodeo.winners.length > 0 ? (
-            <div className="winner-list">
+            <div className="app-card result-round-card">
+              <div className="result-round-title">
+                <strong>Results</strong>
+                <span>{event === "Team Roping" ? "Time" : "Result"}</span>
+                <span>Earnings</span>
+              </div>
               {rodeo.winners.map(([place, name, score]) => (
-                <div key={`${place}-${name}-${score}`}>
+                <div className="result-winner-row" key={`${place}-${name}-${score}`}>
                   <span>{place}</span>
-                  <strong>{name}</strong>
+                  <div className="result-athlete-identity">
+                    <strong>{name}</strong>
+                  </div>
                   <em>{score}</em>
+                  <p>-</p>
                 </div>
               ))}
             </div>
@@ -696,8 +822,123 @@ export function RodeoDetailView({
           )}
         </section>
       )}
+
+      <GoogleAdSlot placement="resultsDetailSection" />
     </div>
   );
+}
+
+function ResultRoundsList({ event, rounds }: { event: EventName; rounds: RodeoResultRound[] }) {
+  const isTeamRoping = event === "Team Roping";
+
+  return (
+    <div className="result-round-list">
+      {rounds.map((round) => (
+        <section className="app-card result-round-card" key={round.id}>
+          <div className="result-round-title">
+            <strong>{round.label}</strong>
+            <span>{isTeamRoping ? "Time" : "Result"}</span>
+            <span>Earnings</span>
+          </div>
+          <div className="result-round-rows">
+            {isTeamRoping ? (
+              teamRopingRows(round.rows).map((team) => <TeamRopingResultRow key={team.id} team={team} />)
+            ) : (
+              round.rows.map((row) => <RodeoResultWinnerRow key={row.id} row={row} />)
+            )}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function RodeoResultWinnerRow({ row }: { row: RodeoResultRow }) {
+  return (
+    <div className="result-winner-row">
+      <span>{row.place}</span>
+      <AthleteResultIdentity row={row} />
+      <em>{row.value}</em>
+      <p>{row.payoff}</p>
+    </div>
+  );
+}
+
+type TeamRopingResult = {
+  id: string;
+  place: string;
+  header: RodeoResultRow;
+  heeler: RodeoResultRow;
+  value: string;
+  payoff: string;
+};
+
+function TeamRopingResultRow({ team }: { team: TeamRopingResult }) {
+  return (
+    <div className="result-team-row">
+      <span>{team.place}</span>
+      <div className="result-team-members">
+        <AthleteResultIdentity label="Header" row={team.header} />
+        <AthleteResultIdentity label="Heeler" row={team.heeler} />
+      </div>
+      <em>{team.value}</em>
+      <p>{team.payoff}</p>
+    </div>
+  );
+}
+
+function AthleteResultIdentity({ row, label }: { row: RodeoResultRow; label?: string }) {
+  const content = (
+    <>
+      <ResultAthleteAvatar row={row} />
+      <div>
+        {label && <span>{label}</span>}
+        <strong>{row.name}</strong>
+        {row.hometown && <small>{row.hometown}</small>}
+      </div>
+    </>
+  );
+
+  if (!row.contestantId) {
+    return <div className="result-athlete-identity">{content}</div>;
+  }
+
+  return (
+    <a className="result-athlete-identity" href={`/athletes/${row.contestantId}`}>
+      {content}
+    </a>
+  );
+}
+
+function ResultAthleteAvatar({ row }: { row: RodeoResultRow }) {
+  if (row.imageUrl) {
+    return <Image alt="" src={row.imageUrl} width={38} height={38} sizes="38px" />;
+  }
+
+  return <i>{initialsFor(row.name)}</i>;
+}
+
+function teamRopingRows(rows: RodeoResultRow[]) {
+  const byTeam = new Map<string, RodeoResultRow[]>();
+
+  rows.forEach((row, index) => {
+    const key = row.teamId ? String(row.teamId) : `${row.place}-${row.value}-${Math.floor(index / 2)}`;
+    byTeam.set(key, [...(byTeam.get(key) ?? []), row]);
+  });
+
+  return [...byTeam.entries()].flatMap(([id, teamRows]) => {
+    if (teamRows.length < 2) return [];
+    return [
+      {
+        id,
+        place: teamRows[0].place,
+        header: teamRows[0],
+        heeler: teamRows[1],
+        value: teamRows[0].value,
+        payoff: teamRows[0].payoff
+      }
+    ];
+  });
 }
 
 export function MoreView({
@@ -813,8 +1054,8 @@ export function MoreView({
 
   return (
     <div className="stack">
-      <section className="app-card header-card">
-        <span>More Features</span>
+      <section className="app-card header-card more-header-card">
+        <h1>More Features</h1>
       </section>
 
       <div className="list-stack">
@@ -858,18 +1099,22 @@ function NfrStandingsView({
 
   return (
     <div className="nfr-view">
-      <section className="app-card header-card nfr-header-card">
-        <span>NFR</span>
-        <div>
-          <h2>{event}</h2>
-          {currentRound ? <strong className="season-label">Round {currentRound}</strong> : null}
+      <section className="app-card nfr-header-card">
+        <div className="nfr-header-main">
+          <div>
+            <h2>NFR</h2>
+            <p>{event}</p>
+          </div>
+          <div className="nfr-header-actions">
+            <SelectChip label="Event" value={event} options={nfrEvents} onChange={(value) => setEvent(value as EventName)} />
+            <SelectChip label="Sort" value={sort} options={["Average", "World Standings"]} onChange={setSort} />
+          </div>
+        </div>
+        <div className="nfr-status-line">
+          {currentRound ? <span>Current through Round {currentRound}</span> : null}
+          <span>Sorted by {sort}</span>
         </div>
       </section>
-
-      <div className="chip-grid">
-        <SelectChip label="Event" value={event} options={nfrEvents} onChange={(value) => setEvent(value as EventName)} />
-        <SelectChip label="Sort" value={sort} options={["Average", "World Standings"]} onChange={setSort} />
-      </div>
 
       {state === "loading" ? (
         <LoadingState title="Loading NFR standings" />
@@ -880,19 +1125,22 @@ function NfrStandingsView({
           {sortedRows.map((contestant) => (
             <article className="app-card nfr-contestant-card" key={contestant.id}>
               <div className="nfr-contestant-main">
-                <AthleteAvatar athlete={{ name: contestant.name, imageUrl: contestant.imageUrl }} size="small" />
+                <span className="nfr-world-place">{contestant.worldPlace || "-"}</span>
                 <div>
-                  <span>World #{contestant.worldPlace || "-"}</span>
                   <h3>{contestant.name}</h3>
                   <p>{contestant.averageDisplayValue}</p>
                 </div>
-                <strong>AVG #{contestant.averagePlace || "-"}</strong>
               </div>
-              <div className="nfr-round-grid">
-                {contestant.rounds.map((round) => (
-                  <div className={round.pending ? "nfr-round pending" : "nfr-round"} key={round.round}>
-                    <span>R{round.round}</span>
-                    <strong>{round.displayValue}</strong>
+              <div className="nfr-card-divider" />
+              <div className="nfr-round-columns">
+                {[contestant.rounds.slice(0, 5), contestant.rounds.slice(5)].map((rounds, index) => (
+                  <div className="nfr-round-column" key={index}>
+                    {rounds.map((round) => (
+                      <div className={round.pending ? "nfr-round pending" : "nfr-round"} key={round.round}>
+                        <span>Round {round.round}</span>
+                        <strong>{round.displayValue}</strong>
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
@@ -928,145 +1176,145 @@ function SettingsView({
 
   return (
     <div className="settings-grid">
-      <section className="app-card settings-section settings-summary-section">
-        <div className="settings-section-title">
-          <ListOrdered size={20} />
-          <div>
-            <strong>Favorite Events</strong>
-            <span>
-              Standings: {settings.favoriteStandingsEvent} - Results: {settings.favoriteResultsEvent}
-            </span>
-          </div>
-        </div>
-        <label className="settings-select-row">
-          <span>Standings Event</span>
-          <select
-            value={settings.favoriteStandingsEvent}
-            onChange={(event) => updateSettings({ favoriteStandingsEvent: event.target.value as EventName })}
-          >
-            {events.map((event) => (
-              <option key={event} value={event}>
-                {event}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="settings-select-row">
-          <span>Results Event</span>
-          <select
-            value={settings.favoriteResultsEvent}
-            onChange={(event) => updateSettings({ favoriteResultsEvent: event.target.value as EventName })}
-          >
-            {events.map((event) => (
-              <option key={event} value={event}>
-                {event}
-              </option>
-            ))}
-          </select>
-        </label>
-        <p>Used as defaults when Rodeo Daily opens on this device.</p>
-      </section>
-
-      <section className="app-card settings-section">
-        <div className="settings-section-title">
-          <Settings size={20} />
-          <div>
-            <strong>Appearance</strong>
-            <span>Change app and logo colors on this device.</span>
-          </div>
-        </div>
-        <div className="theme-swatch-grid">
-          {themeOptions.map((theme) => (
-            <button
-              className={settings.accentTheme === theme.id ? "theme-swatch active" : "theme-swatch"}
-              key={theme.id}
-              onClick={() => updateSettings({ accentTheme: theme.id })}
-            >
+      <section className="settings-form-section">
+        <h3>General</h3>
+        <div className="app-card settings-form-card">
+          <div className="settings-navigation-row">
+            <ListOrdered size={19} />
+            <div>
+              <strong>Favorite Events</strong>
               <span>
-                <i style={{ background: theme.primary }} />
-                <i style={{ background: theme.secondary }} />
+                Standings: {settings.favoriteStandingsEvent} - Results: {settings.favoriteResultsEvent}
               </span>
-              {theme.label}
+            </div>
+          </div>
+          <div className="settings-inline-controls">
+            <label className="settings-select-row">
+              <span>Standings</span>
+              <select
+                value={settings.favoriteStandingsEvent}
+                onChange={(event) => updateSettings({ favoriteStandingsEvent: event.target.value as EventName })}
+              >
+                {events.map((event) => (
+                  <option key={event} value={event}>
+                    {event}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="settings-select-row">
+              <span>Results</span>
+              <select
+                value={settings.favoriteResultsEvent}
+                onChange={(event) => updateSettings({ favoriteResultsEvent: event.target.value as EventName })}
+              >
+                {events.map((event) => (
+                  <option key={event} value={event}>
+                    {event}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className="settings-navigation-row">
+            <Users size={19} />
+            <div>
+              <strong>Favorite Athletes</strong>
+              <span>{favoriteCount} saved in this browser</span>
+            </div>
+            <ChevronRight size={17} />
+          </div>
+        </div>
+      </section>
+
+      <section className="settings-form-section">
+        <h3>Web Preferences</h3>
+        <div className="app-card settings-form-card">
+          <div className="settings-navigation-row">
+            <Settings size={19} />
+            <div>
+              <strong>Appearance</strong>
+              <span>Change app and logo colors on this device.</span>
+            </div>
+          </div>
+          <div className="theme-swatch-grid">
+            {themeOptions.map((theme) => (
+              <button
+                className={settings.accentTheme === theme.id ? "theme-swatch active" : "theme-swatch"}
+                key={theme.id}
+                onClick={() => updateSettings({ accentTheme: theme.id })}
+              >
+                <span>
+                  <i style={{ background: theme.primary }} />
+                  <i style={{ background: theme.secondary }} />
+                </span>
+                {theme.label}
+              </button>
+            ))}
+          </div>
+          <label className="settings-toggle-row">
+            <Bell size={19} />
+            <span>
+              <strong>Follow Alerts</strong>
+              <em>{followedCount} athlete{followedCount === 1 ? "" : "s"} followed on this device</em>
+            </span>
+            <input
+              type="checkbox"
+              checked={settings.followAlertsEnabled}
+              onChange={(event) => updateSettings({ followAlertsEnabled: event.target.checked })}
+            />
+          </label>
+          <label className="settings-toggle-row">
+            <Heart size={19} />
+            <span>
+              <strong>Compact List Rows</strong>
+              <em>Use tighter card spacing throughout the app.</em>
+            </span>
+            <input
+              type="checkbox"
+              checked={settings.compactLists}
+              onChange={(event) => updateSettings({ compactLists: event.target.checked })}
+            />
+          </label>
+        </div>
+      </section>
+
+      <section className="settings-form-section">
+        <h3>Privacy</h3>
+        <div className="app-card settings-form-card">
+          <div className="settings-navigation-row">
+            <ShieldCheck size={19} />
+            <div>
+              <strong>Ads & Privacy</strong>
+              <span>Choose how Rodeo Daily can use ad cookies on this device.</span>
+            </div>
+          </div>
+          <div className="consent-choice-grid">
+            <button
+              className={settings.adConsent === "personalized" ? "consent-choice active" : "consent-choice"}
+              onClick={() => updateAdConsent("personalized")}
+            >
+              Personalized Ads
             </button>
-          ))}
+            <button
+              className={settings.adConsent === "nonPersonalized" ? "consent-choice active" : "consent-choice"}
+              onClick={() => updateAdConsent("nonPersonalized")}
+            >
+              Basic Ads
+            </button>
+            <button
+              className={settings.adConsent === "declined" ? "consent-choice active" : "consent-choice"}
+              onClick={() => updateAdConsent("declined")}
+            >
+              Decline Ads
+            </button>
+          </div>
         </div>
       </section>
 
-      <section className="app-card settings-section">
-        <div className="settings-section-title">
-          <Bell size={20} />
-          <div>
-            <strong>Follow Alerts</strong>
-            <span>{followedCount} athlete{followedCount === 1 ? "" : "s"} followed on this device</span>
-          </div>
-        </div>
-        <label className="settings-toggle-row">
-          <span>Enable alert preferences</span>
-          <input
-            type="checkbox"
-            checked={settings.followAlertsEnabled}
-            onChange={(event) => updateSettings({ followAlertsEnabled: event.target.checked })}
-          />
-        </label>
-      </section>
-
-      <section className="app-card settings-section">
-        <div className="settings-section-title">
-          <Heart size={20} />
-          <div>
-            <strong>Local Preferences</strong>
-            <span>{favoriteCount} favorite athlete{favoriteCount === 1 ? "" : "s"} saved in this browser.</span>
-          </div>
-        </div>
-        <label className="settings-toggle-row">
-          <span>Compact list rows</span>
-          <input
-            type="checkbox"
-            checked={settings.compactLists}
-            onChange={(event) => updateSettings({ compactLists: event.target.checked })}
-          />
-        </label>
-      </section>
-
-      <section className="app-card settings-section">
-        <div className="settings-section-title">
-          <ShieldCheck size={20} />
-          <div>
-            <strong>Ads & Privacy</strong>
-            <span>Choose how Rodeo Daily can use ad cookies on this device.</span>
-          </div>
-        </div>
-        <div className="consent-choice-grid">
-          <button
-            className={settings.adConsent === "personalized" ? "consent-choice active" : "consent-choice"}
-            onClick={() => updateAdConsent("personalized")}
-          >
-            Personalized Ads
-          </button>
-          <button
-            className={settings.adConsent === "nonPersonalized" ? "consent-choice active" : "consent-choice"}
-            onClick={() => updateAdConsent("nonPersonalized")}
-          >
-            Basic Ads
-          </button>
-          <button
-            className={settings.adConsent === "declined" ? "consent-choice active" : "consent-choice"}
-            onClick={() => updateAdConsent("declined")}
-          >
-            Decline Ads
-          </button>
-        </div>
-      </section>
-
-      <section className="app-card settings-section">
-        <div className="settings-section-title">
-          <ExternalLink size={20} />
-          <div>
-            <strong>Data Sources & Feedback</strong>
-            <span>Credits and contact links from the iOS app.</span>
-          </div>
-        </div>
-        <div className="settings-link-list">
+      <section className="settings-form-section">
+        <h3>About</h3>
+        <div className="app-card settings-form-card settings-link-list">
           <a href="mailto:thewaymediaco@gmail.com">
             <Mail size={17} />
             <span>Submit Feedback</span>
@@ -1119,8 +1367,10 @@ function FavoriteAthletesView({
     <div className="favorite-athletes-view">
       <section className="app-card favorite-athlete-header">
         <div>
+          <h2>Favorite Athletes</h2>
           <strong>{favoriteAthletes.length} athletes</strong>
           <span>Open an athlete to view bio, results, and follow updates.</span>
+          <span>Search below to add athletes to your favorites list.</span>
         </div>
         <label className="listing-search">
           <Search size={16} />
@@ -1139,7 +1389,7 @@ function FavoriteAthletesView({
 
       {searchText.trim().length >= 2 && (
         <section className="app-card athlete-search-results">
-          <span>Search Results</span>
+          <span>Tap an athlete to add to favorites</span>
           {searchState === "loading" ? (
             <LoadingState title="Searching athletes" />
           ) : searchState === "error" ? (
@@ -1164,16 +1414,14 @@ function FavoriteAthletesView({
           {favoriteAthletes.map((athlete, index) => {
             const row = savedAthleteToStandingRow(athlete);
             return (
-              <article className="app-card more-row favorite-athlete-row" key={athlete.id}>
+              <article className="app-card favorite-athlete-row" key={athlete.id}>
                 <button className="favorite-athlete-main" onClick={() => onOpenAthlete(row)}>
-                  <AthleteAvatar athlete={athlete} size="small" />
                   <div>
                     <h3>{athlete.name}</h3>
-                    <p>
-                      {athlete.hometown || "No hometown listed"}
-                      {athlete.metric ? ` - ${athlete.metricLabel}: ${athlete.metric}` : ""}
-                    </p>
+                    <p>{athlete.metric ? `${athlete.metricLabel}: ${athlete.metric}` : athlete.hometown || "Open profile"}</p>
+                    <span>{athlete.hometown || "No hometown listed"}</span>
                   </div>
+                  <AthleteAvatar athlete={athlete} size="small" />
                 </button>
                 <div className="favorite-athlete-actions">
                   <button
@@ -1259,7 +1507,7 @@ function PastChampionsView({ champions, state }: { champions: PastChampion[]; st
       return groups;
     }, new Map<number, PastChampion[]>())
   ).sort((left, right) => right[0] - left[0]);
-  const topCounts = topChampionCounts(champions, selectedEvent);
+  const topCounts = selectedEvent === "All Events" ? [] : topChampionCounts(champions, selectedEvent);
 
   return (
     <div className="past-champions-view">
@@ -1297,17 +1545,26 @@ function PastChampionsView({ champions, state }: { champions: PastChampion[]; st
       ) : visibleChampions.length > 0 ? (
         <div className="champion-year-list">
           {selectedEvent === "All Events"
-            ? groupedByYear.map(([year, yearChampions]) => (
-                <section className="champion-year-group" key={year}>
-                  <h3>{year}</h3>
-                  <div className="list-stack">
-                    {yearChampions.map((champion) => (
-                      <ChampionRow champion={champion} key={champion.id} showEvent />
-                    ))}
-                  </div>
-                </section>
+            ? groupedByYear.map(([year, yearChampions], index) => (
+                <div className="ad-list-item-group" key={year}>
+                  {shouldShowListAd(index, 2, 4) && <GoogleAdSlot placement="pastChampionsList" />}
+                  <section className="champion-year-group">
+                    <h3>{year}</h3>
+                    <div className="list-stack">
+                      {yearChampions.map((champion) => (
+                        <ChampionRow champion={champion} key={champion.id} showEvent />
+                      ))}
+                    </div>
+                  </section>
+                </div>
               ))
-            : visibleChampions.map((champion) => <ChampionRow champion={champion} key={champion.id} showEvent={false} />)}
+            : visibleChampions.map((champion, index) => (
+                <div className="ad-list-item-group" key={champion.id}>
+                  {shouldShowListAd(index, 10, 12) && <GoogleAdSlot placement="pastChampionsList" />}
+                  <ChampionRow champion={champion} showEvent={false} />
+                </div>
+              ))}
+          {shouldShowBottomAd(visibleChampions.length, 10) && <GoogleAdSlot placement="pastChampionsList" />}
         </div>
       ) : (
         <EmptyState title="No Champions Found" subtitle="Try changing search or event filters." icon={Trophy} />
@@ -1318,12 +1575,12 @@ function PastChampionsView({ champions, state }: { champions: PastChampion[]; st
 
 function ChampionRow({ champion, showEvent }: { champion: PastChampion; showEvent: boolean }) {
   return (
-    <article className="app-card champion-row">
-      <span>{champion.year}</span>
+    <article className={showEvent ? "app-card champion-row champion-row-grouped" : "app-card champion-row"}>
       <div>
         <h3>{champion.athlete}</h3>
         <p>{[showEvent ? champion.event : "", champion.hometown].filter(Boolean).join(" - ")}</p>
       </div>
+      {!showEvent && <span>{champion.year}</span>}
     </article>
   );
 }
@@ -1390,35 +1647,47 @@ function BusinessJournalListingsView({
         ) : state === "error" && rows.length === 0 && fallbackRows.length === 0 ? (
           <EmptyState title="Listings Unavailable" subtitle="The Business Journal feed could not be loaded." icon={Newspaper} />
         ) : visibleRows.length > 0 ? (
-          visibleRows.map((item) => (
-            <button className="app-card business-listing-card" key={item.id} onClick={() => onOpenListing(item)}>
-              <div className="listing-card-title">
-                <h3>{item.title}</h3>
-                {item.subtitle && <p>{item.subtitle}</p>}
+          <>
+            {visibleRows.map((item, index) => (
+              <div className="ad-list-item-group" key={item.id}>
+                {shouldShowListAd(index) && <GoogleAdSlot placement="rodeoListingsList" />}
+                <button className="app-card business-listing-card" onClick={() => onOpenListing(item)}>
+                  <div className="listing-card-title">
+                    <h3>{item.title}</h3>
+                    {item.subtitle && <p>{item.subtitle}</p>}
+                  </div>
+                  <div className="listing-badges">
+                    {item.source && <span>{item.source}</span>}
+                    {item.dateText && (
+                      <em>
+                        <Calendar size={13} /> {item.dateText}
+                      </em>
+                    )}
+                    {item.locationText && (
+                      <em>
+                        <MapPin size={13} /> {item.locationText}
+                      </em>
+                    )}
+                  </div>
+                  {(item.entryWindowText || item.perfsText) && (
+                    <div className="listing-badges listing-secondary-badges">
+                      {item.entryWindowText && <em>{item.entryWindowText}</em>}
+                      {item.perfsText && <em>{item.perfsText}</em>}
+                    </div>
+                  )}
+                  {item.eventsText && <p className="listing-events">{item.eventsText}</p>}
+                  {item.specialEntryFeesText && (
+                    <p className="listing-fees">
+                      <strong>Special Entry Fees: </strong>
+                      {item.specialEntryFeesText}
+                    </p>
+                  )}
+                  <ChevronRight size={18} />
+                </button>
               </div>
-              <div className="listing-badges">
-                {item.source && <span>{item.source}</span>}
-                {item.dateText && (
-                  <em>
-                    <Calendar size={13} /> {item.dateText}
-                  </em>
-                )}
-                {item.locationText && (
-                  <em>
-                    <MapPin size={13} /> {item.locationText}
-                  </em>
-                )}
-              </div>
-              {item.eventsText && <p className="listing-events">{item.eventsText}</p>}
-              {item.specialEntryFeesText && (
-                <p className="listing-fees">
-                  <strong>Special Entry Fees: </strong>
-                  {item.specialEntryFeesText}
-                </p>
-              )}
-              <ChevronRight size={18} />
-            </button>
-          ))
+            ))}
+            {shouldShowBottomAd(visibleRows.length) && <GoogleAdSlot placement="rodeoListingsList" />}
+          </>
         ) : (
           <EmptyState title="No Rodeos" subtitle="There are no matching rodeos right now." icon={Newspaper} />
         )}
@@ -1428,12 +1697,18 @@ function BusinessJournalListingsView({
 }
 
 export function BusinessJournalListingDetailView({ item, onBack }: { item: BusinessJournalRow; onBack: () => void }) {
-  const detailFields = item.detailFields.filter((field) => !["Publish Date", "Rodeo Name"].includes(field.label));
+  const publishDate = item.detailFields.find((field) => field.label.toLowerCase().includes("publish date"))?.value;
+  const detailFields = item.detailFields
+    .filter((field) => !["Publish Date", "Rodeo Name"].includes(field.label))
+    .sort((left, right) => listingDetailFieldOrder(left.label) - listingDetailFieldOrder(right.label) || left.label.localeCompare(right.label));
 
   return (
     <div className="business-listing-detail">
       <section className="app-card detail-screen-header">
-        <button onClick={onBack}>Back</button>
+        <button onClick={onBack}>
+          <ArrowLeft size={16} />
+          Back
+        </button>
         <div>
           <span>Rodeo</span>
           <h2>{item.title}</h2>
@@ -1441,19 +1716,23 @@ export function BusinessJournalListingDetailView({ item, onBack }: { item: Busin
         </div>
       </section>
 
-      <section className="app-card detail-section">
-        <div className="section-title-row">
-          <div>
-            <span>{item.source || "Listing"}</span>
-            <h3>{item.subtitle || item.title}</h3>
-          </div>
-          {item.link && (
-            <a href={item.link} target="_blank" rel="noreferrer" aria-label="Open full listing">
-              <ExternalLink size={18} />
-            </a>
+      {publishDate && <p className="listing-publish-date">Publish Date: {publishDate}</p>}
+
+      <section className="listing-detail-header">
+        <h1>{item.title}</h1>
+        {item.dateText && <strong>{item.dateText}</strong>}
+        {item.subtitle && <p>{item.subtitle}</p>}
+        <div className="listing-badges">
+          {item.source && <span>{item.source}</span>}
+          {item.locationText && (
+            <em>
+              <MapPin size={13} /> {item.locationText}
+            </em>
           )}
         </div>
+      </section>
 
+      <section className="app-card detail-section listing-detail-card">
         <div className="listing-detail-lines">
           {detailFields.length > 0 ? (
             detailFields.map((field) => (
@@ -1466,9 +1745,22 @@ export function BusinessJournalListingDetailView({ item, onBack }: { item: Busin
             <EmptyState title="No Listing Details" subtitle="No additional listing details were included." icon={Newspaper} />
           )}
         </div>
+        {item.link && (
+          <a className="listing-full-link" href={item.link} target="_blank" rel="noreferrer">
+            <ExternalLink size={16} />
+            Open Full Listing
+          </a>
+        )}
       </section>
     </div>
   );
+}
+
+function listingDetailFieldOrder(label: string) {
+  const normalized = label.toLowerCase().replace(/\s+/g, "_");
+  const order = ["arena", "address", "perfs", "slacks", "events", "special_entry_fees", "permits", "ground_rules", "stock", "eo", "ec"];
+  const index = order.findIndex((token) => normalized.includes(token));
+  return index === -1 ? order.length : index;
 }
 
 function DaysheetViewer({
@@ -1490,6 +1782,11 @@ function DaysheetViewer({
 
   return (
     <div className="daysheet-viewer">
+      <div className="daysheet-summary">
+        <strong>{selectedDaysheet.roundDisplay || "Daysheet"}</strong>
+        <span>{selectedDaysheet.startDisplay}</span>
+      </div>
+
       <div className="daysheet-controls">
         <SelectChip
           label="Performance"
@@ -1506,40 +1803,45 @@ function DaysheetViewer({
         />
       </div>
 
-      <div className="draw-list">
-        {entries.length > 0 ? (
-          entries.map((row) => (
-            <div className={row.entry.HasTurnout ? "draw-row turnout" : "draw-row"} key={row.entry.EventEntryId ?? row.entry.Name}>
-              <span>{row.drawOrder ? row.drawOrder : "-"}</span>
-              <div>
-                <strong>{row.entry.Name?.trim() || "Unnamed contestant"}</strong>
-                <p>
-                  {[row.entry.Hometown, row.entry.ContestantNumber ? `No. ${row.entry.ContestantNumber}` : ""]
-                    .filter(Boolean)
-                    .join(" - ")}
-                </p>
+      <section className="daysheet-list-section">
+        <h4>{selectedEvent || "Entries"}</h4>
+        <div className="draw-list">
+          {entries.length > 0 ? (
+            entries.map((row) => (
+              <div className={row.entry.HasTurnout ? "draw-row turnout" : "draw-row"} key={row.entry.EventEntryId ?? row.entry.Name}>
+                <span>{row.drawOrder ? row.drawOrder : ""}</span>
+                <div>
+                  <strong>{row.entry.Name?.trim() || "Unnamed contestant"}</strong>
+                  <p>
+                    {[row.entry.Hometown, row.entry.ContestantNumber ? `No. ${row.entry.ContestantNumber}` : ""]
+                      .filter(Boolean)
+                      .join(" - ")}
+                  </p>
+                </div>
+                <em>{[row.entry.Brand, row.entry.ContractorInitials].filter(Boolean).join(" ")}</em>
               </div>
-              <em>{[row.entry.Brand, row.entry.ContractorInitials].filter(Boolean).join(" ")}</em>
-            </div>
-          ))
-        ) : (
-          <EmptyState title="No Entries" subtitle="No entries are listed for this event." icon={Calendar} />
-        )}
-      </div>
+            ))
+          ) : (
+            <EmptyState title="No Entries" subtitle="No entries are listed for this event." icon={Calendar} />
+          )}
+        </div>
+      </section>
 
       {rerides.length > 0 && (
-        <div className="reride-list">
+        <section className="daysheet-list-section">
           <h4>Rerides</h4>
-          {rerides.map((reride) => (
-            <div className="draw-row" key={reride.RerideEntryId ?? `${reride.RerideNumber}-${reride.StockName}`}>
-              <span>{reride.RerideNumber ?? "-"}</span>
-              <div>
-                <strong>{reride.StockName?.trim() || "Reride Stock"}</strong>
-                <p>{[reride.Brand ? `Brand ${reride.Brand}` : "", reride.ContractorInitials].filter(Boolean).join(" - ")}</p>
+          <div className="reride-list">
+            {rerides.map((reride) => (
+              <div className="draw-row" key={reride.RerideEntryId ?? `${reride.RerideNumber}-${reride.StockName}`}>
+                <span>{reride.RerideNumber ?? "-"}</span>
+                <div>
+                  <strong>{reride.StockName?.trim() || "Reride Stock"}</strong>
+                  <p>{[reride.Brand ? `Brand ${reride.Brand}` : "", reride.ContractorInitials].filter(Boolean).join(" - ")}</p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </section>
       )}
     </div>
   );
@@ -1726,6 +2028,7 @@ export function AthleteDetailPane({
         {state === "loaded" && bio && !showBioDocument && selectedTab === "Results" && <AthleteResultsTab bio={bio} />}
         {state === "loaded" && bio && !showBioDocument && selectedTab === "Career" && <AthleteCareerTab bio={bio} />}
         {state === "loaded" && bio && !showBioDocument && selectedTab === "Highlights" && <AthleteHighlightsTab bio={bio} />}
+        {state === "loaded" && bio && !showBioDocument && <GoogleAdSlot placement="athleteBioSection" />}
       </section>
     </div>
   );
@@ -1745,16 +2048,20 @@ function AthleteStatsTab({
   const seasons = Array.from(
     new Set([
       ...bio.career.map((season) => String(season.season)).filter((season) => season !== "0"),
-      ...bio.rankings.map((ranking) => String(ranking.season)).filter((season) => season !== "0")
+      ...bio.rankings.map((ranking) => String(ranking.season)).filter((season) => season !== "0"),
+      ...bio.recentResults.map((result) => String(result.season)).filter((season) => season !== "0")
     ])
   ).sort((left, right) => Number(right) - Number(left));
   const [selectedSeason, setSelectedSeason] = useState(seasons[0] ?? new Date().getFullYear().toString());
   const activeSeason = seasons.includes(selectedSeason) ? selectedSeason : seasons[0] ?? selectedSeason;
   const seasonCareer = bio.career.find((season) => String(season.season) === activeSeason);
-  const seasonRanking = bio.rankings.find((ranking) => String(ranking.season) === activeSeason) ?? bio.rankings[0];
-  const bestResult = bio.recentResults.find((result) => result.resultValue && result.resultValue !== "-");
-  const bestPayingGo = [...bio.recentResults].sort((left, right) => currencyNumber(right.payoff) - currencyNumber(left.payoff))[0];
-  const monthlyRows = monthlyEarningsRows(bio.recentResults);
+  const seasonRanking = bio.rankings.find((ranking) => String(ranking.season) === activeSeason);
+  const seasonResults = bio.recentResults.filter((result) => String(result.season) === activeSeason);
+  const hasSeasonStats = Boolean(seasonCareer || seasonRanking || seasonResults.length > 0);
+  const bestResult = bestAthleteResult(seasonResults, bio.events[0]);
+  const bestPayingGo = [...seasonResults].sort((left, right) => currencyNumber(right.payoff) - currencyNumber(left.payoff))[0];
+  const bestPayingRodeo = bestAthletePayingRodeo(seasonResults);
+  const monthlyRows = monthlyEarningsRows(seasonResults);
   const monthlyTotal = monthlyRows.reduce((total, row) => total + row.total, 0);
   const maxMonthTotal = Math.max(...monthlyRows.map((row) => row.total), 1);
 
@@ -1782,61 +2089,67 @@ function AthleteStatsTab({
         </div>
       )}
 
-      <section className="app-card athlete-season-overview-card">
-        <div>
-          <span>Season {activeSeason}</span>
-          <strong>{seasonRanking?.rank ? `#${seasonRanking.rank}` : athlete.place ? `#${athlete.place}` : "Unranked"}</strong>
-        </div>
-        <div>
-          <span>Earnings</span>
-          <strong>{seasonCareer?.earnings || (activeSeason === new Date().getFullYear().toString() ? athlete.metric || bio.yearEarnings : "-")}</strong>
-        </div>
-      </section>
-
-      <section className="app-card athlete-performance-card athlete-best-performance-card">
-        <strong>Best Performances</strong>
-        <AthleteStatRow title="Best Result" rodeo={bestResult?.rodeoName || "No result listed"} trailing={bestResult?.resultValue || "-"} />
-        <AthleteStatRow
-          title="Best Paying Go"
-          rodeo={bestPayingGo?.rodeoName || "No payoff listed"}
-          trailing={bestPayingGo ? `${bestPayingGo.resultValue || "-"} • ${bestPayingGo.payoff}` : "-"}
-        />
-        <AthleteStatRow title="Best Paying Rodeo" rodeo={bestPayingGo?.rodeoName || "No payoff listed"} trailing={bestPayingGo?.payoff || "-"} />
-      </section>
-
-      <section className="app-card athlete-performance-card">
-        <strong>NFR Summary</strong>
-        <div>
-          <span>NFR Qualifications</span>
-          <p>{bio.nfrQualifications ?? 0}</p>
-        </div>
-        <div>
-          <span>World Titles</span>
-          <p>{bio.worldTitles ?? 0}</p>
-        </div>
-        <div>
-          <span>NFR Earnings</span>
-          <p>{seasonCareer?.nfrQualified ? seasonCareer.earnings : "No NFR stats for this season"}</p>
-        </div>
-      </section>
-
-      <section className="app-card athlete-monthly-card">
-        <div className="athlete-monthly-heading">
-          <strong>Monthly Earnings</strong>
-          <span>Regular Season: {formatMoneyFromNumber(monthlyTotal)}</span>
-        </div>
-        <div className="athlete-monthly-list">
-          {monthlyRows.map((row) => (
-            <div className="athlete-month-row" key={row.month}>
-              <span>{row.month}</span>
-              <i>
-                <b style={{ width: `${Math.max(4, (row.total / maxMonthTotal) * 100)}%` }} />
-              </i>
-              <strong>{formatMoneyFromNumber(row.total)}</strong>
+      {!hasSeasonStats ? (
+        <EmptyState title="No Stats Available" subtitle="No stats are available for this season and event." icon={ListOrdered} />
+      ) : (
+        <>
+          <section className="app-card athlete-season-overview-card">
+            <div>
+              <span>Season {activeSeason}</span>
+              <strong>{seasonRanking?.rank ? formatRankDisplay(seasonRanking.rank) : activeSeason === new Date().getFullYear().toString() && athlete.place ? `#${athlete.place}` : "Unranked"}</strong>
             </div>
-          ))}
-        </div>
-      </section>
+            <div>
+              <span>Earnings</span>
+              <strong>{seasonCareer?.earnings || (activeSeason === new Date().getFullYear().toString() ? athlete.metric || bio.yearEarnings : "-")}</strong>
+            </div>
+          </section>
+
+          <section className="app-card athlete-performance-card athlete-best-performance-card">
+            <strong>Best Performances</strong>
+            <AthleteStatRow title={resultMetricTitle(bio.events[0])} rodeo={bestResult?.rodeoName || "No result listed"} trailing={bestResult?.resultValue || "-"} />
+            <AthleteStatRow
+              title="Best Paying Go"
+              rodeo={bestPayingGo?.rodeoName || "No payoff listed"}
+              trailing={bestPayingGo ? `${bestPayingGo.resultValue || "-"} • ${bestPayingGo.payoff}` : "-"}
+            />
+            <AthleteStatRow title="Best Paying Rodeo" rodeo={bestPayingRodeo?.rodeoName || "No payoff listed"} trailing={bestPayingRodeo?.payoff || "-"} />
+          </section>
+
+          <section className="app-card athlete-performance-card">
+            <strong>NFR Summary</strong>
+            <div>
+              <span>NFR Qualifications</span>
+              <p>{seasonCareer?.nfrQualified ? "Qualified" : "No NFR stats for this season"}</p>
+            </div>
+            <div>
+              <span>World Titles</span>
+              <p>{seasonCareer?.worldTitles ?? 0}</p>
+            </div>
+            <div>
+              <span>NFR Earnings</span>
+              <p>{seasonCareer?.nfrQualified ? seasonCareer.earnings : "No NFR stats for this season"}</p>
+            </div>
+          </section>
+
+          <section className="app-card athlete-monthly-card">
+            <div className="athlete-monthly-heading">
+              <strong>Monthly Earnings</strong>
+              <span>Regular Season: {formatMoneyFromNumber(monthlyTotal)}</span>
+            </div>
+            <div className="athlete-monthly-list">
+              {monthlyRows.map((row) => (
+                <div className="athlete-month-row" key={row.month}>
+                  <span>{row.month}</span>
+                  <i>
+                    <b style={{ width: `${Math.max(4, (row.total / maxMonthTotal) * 100)}%` }} />
+                  </i>
+                  <strong>{formatMoneyFromNumber(row.total)}</strong>
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
     </div>
   );
 }
@@ -1874,6 +2187,28 @@ function monthlyEarningsRows(results: AthleteBio["recentResults"]) {
       .filter((result) => result.endDate.startsWith(month))
       .reduce((total, result) => total + currencyNumber(result.payoff), 0)
   }));
+}
+
+function bestAthleteResult(results: AthleteBio["recentResults"], eventType?: string) {
+  const scored = results.filter((result) => result.resultValue && result.resultValue !== "-");
+  const isScore = roughstockEventTypes.has((eventType ?? "").toUpperCase());
+  return scored.sort((left, right) => (isScore ? resultNumber(right.resultValue) - resultNumber(left.resultValue) : resultNumber(left.resultValue) - resultNumber(right.resultValue)))[0];
+}
+
+function bestAthletePayingRodeo(results: AthleteBio["recentResults"]) {
+  const grouped = new Map<string, { rodeoName: string; payoff: number }>();
+  results.forEach((result) => {
+    const key = `${result.rodeoName}-${result.endDate}`;
+    const current = grouped.get(key) ?? { rodeoName: result.rodeoName, payoff: 0 };
+    current.payoff += currencyNumber(result.payoff);
+    grouped.set(key, current);
+  });
+  const best = [...grouped.values()].sort((left, right) => right.payoff - left.payoff)[0];
+  return best ? { rodeoName: best.rodeoName, payoff: formatMoneyFromNumber(best.payoff) } : null;
+}
+
+function resultMetricTitle(eventType?: string) {
+  return roughstockEventTypes.has((eventType ?? "").toUpperCase()) ? "Score" : "Time";
 }
 
 function AthleteResultsTab({ bio }: { bio: AthleteBio }) {
@@ -2099,16 +2434,20 @@ function groupAthleteResults(results: AthleteBioResult[]) {
 }
 
 function AthleteCareerTab({ bio }: { bio: AthleteBio }) {
+  const careerRows = athleteCareerRows(bio);
+  const eventLabel = displayAthleteEvent(bio.events[0] || bio.rankings[0]?.eventName || bio.career[0]?.eventType || "");
+
   if (bio.career.length === 0 && bio.rankings.length === 0) {
     return <EmptyState title="No Career Data" subtitle="No career rankings are available for this athlete." icon={ListOrdered} />;
   }
 
   return (
     <div className="athlete-profile-stack">
-      <section className="app-card athlete-tab-header-card">
+      <section className="app-card athlete-career-header-card">
         <div>
           <h2>Career</h2>
-          <p>{bio.career.length || bio.rankings.length} seasons</p>
+          <strong>{eventLabel}</strong>
+          <p>{careerRows.length} seasons</p>
         </div>
       </section>
       <div className="athlete-career-table">
@@ -2117,24 +2456,76 @@ function AthleteCareerTab({ bio }: { bio: AthleteBio }) {
           <span>Rank</span>
           <span>Earnings</span>
         </div>
-        {bio.career.length > 0
-          ? bio.career.map((season) => (
-              <div className="app-card athlete-career-row" key={season.id}>
-                <strong>{season.season || "-"}</strong>
-                <span>{season.nfrQualified ? "NFR" : season.worldTitles ? `${season.worldTitles} WT` : season.eventType || "-"}</span>
-                <p>{season.earnings}</p>
-              </div>
-            ))
-          : bio.rankings.map((ranking) => (
-              <div className="app-card athlete-career-row" key={ranking.id}>
-                <strong>{ranking.season || "-"}</strong>
-                <span>{ranking.rank ? `#${ranking.rank}` : "-"}</span>
-                <p>{ranking.eventName}</p>
-              </div>
-            ))}
+        {careerRows.map((season) => (
+          <div className="app-card athlete-career-row" key={season.id}>
+            <strong>{season.season || "-"}</strong>
+            <span>{season.rank}</span>
+            <p>{season.earnings}</p>
+          </div>
+        ))}
       </div>
     </div>
   );
+}
+
+function athleteCareerRows(bio: AthleteBio) {
+  if (bio.career.length > 0) {
+    return bio.career
+      .slice()
+      .sort((left, right) => right.season - left.season)
+      .map((season) => {
+        const ranking =
+          bio.rankings.find((rank) => rank.season === season.season && rankMatchesEvent(rank.eventName, season.eventType)) ??
+          bio.rankings.find((rank) => rank.season === season.season);
+
+        return {
+          id: season.id,
+          season: season.season,
+          rank: ranking?.rank ? formatRankDisplay(ranking.rank) : season.worldTitles ? `${season.worldTitles} WT` : season.nfrQualified ? "NFR" : "-",
+          earnings: season.earnings || "-"
+        };
+      });
+  }
+
+  return bio.rankings
+    .slice()
+    .sort((left, right) => right.season - left.season)
+    .map((ranking) => ({
+      id: ranking.id,
+      season: ranking.season,
+      rank: ranking.rank ? formatRankDisplay(ranking.rank) : "-",
+      earnings: ranking.eventName || "-"
+    }));
+}
+
+function rankMatchesEvent(eventName: string, eventType: string) {
+  const eventDisplay = displayAthleteEvent(eventType).toLowerCase();
+  const normalizedName = eventName.toLowerCase();
+  return Boolean(eventDisplay && normalizedName.includes(eventDisplay));
+}
+
+function formatRankDisplay(rank: string) {
+  const trimmed = rank.trim();
+  if (!trimmed || trimmed.toLowerCase() === "unranked") return "-";
+  return trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
+}
+
+function displayAthleteEvent(value: string) {
+  const normalized = value.trim().toUpperCase();
+  const names: Record<string, string> = {
+    BB: "Bareback Riding",
+    SW: "Steer Wrestling",
+    TR: "Team Roping",
+    TRHD: "Team Roping",
+    TRHL: "Team Roping",
+    SB: "Saddle Bronc Riding",
+    TD: "Tie-Down Roping",
+    GB: "Barrel Racing",
+    BR: "Bull Riding",
+    LB: "Breakaway Roping",
+    SR: "Breakaway Roping"
+  };
+  return names[normalized] ?? value;
 }
 
 function AthleteHighlightsTab({ bio }: { bio: AthleteBio }) {
@@ -2150,21 +2541,26 @@ function AthleteHighlightsTab({ bio }: { bio: AthleteBio }) {
 
   return (
     <div className="athlete-profile-stack">
-      <section className="app-card athlete-tab-header-card">
+      <section className="app-card athlete-highlights-header-card">
         <div>
           <h2>Highlights</h2>
+          <strong>{bio.name}</strong>
           <p>{bio.highlights.length} videos</p>
         </div>
       </section>
-      {bio.highlights.map((video) => (
-        <iframe
-          allow="autoplay; fullscreen; picture-in-picture"
-          className="athlete-highlight-video"
-          key={video.id}
-          src={`https://player.vimeo.com/video/${video.id}`}
-          title={`${bio.name} highlight video`}
-        />
-      ))}
+      <div className="athlete-highlight-grid">
+        {bio.highlights.map((video, index) => (
+          <section className="athlete-highlight-card" key={video.id}>
+            <iframe
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+              className="athlete-highlight-video"
+              src={`https://player.vimeo.com/video/${video.id}`}
+              title={`${bio.name} highlight video ${index + 1}`}
+            />
+          </section>
+        ))}
+      </div>
     </div>
   );
 }
