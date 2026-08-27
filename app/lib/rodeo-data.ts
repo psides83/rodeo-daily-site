@@ -38,6 +38,8 @@ export const events: EventName[] = [
   "Breakaway Roping"
 ];
 
+const rodeoResultListLimit = 20;
+
 export const eventCodes: Record<EventName, EventCode> = {
   "Bareback Riding": "BB",
   "Steer Wrestling": "SW",
@@ -734,7 +736,7 @@ export function mapWinners(payload: ApiRodeoResults, event: EventCode): Array<[s
         ? (b.Score ?? 0) - (a.Score ?? 0)
         : (a.Time ?? Number.MAX_SAFE_INTEGER) - (b.Time ?? Number.MAX_SAFE_INTEGER);
     })
-    .slice(0, 5)
+    .slice(0, rodeoResultListLimit)
     .map((row, index) => {
       const contestant = row.Contestant?.[0];
       const name = `${contestant?.NickName || contestant?.FirstName || ""} ${contestant?.LastName || ""}`.trim();
@@ -758,9 +760,12 @@ export function mapResultRounds(payload: ApiRodeoResults, event: EventCode): Rod
           return event === "BB" || event === "SB" || event === "BR"
             ? (b.Score ?? 0) - (a.Score ?? 0)
             : (a.Time ?? Number.MAX_SAFE_INTEGER) - (b.Time ?? Number.MAX_SAFE_INTEGER);
-        });
+        })
+        .slice(0, rodeoResultListLimit);
       const firstRow = sortedRows[0];
-      const label = firstRow?.GoRoundLabel?.trim() || (firstRow?.GoRound ? `Round ${firstRow.GoRound}` : roundId);
+      const label = normalizeRoundName(
+        firstRow?.GoRoundLabel?.trim() || (firstRow?.GoRound ? `Round ${firstRow.GoRound}` : roundId)
+      );
 
       return {
         id: roundId,
@@ -850,6 +855,7 @@ export function makeDaysheetDisplayRows(entries: DaysheetEntry[]) {
 export function normalizeRoundName(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return "Round";
+  if (/^\d+$/.test(trimmed)) return `Round ${trimmed}`;
   return trimmed.replace(/\bgo\b/gi, "Round");
 }
 

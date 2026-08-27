@@ -22,6 +22,7 @@ html {
 body {
   min-height: 100%;
   margin: 0;
+  overflow-x: hidden;
   background: #edf0ed;
   color: var(--app-primary);
   font-family:
@@ -66,6 +67,7 @@ button:active {
 }
 
 .app-window {
+  position: relative;
   width: min(1180px, 100%);
   min-height: min(880px, calc(100vh - 24px));
   overflow: hidden;
@@ -188,6 +190,103 @@ button:active {
 .routed-window {
   width: min(760px, 100%);
   padding: 0 16px 32px;
+}
+
+.ios-app-promo-banner {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  left: 16px;
+  z-index: 60;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 86px;
+  padding: 12px 14px 12px 12px;
+  border: 1px solid rgba(160, 138, 89, 0.24);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(245, 245, 245, 0.94)),
+    #fff;
+  box-shadow: 0 18px 42px rgba(30, 33, 30, 0.16);
+  backdrop-filter: blur(18px);
+}
+
+.ios-app-promo-main {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+
+.ios-app-promo-main .logo-mark {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  box-shadow: 0 8px 18px rgba(30, 33, 30, 0.12);
+}
+
+.ios-app-promo-main .logo-mark img {
+  width: 42px;
+  height: 42px;
+}
+
+.ios-app-promo-main > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ios-app-promo-banner strong,
+.ios-app-promo-banner span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ios-app-promo-banner strong {
+  color: var(--app-primary);
+  font-size: 1.08rem;
+  font-weight: 950;
+  line-height: 1.08;
+  white-space: nowrap;
+}
+
+.ios-app-promo-banner span {
+  color: var(--app-tertiary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.app-store-badge-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 126px;
+  height: 42px;
+  padding: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-decoration: none;
+}
+
+.app-store-badge-link img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.ios-app-promo-banner > button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(107, 111, 118, 0.12);
+  color: var(--app-primary);
 }
 
 .top-toolbar {
@@ -441,6 +540,7 @@ button:active {
 .phone-surface {
   position: relative;
   min-width: 0;
+  max-width: 100%;
   background: var(--app-bg);
 }
 
@@ -512,6 +612,9 @@ button:active {
 .tab-scroll {
   height: calc(100vh - 178px);
   min-height: 590px;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
   overflow-y: auto;
   padding: 14px 22px 28px;
 }
@@ -523,11 +626,16 @@ button:active {
 .stack {
   display: grid;
   gap: 14px;
+  width: 100%;
   max-width: 780px;
+  min-width: 0;
   margin: 0 auto;
 }
 
 .app-card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.78);
@@ -537,6 +645,9 @@ button:active {
 .ad-list-item-group {
   display: grid;
   gap: 14px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .google-ad-shell {
@@ -944,22 +1055,33 @@ button:active {
 }
 
 .list-stack.standings-list {
-  gap: 48px;
-  padding-top: 36px;
+  gap: 82px;
+  padding-top: 48px;
 }
 
 .standings-card {
   position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(112px, auto);
-  gap: 26px;
+  display: block;
   min-height: 132px;
   padding: 12px;
   overflow: visible;
+  clip-path: inset(-88px 0 0 0 round 10px);
   isolation: isolate;
   color: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+.standings-card-content {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(112px, auto);
+  gap: 26px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 108px;
 }
 
 .standings-card.active,
@@ -972,7 +1094,6 @@ button:active {
 
 .standing-copy {
   position: relative;
-  z-index: 2;
   display: grid;
   align-content: center;
   min-width: 0;
@@ -1070,7 +1191,6 @@ button:active {
 
 .card-metrics {
   position: relative;
-  z-index: 3;
   display: grid;
   min-width: 112px;
   justify-items: end;
@@ -1121,14 +1241,15 @@ button:active {
 
 .standing-portrait {
   position: absolute;
-  right: 132px;
-  bottom: -14px;
+  left: 52%;
+  right: auto;
+  bottom: 0;
   z-index: 1;
   width: 96px;
   height: 126px;
   pointer-events: none;
-  transform: scale(1.62);
-  transform-origin: bottom right;
+  transform: translateX(-50%) scale(1.62);
+  transform-origin: bottom center;
   filter: drop-shadow(0 6px 8px rgba(30, 33, 30, 0.18));
 }
 
@@ -1147,6 +1268,8 @@ button:active {
   gap: 14px;
   align-items: start;
   width: 100%;
+  min-width: 0;
+  overflow: hidden;
   padding: 16px;
   border-color: var(--line);
   color: inherit;
@@ -1162,6 +1285,7 @@ button:active {
   display: grid;
   gap: 8px;
   min-width: 0;
+  max-width: 100%;
 }
 
 .rodeo-card-main h3 {
@@ -1177,10 +1301,18 @@ button:active {
   flex-wrap: wrap;
   gap: 7px;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
   margin: 0;
   color: var(--app-tertiary);
   font-size: 0.9rem;
   font-weight: 760;
+}
+
+.rodeo-card-subtitle span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .rodeo-card-subtitle i {
@@ -1195,6 +1327,8 @@ button:active {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .rodeo-card-tags span {
@@ -1211,6 +1345,8 @@ button:active {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .rodeo-card-date-row strong {
@@ -1291,6 +1427,25 @@ button:active {
 
 .more-row > svg:last-child {
   color: var(--app-tertiary);
+}
+
+.more-app-store-row {
+  text-decoration: none;
+}
+
+.more-app-store-row .logo-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+}
+
+.more-app-store-row .logo-mark img {
+  width: 28px;
+  height: 28px;
+}
+
+.more-app-store-row > svg:last-child {
+  color: var(--app-secondary);
 }
 
 .more-row h3 {
@@ -1628,23 +1783,25 @@ button:active {
 
 .cookie-consent-banner {
   position: fixed;
-  right: 22px;
-  bottom: 22px;
+  top: 50%;
+  left: 50%;
   z-index: 40;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 1fr;
   gap: 16px;
-  align-items: center;
-  width: min(720px, calc(100vw - 44px));
-  padding: 14px;
+  width: min(460px, calc(100vw - 32px));
+  padding: 18px;
+  transform: translate(-50%, -50%);
   border: 1px solid rgba(160, 138, 89, 0.28);
   border-radius: 16px;
   background: rgba(255, 253, 247, 0.96);
-  box-shadow: 0 18px 48px rgba(30, 33, 30, 0.18);
+  box-shadow: 0 24px 72px rgba(30, 33, 30, 0.28);
+  text-align: center;
 }
 
 .cookie-consent-banner strong {
   color: var(--app-primary);
+  font-size: 1.06rem;
 }
 
 .cookie-consent-banner p {
@@ -1660,6 +1817,7 @@ button:active {
   display: flex;
   gap: 8px;
   align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
 }
 
@@ -1696,14 +1854,15 @@ html[data-compact-lists="true"] .standings-card {
 }
 
 html[data-compact-lists="true"] .standing-portrait {
-  right: 122px;
-  bottom: -16px;
-  transform: scale(1.48);
+  left: 52%;
+  right: auto;
+  bottom: 0;
+  transform: translateX(-50%) scale(1.48);
 }
 
 html[data-compact-lists="true"] .list-stack.standings-list {
-  gap: 40px;
-  padding-top: 30px;
+  gap: 66px;
+  padding-top: 40px;
 }
 
 html[data-compact-lists="true"] .rodeo-card,
@@ -4134,6 +4293,55 @@ html[data-compact-lists="true"] .champion-row {
     border-radius: 0;
   }
 
+  .ios-app-promo-banner {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 12px;
+    min-height: 112px;
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .ios-app-promo-main {
+    grid-column: 1 / 3;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .ios-app-promo-main .logo-mark {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+
+  .ios-app-promo-main .logo-mark img {
+    width: 37px;
+    height: 37px;
+  }
+
+  .ios-app-promo-banner span {
+    font-size: 0.74rem;
+  }
+
+  .ios-app-promo-banner strong {
+    font-size: 0.98rem;
+  }
+
+  .app-store-badge-link {
+    grid-column: 1;
+    width: 122px;
+    height: 41px;
+    justify-self: start;
+  }
+
+  .ios-app-promo-banner > button {
+    grid-column: 2;
+    align-self: center;
+    justify-self: end;
+  }
+
   .top-toolbar {
     display: none;
   }
@@ -4162,7 +4370,19 @@ html[data-compact-lists="true"] .champion-row {
   .tab-scroll {
     height: 100vh;
     min-height: 0;
-    padding: 10px 12px 98px;
+    width: 100%;
+    max-width: 100vw;
+    padding: 10px 0 98px;
+  }
+
+  .stack,
+  .list-stack,
+  .rodeo-list-section,
+  .ad-list-item-group,
+  .app-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .phone-surface.has-context-strip .tab-scroll {
@@ -4170,7 +4390,29 @@ html[data-compact-lists="true"] .champion-row {
   }
 
   .stack {
+    --mobile-card-rail: min(100%, calc(100vw - 44px));
+    justify-items: center;
+    width: 100%;
     gap: 10px;
+    margin: 0 auto;
+  }
+
+  .stack > .app-card,
+  .stack > .chip-grid,
+  .stack > .list-stack,
+  .stack > .rodeo-list-section {
+    width: var(--mobile-card-rail);
+    max-width: var(--mobile-card-rail);
+    justify-self: center;
+  }
+
+  .list-stack > .app-card,
+  .list-stack > .ad-list-item-group,
+  .ad-list-item-group > .app-card,
+  .rodeo-list-section > .app-card {
+    width: 100%;
+    max-width: 100%;
+    justify-self: stretch;
   }
 
   .standings-filter-card {
@@ -4231,14 +4473,40 @@ html[data-compact-lists="true"] .champion-row {
   }
 
   .rodeo-card {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) 22px;
+  }
+
+  .rodeo-card > svg {
+    justify-self: end;
+  }
+
+  .rodeo-card-main h3,
+  .rodeo-card-subtitle,
+  .rodeo-card-date-row strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .rodeo-card-main h3,
+  .rodeo-card-date-row strong {
+    white-space: nowrap;
+  }
+
+  .rodeo-card-date-row {
+    min-width: 0;
   }
 
   .standings-card {
-    grid-template-columns: minmax(0, 1fr) minmax(98px, auto);
+    width: 100%;
     min-height: 118px;
     padding: 10px;
-    gap: 18px;
+  }
+
+  .standings-card-content {
+    grid-template-columns: minmax(0, 1fr) minmax(78px, 24%);
+    gap: 0;
+    min-height: 98px;
   }
 
   .list-stack.standings-list {
@@ -4247,240 +4515,335 @@ html[data-compact-lists="true"] .champion-row {
   }
 
   .standing-copy {
-    padding-right: 68px;
+    min-width: 0;
+    max-width: 100%;
+    padding-right: 118px;
+    padding-left: 0;
+  }
+
+  .standing-name-stack {
+    position: relative;
+    z-index: 3;
+  }
+
+  .standing-copy > div {
+    width: min(100%, 156px);
   }
 
   .standing-portrait {
-    right: 108px;
-    bottom: -20px;
-    width: 86px;
-    height: 116px;
-    transform: scale(1.35);
+    position: absolute;
+    left: 51%;
+    right: auto;
+    bottom: 0;
+    z-index: 1;
+    width: 96px;
+    max-width: none;
+    height: 126px;
+    transform: translateX(-50%) scale(1.46);
+    transform-origin: bottom center;
+  }
+
+  .card-metrics {
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .icons {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    justify-content: flex-end;
+  }
+
+  .icons svg {
+    flex: 0 0 auto;
   }
 
   .standings-card h3 {
     font-size: 1.05rem;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .card-metrics {
-    min-width: 98px;
+  .standings-card p {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .card-metrics strong {
-    max-width: 96px;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 430px) {
+  .tab-scroll {
+    padding: 8px 0 96px;
   }
 
-  .rodeo-card,
-  .business-listing-card,
-  .more-row,
-  .settings-section,
-  .favorite-athlete-header,
-  .athlete-search-results,
-  .champion-filter-card,
-  .top-champions-card,
-  .nfr-contestant-card,
-  .listing-disclaimer,
-  .detail-section {
-    padding: 10px;
+  .stack {
+    --mobile-card-rail: calc(100vw - 44px);
+    width: 100%;
   }
 
-  .rodeo-meta {
-    grid-column: 1 / 3;
-    grid-row: 2;
-    justify-items: start;
+  .mobile-context-strip {
+    margin: 0 8px 8px;
   }
 
-  .detail-screen-metrics {
-    grid-template-columns: 1fr;
+  .ios-app-promo-banner {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .daysheet-controls {
-    grid-template-columns: 1fr;
+  .app-store-badge-link {
+    width: 116px;
+    height: 39px;
   }
 
-  .date-range-filter {
-    min-width: 282px;
+  .ios-app-promo-banner button {
+    width: 30px;
+    height: 30px;
+    min-height: 28px;
   }
 
-  .draw-row {
-    grid-template-columns: 38px minmax(0, 1fr);
+  .standings-filter-card {
+    min-height: 108px;
+    padding: 16px 18px;
+    gap: 10px;
   }
 
-  .draw-row em {
-    grid-column: 2;
+  .standings-filter-card > div {
+    gap: 12px;
   }
 
-  .round-winner-list div {
-    grid-template-columns: 40px minmax(0, 1fr) auto;
+  .standings-filter-card > div > span {
+    font-size: 1.56rem;
   }
 
-  .round-winner-list p {
-    grid-column: 2 / -1;
-    justify-self: start;
+  .standings-filter-card h2 {
+    font-size: 1.26rem;
   }
 
-  .detail-screen-header.results-detail-header {
-    grid-template-columns: auto minmax(0, 1fr) 34px;
+  .standing-year-picker select {
+    width: 76px;
+    font-size: 1.28rem;
+  }
+
+  .standings-filter-grid {
+    gap: 8px;
+  }
+
+  .standings-filter-grid .select-chip {
+    min-height: 58px;
+    padding: 9px 10px;
+  }
+
+  .standings-filter-grid .select-chip select {
+    font-size: 0.9rem;
+  }
+
+  .list-stack.standings-list {
+    gap: 52px;
+    padding-top: 38px;
+  }
+
+  .standings-card {
+    width: 100%;
+    min-height: 112px;
+    padding: 9px;
+  }
+
+  .standings-card-content {
+    grid-template-columns: minmax(0, 1fr) minmax(72px, 23%);
+    gap: 0;
+    min-height: 94px;
+  }
+
+  .standing-copy {
+    min-width: 0;
+    max-width: 100%;
+    padding-right: 104px;
+  }
+
+  .standing-copy > div {
+    width: min(100%, 140px);
+  }
+
+  .standing-portrait {
+    position: absolute;
+    left: 51%;
+    right: auto;
+    bottom: 0;
+    width: 88px;
+    max-width: none;
+    height: 120px;
+    transform: translateX(-50%) scale(1.38);
+  }
+
+  .standings-card h3 {
+    max-width: 100%;
+    font-size: 0.98rem;
+  }
+
+  .standings-card p {
+    font-size: 0.76rem;
+  }
+
+  .rank-badge {
+    min-height: 26px;
+    padding: 2px 8px;
+    font-size: 0.9rem;
+  }
+
+  .icons {
+    gap: 1px;
+  }
+
+  .icons button {
+    width: 22px;
+    height: 22px;
+  }
+
+  .card-metrics {
+    min-width: 0;
+    gap: 10px;
+  }
+
+  .card-metrics span {
+    font-size: 0.6rem;
+  }
+
+  .card-metrics strong {
+    max-width: 100%;
+    font-size: 0.76rem;
   }
 
   .result-round-card {
-    padding: 12px;
+    padding: 10px;
   }
 
   .result-round-title,
   .result-winner-row,
   .result-team-row {
-    grid-template-columns: 28px minmax(0, 1fr) 48px 70px;
-    gap: 7px;
+    grid-template-columns: 24px minmax(0, 1fr) 40px 58px;
+    gap: 6px;
   }
 
-  .result-round-title strong {
-    grid-column: 1 / 3;
+  .result-round-title span {
+    font-size: 0.62rem;
   }
 
   .result-athlete-identity {
-    grid-template-columns: 34px minmax(0, 1fr);
-    gap: 7px;
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 6px;
   }
 
   .result-athlete-identity img,
   .result-athlete-identity i {
-    width: 34px;
-    height: 34px;
+    width: 30px;
+    height: 30px;
   }
 
   .result-athlete-identity strong {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
   }
 
   .result-athlete-identity small {
-    font-size: 0.68rem;
+    font-size: 0.64rem;
   }
 
   .result-winner-row > em,
   .result-winner-row > p,
   .result-team-row > em,
   .result-team-row > p {
-    font-size: 0.74rem;
+    font-size: 0.68rem;
   }
 
-  .cookie-consent-banner {
-    right: 12px;
-    bottom: 72px;
-    left: 12px;
-    grid-template-columns: 1fr;
-    width: auto;
+  .date-range-filter {
+    width: 100%;
+    min-width: 0;
   }
 
-  .cookie-consent-actions {
-    justify-content: stretch;
-  }
-
-  .cookie-consent-actions button {
-    flex: 1;
-  }
-
-  .nfr-contestant-main {
-    grid-template-columns: 48px minmax(0, 1fr);
-  }
-
-  .nfr-world-place {
-    width: 48px;
-    height: 48px;
-    font-size: 1.55rem;
-  }
-
-  .nfr-round-columns {
-    gap: 18px;
-  }
-
-  .athlete-profile-screen {
-    max-width: none;
-  }
-
-  .athlete-profile-nav {
-    margin: 0;
-    border-radius: 12px;
-  }
-
-  .athlete-profile-shell {
-    border-radius: 14px;
-  }
-
-  .athlete-profile-hero {
-    min-height: 430px;
-  }
-
-  .athlete-profile-hero-content {
-    padding: 16px 12px 12px;
-  }
-
-  .athlete-profile-title-row {
-    gap: 8px;
-  }
-
-  .athlete-profile-title-row h1 {
-    font-size: 2.05rem;
-  }
-
-  .athlete-profile-action-buttons button {
-    width: 38px;
-    height: 38px;
-  }
-
-  .athlete-hero-stat-row {
-    grid-template-columns: 1fr;
-  }
-
-  .athlete-hero-stat-row span {
-    min-height: 32px;
-  }
-
-  .athlete-profile-tabs {
-    overflow-x: auto;
-  }
-
-  .athlete-profile-tabs button {
-    min-width: 80px;
-  }
-
-  .athlete-profile-tab-content {
-    padding: 10px;
-  }
-
-  .athlete-stat-grid {
-    grid-template-columns: 1fr;
+  .athlete-results-title-row {
+    display: grid;
   }
 
   .athlete-results-filter-row {
-    grid-template-columns: 1fr 0.62fr;
+    grid-template-columns: 1fr;
   }
 
   .athlete-result-column-header,
   .athlete-result-detail-row {
-    grid-template-columns: 58px 48px minmax(54px, 1fr) minmax(82px, auto);
-    gap: 7px;
+    grid-template-columns: 46px 40px minmax(48px, 1fr) 68px;
+    gap: 5px;
   }
 
   .athlete-result-column-header {
-    padding: 0 6px;
-    font-size: 0.62rem;
-  }
-
-  .athlete-result-group-card {
-    padding: 12px;
+    font-size: 0.56rem;
   }
 
   .athlete-result-detail-row span,
   .athlete-result-detail-row strong,
   .athlete-result-detail-row em,
   .athlete-result-detail-row p {
-    font-size: 0.76rem;
+    font-size: 0.68rem;
   }
 
   .athlete-career-heading,
   .athlete-career-row {
-    grid-template-columns: 64px minmax(0, 1fr) minmax(76px, auto);
+    grid-template-columns: 52px minmax(0, 1fr) 66px;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 340px) {
+  .standings-filter-card {
+    padding: 14px;
+  }
+
+  .standings-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .standing-portrait {
+    left: 50%;
+    right: auto;
+    width: 76px;
+    height: 108px;
+    transform: translateX(-50%) scale(1.28);
+  }
+
+  .standing-copy {
+    padding-right: 90px;
+  }
+
+  .standing-copy > div {
+    width: min(100%, 124px);
+  }
+
+  .standings-card h3 {
+    max-width: 100%;
+    font-size: 0.9rem;
+  }
+
+  .result-round-title,
+  .result-winner-row,
+  .result-team-row {
+    grid-template-columns: 22px minmax(0, 1fr) 36px 52px;
+    gap: 5px;
+  }
+
+  .result-athlete-identity img,
+  .result-athlete-identity i {
+    display: none;
+  }
+
+  .result-athlete-identity {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

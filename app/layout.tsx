@@ -21,8 +21,9 @@ export const metadata: Metadata = {
   },
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: "/icon.svg",
-    apple: "/apple-touch-icon.svg"
+    icon: "/rodeo-daily-icon.png",
+    shortcut: "/rodeo-daily-icon.png",
+    apple: "/rodeo-daily-icon.png"
   },
   openGraph: {
     type: "website",

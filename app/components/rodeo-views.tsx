@@ -110,6 +110,7 @@ const nfrEvents: EventName[] = [
 const athleteProfileTabs = ["Stats", "Results", "Career", "Highlights"] as const;
 type AthleteProfileTab = (typeof athleteProfileTabs)[number];
 type AthleteResultSort = "Date" | "Rodeo" | "Result" | "Earnings";
+const iosAppStoreUrl = "https://apps.apple.com/us/app/rodeo-daily/id1671624492";
 
 export function RodeoDailyLogoMark() {
   return (
@@ -306,42 +307,46 @@ function StandingCard({
       onKeyDown={handleKeyDown}
       aria-label={`Open ${position.name} profile`}
     >
-      <div className="standing-copy">
-        <div className="standing-name-stack">
-          <span className="rank-badge">#{position.place}</span>
-          <div>
-            <h3>{position.name}</h3>
-            <p>{position.hometown}</p>
+      <div className="standings-card-content">
+        <div className="standing-copy">
+          <div className="standing-name-stack">
+            <span className="rank-badge">#{position.place}</span>
+            <div>
+              <h3>{position.name}</h3>
+              <p>{position.hometown}</p>
+            </div>
           </div>
         </div>
-      </div>
-      <div className="card-metrics">
-        <div className="icons">
-          <button
-            aria-label={position.followed ? "Unfollow athlete" : "Follow athlete"}
-            className={position.followed ? "status-control active" : "status-control"}
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleFollow();
-            }}
-          >
-            <Bell size={16} fill={position.followed ? "currentColor" : "none"} />
-          </button>
-          <button
-            aria-label={position.favorite ? "Remove favorite athlete" : "Favorite athlete"}
-            className={position.favorite ? "status-control active" : "status-control"}
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleFavorite();
-            }}
-          >
-            <Star size={16} fill={position.favorite ? "currentColor" : "none"} />
-          </button>
-          <ChevronRight size={17} />
+
+        <div className="card-metrics">
+          <div className="icons">
+            <button
+              aria-label={position.followed ? "Unfollow athlete" : "Follow athlete"}
+              className={position.followed ? "status-control active" : "status-control"}
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggleFollow();
+              }}
+            >
+              <Bell size={16} fill={position.followed ? "currentColor" : "none"} />
+            </button>
+            <button
+              aria-label={position.favorite ? "Remove favorite athlete" : "Favorite athlete"}
+              className={position.favorite ? "status-control active" : "status-control"}
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggleFavorite();
+              }}
+            >
+              <Star size={16} fill={position.favorite ? "currentColor" : "none"} />
+            </button>
+            <ChevronRight size={17} />
+          </div>
+          <span>{position.metricLabel}</span>
+          <strong>{position.metric}</strong>
         </div>
-        <span>{position.metricLabel}</span>
-        <strong>{position.metric}</strong>
       </div>
+
       <div className="standing-portrait" aria-hidden="true">
         <AthleteAvatar athlete={position} size="card" />
       </div>
@@ -1072,6 +1077,14 @@ export function MoreView({
             </button>
           );
         })}
+        <a className="app-card more-row more-app-store-row" href={iosAppStoreUrl} target="_blank" rel="noreferrer">
+          <RodeoDailyLogoMark />
+          <div>
+            <h3>Rodeo Daily for iOS</h3>
+            <p>Open Rodeo Daily in the Apple App Store</p>
+          </div>
+          <ExternalLink size={17} />
+        </a>
       </div>
     </div>
   );

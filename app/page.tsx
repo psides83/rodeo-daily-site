@@ -1,6 +1,7 @@
 "use client";
 
 import { Bell, Calendar, CircleDollarSign, Ellipsis, ListOrdered, Menu, Search, X } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { PwaRegister } from "./pwa-register";
@@ -93,6 +94,9 @@ const defaultSettings: AppSettings = {
   consentUpdatedAt: ""
 };
 
+const iosAppStoreUrl = "https://apps.apple.com/us/app/rodeo-daily/id1671624492";
+const iosAppBannerDismissedKey = "rodeodaily.iosAppBannerDismissed";
+
 const themeVariables: Record<AppSettings["accentTheme"], Record<string, string>> = {
   classic: {
     "--app-primary": "#4d5d52",
@@ -147,6 +151,33 @@ function updateDocumentSeo(title: string, description: string) {
   descriptionTag.content = description;
 }
 
+function isAppleDevice() {
+  const userAgent = navigator.userAgent || "";
+  const platform = navigator.platform || "";
+  const maxTouchPoints = navigator.maxTouchPoints || 0;
+  return /iPhone|iPad|iPod|Macintosh/.test(userAgent) || /Mac/.test(platform) || (platform === "MacIntel" && maxTouchPoints > 1);
+}
+
+function IosAppPromoBanner({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <section className="ios-app-promo-banner" aria-label="Rodeo Daily iOS app">
+      <div className="ios-app-promo-main">
+        <RodeoDailyLogoMark />
+        <div>
+          <strong>Rodeo Daily for iPhone</strong>
+          <span>Track standings, results, schedules, favorites, and athlete updates in the iOS app.</span>
+        </div>
+      </div>
+      <a className="app-store-badge-link" href={iosAppStoreUrl} target="_blank" rel="noreferrer" aria-label="Download Rodeo Daily on the App Store">
+        <Image src="/app-store-badge.svg" alt="Download on the App Store" width={120} height={40} />
+      </a>
+      <button type="button" aria-label="Dismiss iOS app banner" onClick={onDismiss}>
+        <X size={16} />
+      </button>
+    </section>
+  );
+}
+
 export default function Home() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("Standings");
@@ -175,6 +206,7 @@ export default function Home() {
   const [appSettings, setAppSettings] = useState<AppSettings>(defaultSettings);
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const [followAlertsOpen, setFollowAlertsOpen] = useState(false);
+  const [showIosAppBanner, setShowIosAppBanner] = useState(false);
   const [moreSection, setMoreSection] = useState<MoreSection>("menu");
   const [standingsState, setStandingsState] = useState<LoadState>("idle");
   const [resultsState, setResultsState] = useState<LoadState>("idle");
@@ -244,6 +276,11 @@ export default function Home() {
     syncFromRoute();
     window.addEventListener("popstate", syncFromRoute);
     return () => window.removeEventListener("popstate", syncFromRoute);
+  }, []);
+
+  useEffect(() => {
+    const dismissed = window.localStorage.getItem(iosAppBannerDismissedKey) === "true";
+    setShowIosAppBanner(isAppleDevice() && !dismissed);
   }, []);
 
   useEffect(() => {
@@ -680,11 +717,17 @@ export default function Home() {
     window.history.pushState({}, "", appRoute("More", section));
   }
 
+  function dismissIosAppBanner() {
+    window.localStorage.setItem(iosAppBannerDismissedKey, "true");
+    setShowIosAppBanner(false);
+  }
+
   return (
     <main className="browser-stage">
-        <PwaRegister />
-        {preferencesLoaded && <GoogleAdsController consent={appSettings.adConsent} />}
-        <section className="app-window" aria-label="Rodeo Daily web app">
+      <PwaRegister />
+      {preferencesLoaded && <GoogleAdsController consent={appSettings.adConsent} />}
+      <section className="app-window" aria-label="Rodeo Daily web app">
+        {showIosAppBanner && <IosAppPromoBanner onDismiss={dismissIosAppBanner} />}
         {preferencesLoaded && <CookieConsentBanner consent={appSettings.adConsent} onChoose={updateAdConsent} />}
         <header className="top-toolbar">
           <div className="identity">
