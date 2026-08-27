@@ -8,6 +8,7 @@ import {
   Calendar,
   ChevronDown,
   ChevronRight,
+  CircleHelp,
   CircleDollarSign,
   ExternalLink,
   Heart,
@@ -339,7 +340,6 @@ export function ResultsView({
   setResultEvent,
   dateRange,
   setDateRange,
-  selectedResult,
   onOpenRodeo,
   onLoadMore,
   rows,
@@ -349,7 +349,6 @@ export function ResultsView({
   setResultEvent: (event: EventName) => void;
   dateRange: DateRange;
   setDateRange: (range: DateRange) => void;
-  selectedResult: RodeoRow | null;
   onOpenRodeo: (result: RodeoRow) => void;
   onLoadMore: () => void;
   rows: RodeoRow[];
@@ -386,7 +385,7 @@ export function ResultsView({
           <>
             {rows.map((rodeo) => (
               <button
-                className={selectedResult?.id === rodeo.id ? "app-card rodeo-card active" : "app-card rodeo-card"}
+                className="app-card rodeo-card"
                 key={rodeo.id}
                 onClick={() => onOpenRodeo(rodeo)}
               >
@@ -421,7 +420,6 @@ export function ScheduleView({
   state,
   dateRange,
   setDateRange,
-  selectedResult,
   onOpenRodeo,
   onLoadMore
 }: {
@@ -429,7 +427,6 @@ export function ScheduleView({
   state: LoadState;
   dateRange: DateRange;
   setDateRange: (range: DateRange) => void;
-  selectedResult: RodeoRow | null;
   onOpenRodeo: (result: RodeoRow) => void;
   onLoadMore: () => void;
 }) {
@@ -458,7 +455,7 @@ export function ScheduleView({
           <>
             {rows.map((rodeo) => (
               <button
-                className={selectedResult?.id === rodeo.id ? "app-card rodeo-card active" : "app-card rodeo-card"}
+                className="app-card rodeo-card"
                 key={rodeo.id}
                 onClick={() => onOpenRodeo(rodeo)}
               >
@@ -509,10 +506,23 @@ export function RodeoDetailView({
   source: RodeoDetailSource;
   onBack: () => void;
 }) {
-  const [view, setView] = useState<"results" | "daysheets">("results");
+  const canShowDaysheets = rodeo.hasDaysheets;
+  const [view, setView] = useState<"results" | "daysheets">(() => {
+    if (typeof window === "undefined" || !canShowDaysheets) return "results";
+    return window.localStorage.getItem("rodeodaily.lastRodeoDetailView") === "daysheets" ? "daysheets" : "results";
+  });
+  const [showResultsHelp, setShowResultsHelp] = useState(false);
   const [selectedDaysheetId, setSelectedDaysheetId] = useState("");
   const selectedDaysheet = daysheets.find((daysheet) => daysheet.id === selectedDaysheetId) ?? daysheets[0];
   const [selectedDaysheetEvent, setSelectedDaysheetEvent] = useState("");
+
+  useEffect(() => {
+    if (!canShowDaysheets) {
+      setView("results");
+      return;
+    }
+    window.localStorage.setItem("rodeodaily.lastRodeoDetailView", view);
+  }, [canShowDaysheets, view]);
 
   useEffect(() => {
     if (!selectedDaysheet) return;
@@ -529,7 +539,10 @@ export function RodeoDetailView({
   return (
     <div className="stack">
       <section className="app-card detail-screen-header">
-        <button onClick={onBack}>Back</button>
+        <button onClick={onBack}>
+          <ArrowLeft size={16} />
+          Back
+        </button>
         <div>
           <span>{source === "results" ? "Results" : "Schedule"}</span>
           <h2>{rodeo.name}</h2>
@@ -573,14 +586,16 @@ export function RodeoDetailView({
         <p>{rodeo.location}</p>
       </section>
 
-      <div className="detail-toggle" aria-label="Rodeo detail view">
-        <button className={view === "results" ? "active" : undefined} onClick={() => setView("results")}>
-          Results
-        </button>
-        <button className={view === "daysheets" ? "active" : undefined} onClick={() => setView("daysheets")}>
-          Daysheets
-        </button>
-      </div>
+      {canShowDaysheets && (
+        <div className="detail-toggle" aria-label="Rodeo detail view">
+          <button className={view === "results" ? "active" : undefined} onClick={() => setView("results")}>
+            Results
+          </button>
+          <button className={view === "daysheets" ? "active" : undefined} onClick={() => setView("daysheets")}>
+            Daysheets
+          </button>
+        </div>
+      )}
 
       {view === "results" ? (
         <section className="app-card detail-section">
@@ -589,7 +604,24 @@ export function RodeoDetailView({
               <span>{event}</span>
               <h3>Leaders</h3>
             </div>
+            <button
+              className="detail-help-button"
+              aria-label="Bracket results help"
+              onClick={() => setShowResultsHelp((show) => !show)}
+              type="button"
+            >
+              <CircleHelp size={18} />
+            </button>
           </div>
+          {showResultsHelp && (
+            <div className="detail-help-note">
+              <strong>Important</strong>
+              <p>
+                For rodeos with bracket formats, multiple athletes may show the same place and payoff within a round. The feed
+                groups those bracket winners together under the selected event.
+              </p>
+            </div>
+          )}
           {state === "loading" ? (
             <LoadingState title="Loading results" />
           ) : state === "error" ? (

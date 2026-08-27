@@ -3,11 +3,15 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { RodeoDetailView } from "../../components/rodeo-views";
-import { eventCodes, fetchJson, mapDaysheets, mapWinners } from "../../lib/rodeo-data";
+import { eventCodes, events, fetchJson, mapDaysheets, mapWinners } from "../../lib/rodeo-data";
 import type { ApiDaysheetResponse, ApiRodeoResults, DaysheetRow, EventName, LoadState, RodeoRow } from "../../lib/types";
 
 function paramValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function eventParam(value: string | null): EventName {
+  return events.includes(value as EventName) ? (value as EventName) : "Tie-Down Roping";
 }
 
 export default function ScheduleRodeoRoutePage() {
@@ -15,7 +19,7 @@ export default function ScheduleRodeoRoutePage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const rodeoId = Number(paramValue(params.rodeoId));
-  const [event, setEvent] = useState<EventName>("Tie-Down Roping");
+  const [event, setEvent] = useState<EventName>(() => eventParam(searchParams.get("event")));
   const [state, setState] = useState<LoadState>("idle");
   const [daysheetState, setDaysheetState] = useState<LoadState>("idle");
   const [daysheets, setDaysheets] = useState<DaysheetRow[]>([]);

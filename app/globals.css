@@ -1541,6 +1541,9 @@ html[data-compact-lists="true"] .champion-row {
 }
 
 .detail-screen-header button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   min-height: 36px;
   border: 1px solid rgba(160, 138, 89, 0.3);
   border-radius: 999px;
@@ -1645,6 +1648,38 @@ html[data-compact-lists="true"] .champion-row {
   border-radius: 999px;
   background: rgba(160, 138, 89, 0.1);
   color: var(--app-secondary);
+}
+
+.detail-help-button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(160, 138, 89, 0.1);
+  color: var(--app-secondary);
+}
+
+.detail-help-note {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid rgba(160, 138, 89, 0.18);
+  border-radius: 12px;
+  background: rgba(160, 138, 89, 0.1);
+}
+
+.detail-help-note strong {
+  color: var(--app-primary);
+}
+
+.detail-help-note p {
+  margin: 0;
+  color: var(--app-tertiary);
+  font-size: 0.9rem;
+  line-height: 1.4;
 }
 
 .venue-section p {

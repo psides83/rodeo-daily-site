@@ -157,7 +157,6 @@ export default function Home() {
   const [nfrStandings, setNfrStandings] = useState<NfrContestant[]>([]);
   const [athleteSearchText, setAthleteSearchText] = useState("");
   const [athleteSearchRows, setAthleteSearchRows] = useState<AthleteSearchRow[]>([]);
-  const [selectedResult, setSelectedResult] = useState<RodeoRow | null>(null);
   const [favoriteAthletes, setFavoriteAthletes] = useState<Record<number, SavedAthlete>>({});
   const [favoriteAthleteOrder, setFavoriteAthleteOrder] = useState<number[]>([]);
   const [followedAthletes, setFollowedAthletes] = useState<number[]>([]);
@@ -337,7 +336,6 @@ export default function Home() {
         const rows = (payload.data ?? []).filter((rodeo) => rodeoHasEvent(rodeo, resultEvent)).map(mapRodeo);
         if (!cancelled) {
           setResultsRows((current) => (resultsPage === 1 ? rows : appendUniqueRodeos(current, rows)));
-          setSelectedResult((current) => rows.find((row) => row.id === current?.id) ?? current ?? rows[0] ?? null);
           setResultsState("loaded");
         }
       } catch {
@@ -562,8 +560,7 @@ export default function Home() {
     );
   }
 
-  function openRodeoDetail(rodeo: RodeoRow, source: RodeoDetailSource) {
-    setSelectedResult(rodeo);
+  function openRodeoDetail(rodeo: RodeoRow, source: RodeoDetailSource, event?: EventName) {
     const query = new URLSearchParams({
       name: rodeo.name,
       location: rodeo.location,
@@ -573,6 +570,7 @@ export default function Home() {
       payout: rodeo.payout,
       daysheets: String(rodeo.hasDaysheets)
     });
+    if (event) query.set("event", event);
     if (rodeo.websiteUrl) query.set("website", rodeo.websiteUrl);
     router.push(`/${source}/${rodeo.id}?${query}`);
   }
@@ -739,8 +737,7 @@ export default function Home() {
                   setResultEvent={updateResultEvent}
                   dateRange={resultsDateRange}
                   setDateRange={updateResultsDateRange}
-                  selectedResult={selectedResult}
-                  onOpenRodeo={(rodeo) => openRodeoDetail(rodeo, "results")}
+                  onOpenRodeo={(rodeo) => openRodeoDetail(rodeo, "results", resultEvent)}
                   onLoadMore={() => setResultsPage((page) => page + 1)}
                   rows={resultsRows}
                   state={resultsState}
@@ -752,8 +749,7 @@ export default function Home() {
                   state={scheduleState}
                   dateRange={scheduleDateRange}
                   setDateRange={updateScheduleDateRange}
-                  selectedResult={selectedResult}
-                  onOpenRodeo={(rodeo) => openRodeoDetail(rodeo, "schedule")}
+                  onOpenRodeo={(rodeo) => openRodeoDetail(rodeo, "schedule", rodeo.event)}
                   onLoadMore={() => setSchedulePage((page) => page + 1)}
                 />
               )}
