@@ -1,20 +1,15 @@
 "use client";
 
 import { Bell, Calendar, CircleDollarSign, Ellipsis, ListOrdered, Menu, Search, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { PwaRegister } from "./pwa-register";
 import {
-  AthleteDetailPane,
-  AthleteProfileScreen,
   CookieConsentBanner,
-  DetailPane,
-  EmptyDetailPane,
   FollowAlertsPanel,
-  MobileContextStrip,
   MoreView,
   ResultsView,
   RodeoDailyLogoMark,
-  RodeoDetailView,
   ScheduleView,
   StandingsView
 } from "./components/rodeo-views";
@@ -22,33 +17,25 @@ import {
   dateRangeParams,
   eventCodes,
   fetchJson,
-  mapAthleteBio,
   mapAthleteSearchRows,
   mapBusinessJournalRows,
-  mapDaysheets,
   mapNfrStandings,
   mapPastChampions,
   mapPosition,
   mapRodeo,
-  mapWinners,
   rodeoHasEvent,
   standingTypes
 } from "./lib/rodeo-data";
 import type {
   ApiBusinessJournalResponse,
-  ApiAthleteBioResponse,
   ApiAthleteSearchResponse,
-  ApiDaysheetResponse,
   ApiNfrStandingsResponse,
   ApiPosition,
   ApiRodeo,
-  ApiRodeoResults,
   AppSettings,
-  AthleteBio,
   AthleteSearchRow,
   BusinessJournalRow,
   DateRange,
-  DaysheetRow,
   EventName,
   LoadState,
   MoreSection,
@@ -70,6 +57,31 @@ const tabs: Array<{ label: Tab; icon: typeof ListOrdered }> = [
   { label: "More", icon: Ellipsis }
 ];
 
+const tabRouteValues: Record<Tab, string> = {
+  Standings: "standings",
+  Results: "results",
+  Schedule: "schedule",
+  More: "more"
+};
+
+const tabRoutes = Object.entries(tabRouteValues).reduce(
+  (routes, [tab, route]) => ({ ...routes, [route]: tab as Tab }),
+  {} as Record<string, Tab>
+);
+
+const moreSectionRouteValues: Record<Exclude<MoreSection, "menu">, string> = {
+  favorites: "favorites",
+  nfr: "nfr",
+  listings: "listings",
+  champions: "champions",
+  settings: "settings"
+};
+
+const moreSectionRoutes = Object.entries(moreSectionRouteValues).reduce(
+  (routes, [section, route]) => ({ ...routes, [route]: section as MoreSection }),
+  {} as Record<string, MoreSection>
+);
+
 const defaultSettings: AppSettings = {
   accentTheme: "classic",
   favoriteStandingsEvent: "Tie-Down Roping",
@@ -84,34 +96,22 @@ const themeVariables: Record<AppSettings["accentTheme"], Record<string, string>>
   classic: {
     "--app-primary": "#4d5d52",
     "--app-secondary": "#a08a59",
-    "--app-tertiary": "#6b6f76",
-    "--logo-bg": "#4d5d52",
-    "--logo-outer": "#a08a59",
-    "--logo-bar": "#6b6f76"
+    "--app-tertiary": "#6b6f76"
   },
   arena: {
     "--app-primary": "#31484f",
     "--app-secondary": "#b57935",
-    "--app-tertiary": "#647071",
-    "--logo-bg": "#31484f",
-    "--logo-outer": "#b57935",
-    "--logo-bar": "#647071"
+    "--app-tertiary": "#647071"
   },
   river: {
     "--app-primary": "#29555a",
     "--app-secondary": "#8f7c3f",
-    "--app-tertiary": "#657175",
-    "--logo-bg": "#29555a",
-    "--logo-outer": "#8f7c3f",
-    "--logo-bar": "#657175"
+    "--app-tertiary": "#657175"
   },
   rose: {
     "--app-primary": "#61424a",
     "--app-secondary": "#b47852",
-    "--app-tertiary": "#756970",
-    "--logo-bg": "#61424a",
-    "--logo-outer": "#b47852",
-    "--logo-bar": "#756970"
+    "--app-tertiary": "#756970"
   }
 };
 
@@ -120,13 +120,28 @@ function appendUniqueRodeos(current: RodeoRow[], incoming: RodeoRow[]) {
   return [...current, ...incoming.filter((rodeo) => !seen.has(rodeo.id))];
 }
 
+function appRoute(tab: Tab, section: MoreSection = "menu") {
+  const params = new URLSearchParams({ tab: tabRouteValues[tab] });
+  if (tab === "More" && section !== "menu") {
+    params.set("section", moreSectionRouteValues[section]);
+  }
+  return `/?${params}`;
+}
+
+function readAppRoute() {
+  const params = new URL(window.location.href).searchParams;
+  const tab = tabRoutes[params.get("tab") ?? ""] ?? "Standings";
+  const section = tab === "More" ? moreSectionRoutes[params.get("section") ?? ""] ?? "menu" : "menu";
+  return { tab, section };
+}
+
 export default function Home() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("Standings");
   const [standingType, setStandingType] = useState<StandingType>("World Standings");
   const [standingEvent, setStandingEvent] = useState<EventName>("Tie-Down Roping");
   const [standingYear, setStandingYear] = useState("2026");
   const [resultEvent, setResultEvent] = useState<EventName>("Tie-Down Roping");
-  const [detailEvent, setDetailEvent] = useState<EventName>("Tie-Down Roping");
   const [nfrEvent, setNfrEvent] = useState<EventName>("Bareback Riding");
   const [resultsDateRange, setResultsDateRange] = useState<DateRange>({ start: "", end: "" });
   const [scheduleDateRange, setScheduleDateRange] = useState<DateRange>({ start: "", end: "" });
@@ -140,18 +155,14 @@ export default function Home() {
   const [businessJournalRows, setBusinessJournalRows] = useState<BusinessJournalRow[]>([]);
   const [pastChampions, setPastChampions] = useState<PastChampion[]>([]);
   const [nfrStandings, setNfrStandings] = useState<NfrContestant[]>([]);
-  const [athleteBio, setAthleteBio] = useState<AthleteBio | null>(null);
   const [athleteSearchText, setAthleteSearchText] = useState("");
   const [athleteSearchRows, setAthleteSearchRows] = useState<AthleteSearchRow[]>([]);
-  const [daysheets, setDaysheets] = useState<DaysheetRow[]>([]);
   const [selectedResult, setSelectedResult] = useState<RodeoRow | null>(null);
-  const [selectedStanding, setSelectedStanding] = useState<StandingRow | null>(null);
-  const [athleteProfileOpen, setAthleteProfileOpen] = useState(false);
-  const [rodeoDetailSource, setRodeoDetailSource] = useState<RodeoDetailSource | null>(null);
   const [favoriteAthletes, setFavoriteAthletes] = useState<Record<number, SavedAthlete>>({});
   const [favoriteAthleteOrder, setFavoriteAthleteOrder] = useState<number[]>([]);
   const [followedAthletes, setFollowedAthletes] = useState<number[]>([]);
   const [appSettings, setAppSettings] = useState<AppSettings>(defaultSettings);
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const [followAlertsOpen, setFollowAlertsOpen] = useState(false);
   const [moreSection, setMoreSection] = useState<MoreSection>("menu");
   const [standingsState, setStandingsState] = useState<LoadState>("idle");
@@ -160,22 +171,10 @@ export default function Home() {
   const [businessJournalState, setBusinessJournalState] = useState<LoadState>("idle");
   const [pastChampionsState, setPastChampionsState] = useState<LoadState>("idle");
   const [nfrState, setNfrState] = useState<LoadState>("idle");
-  const [athleteBioState, setAthleteBioState] = useState<LoadState>("idle");
   const [athleteSearchState, setAthleteSearchState] = useState<LoadState>("idle");
-  const [detailState, setDetailState] = useState<LoadState>("idle");
-  const [daysheetState, setDaysheetState] = useState<LoadState>("idle");
-  const selectedResultId = selectedResult?.id;
-  const selectedStandingId = selectedStanding?.id;
   const standingsSearchText = activeTab === "Standings" ? searchText : "";
   const resultsSearchText = activeTab === "Results" ? searchText : "";
   const scheduleSearchText = activeTab === "Schedule" ? searchText : "";
-  const showMobileContextStrip =
-    !athleteProfileOpen &&
-    !rodeoDetailSource &&
-    activeTab !== "More" &&
-    ((activeTab === "Standings" && Boolean(selectedStanding)) ||
-      ((activeTab === "Results" || activeTab === "Schedule") && Boolean(selectedResult)));
-
   const headerSubtitle = useMemo(() => {
     if (activeTab === "Standings") return `${standingEvent} - ${standingYear} ${standingType}`;
     if (activeTab === "Results") return `${resultEvent} Rodeo Results`;
@@ -189,6 +188,21 @@ export default function Home() {
     if (activeTab === "Schedule") return "Search upcoming rodeos...";
     return "Search...";
   }, [activeTab]);
+
+  useEffect(() => {
+    function syncFromRoute() {
+      const route = readAppRoute();
+      setActiveTab(route.tab);
+      setMoreSection(route.section);
+      setSearchText("");
+      setSearchExpanded(false);
+      setFollowAlertsOpen(false);
+    }
+
+    syncFromRoute();
+    window.addEventListener("popstate", syncFromRoute);
+    return () => window.removeEventListener("popstate", syncFromRoute);
+  }, []);
 
   useEffect(() => {
     const storedFavorites = window.localStorage.getItem("rodeodaily.favoriteAthletes");
@@ -213,13 +227,15 @@ export default function Home() {
       setAppSettings(settings);
       setStandingEvent(settings.favoriteStandingsEvent);
       setResultEvent(settings.favoriteResultsEvent);
-      setDetailEvent(settings.favoriteResultsEvent);
     }
+
+    setPreferencesLoaded(true);
   }, []);
 
   useEffect(() => {
+    if (!preferencesLoaded) return;
     window.localStorage.setItem("rodeodaily.favoriteAthletes", JSON.stringify(favoriteAthletes));
-  }, [favoriteAthletes]);
+  }, [favoriteAthletes, preferencesLoaded]);
 
   useEffect(() => {
     setFavoriteAthleteOrder((current) => {
@@ -232,20 +248,25 @@ export default function Home() {
   }, [favoriteAthletes]);
 
   useEffect(() => {
+    if (!preferencesLoaded) return;
     window.localStorage.setItem("rodeodaily.favoriteAthleteOrder", JSON.stringify(favoriteAthleteOrder));
-  }, [favoriteAthleteOrder]);
+  }, [favoriteAthleteOrder, preferencesLoaded]);
 
   useEffect(() => {
+    if (!preferencesLoaded) return;
     window.localStorage.setItem("rodeodaily.followedAthletes", JSON.stringify(followedAthletes));
-  }, [followedAthletes]);
+  }, [followedAthletes, preferencesLoaded]);
 
   useEffect(() => {
-    window.localStorage.setItem("rodeodaily.settings", JSON.stringify(appSettings));
     const root = document.documentElement;
     for (const [key, value] of Object.entries(themeVariables[appSettings.accentTheme])) {
       root.style.setProperty(key, value);
     }
     root.dataset.compactLists = appSettings.compactLists ? "true" : "false";
+
+    if (!preferencesLoaded) return;
+
+    window.localStorage.setItem("rodeodaily.settings", JSON.stringify(appSettings));
 
     const consentGranted = appSettings.adConsent === "personalized";
     const adsAllowed = appSettings.adConsent === "personalized" || appSettings.adConsent === "nonPersonalized";
@@ -266,7 +287,7 @@ export default function Home() {
     } else {
       googleWindow.dataLayer.push(["consent", "update", consentUpdate]);
     }
-  }, [appSettings]);
+  }, [appSettings, preferencesLoaded]);
 
   useEffect(() => {
     let cancelled = false;
@@ -284,7 +305,6 @@ export default function Home() {
         const rows = (payload.data ?? []).map(mapPosition);
         if (!cancelled) {
           setStandingsRows(rows);
-          setSelectedStanding((current) => rows.find((row) => row.id === current?.id) ?? rows[0] ?? null);
           setStandingsState("loaded");
         }
       } catch {
@@ -402,100 +422,6 @@ export default function Home() {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadAthleteBio() {
-      if (!selectedStandingId) {
-        setAthleteBio(null);
-        setAthleteBioState("idle");
-        return;
-      }
-
-      setAthleteBioState("loading");
-      try {
-        const params = new URLSearchParams({
-          resource: "athlete",
-          athleteId: String(selectedStandingId)
-        });
-        const payload = await fetchJson<ApiAthleteBioResponse>(`/api/rodeo?${params}`);
-        const bio = mapAthleteBio(payload);
-        if (!cancelled) {
-          setAthleteBio(bio);
-          setAthleteBioState(bio ? "loaded" : "error");
-        }
-      } catch {
-        if (!cancelled) setAthleteBioState("error");
-      }
-    }
-
-    loadAthleteBio();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedStandingId]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadSelectedWinners() {
-      if (!selectedResultId) return;
-      setDetailState("loading");
-      try {
-        const params = new URLSearchParams({
-          resource: "rodeo-results",
-          rodeoId: String(selectedResultId)
-        });
-        const payload = await fetchJson<ApiRodeoResults>(`/api/rodeo?${params}`);
-        const winners = mapWinners(payload, eventCodes[detailEvent]);
-        if (!cancelled) {
-          setSelectedResult((current) => (current?.id === selectedResultId ? { ...current, winners } : current));
-          setDetailState("loaded");
-        }
-      } catch {
-        if (!cancelled) setDetailState("error");
-      }
-    }
-
-    loadSelectedWinners();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedResultId, detailEvent]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadDaysheets() {
-      if (!selectedResultId || !selectedResult?.hasDaysheets) {
-        setDaysheets([]);
-        setDaysheetState("loaded");
-        return;
-      }
-
-      setDaysheetState("loading");
-      try {
-        const params = new URLSearchParams({
-          resource: "daysheet",
-          rodeoId: String(selectedResultId)
-        });
-        const payload = await fetchJson<ApiDaysheetResponse>(`/api/rodeo?${params}`);
-        const rows = mapDaysheets(payload);
-        if (!cancelled) {
-          setDaysheets(rows);
-          setDaysheetState("loaded");
-        }
-      } catch {
-        if (!cancelled) setDaysheetState("error");
-      }
-    }
-
-    loadDaysheets();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedResultId, selectedResult?.hasDaysheets]);
 
   useEffect(() => {
     let cancelled = false;
@@ -638,8 +564,17 @@ export default function Home() {
 
   function openRodeoDetail(rodeo: RodeoRow, source: RodeoDetailSource) {
     setSelectedResult(rodeo);
-    setDetailEvent(resultEvent);
-    setRodeoDetailSource(source);
+    const query = new URLSearchParams({
+      name: rodeo.name,
+      location: rodeo.location,
+      venue: rodeo.venueName,
+      start: rodeo.startDate,
+      end: rodeo.endDate,
+      payout: rodeo.payout,
+      daysheets: String(rodeo.hasDaysheets)
+    });
+    if (rodeo.websiteUrl) query.set("website", rodeo.websiteUrl);
+    router.push(`/${source}/${rodeo.id}?${query}`);
   }
 
   function updateResultEvent(event: EventName) {
@@ -665,7 +600,6 @@ export default function Home() {
     if (nextSettings.favoriteResultsEvent) {
       setResultsPage(1);
       setResultEvent(nextSettings.favoriteResultsEvent);
-      setDetailEvent(nextSettings.favoriteResultsEvent);
     }
   }
 
@@ -674,26 +608,42 @@ export default function Home() {
   }
 
   function openAthleteProfile(athlete: StandingRow) {
-    setSelectedStanding(athlete);
-    setAthleteProfileOpen(true);
-    setActiveTab("Standings");
-    setMoreSection("menu");
+    router.push(`/athletes/${athlete.id}`);
+  }
+
+  function openBusinessJournalListing(listing: BusinessJournalRow) {
+    const query = new URLSearchParams({
+      title: listing.title,
+      date: listing.dateText,
+      location: listing.locationText,
+      source: listing.source
+    });
+    router.push(`/listings/${encodeURIComponent(listing.id)}?${query}`);
   }
 
   function selectTab(tab: Tab) {
     setActiveTab(tab);
+    setMoreSection("menu");
     setSearchText("");
     setSearchExpanded(false);
-    setRodeoDetailSource(null);
-    setAthleteProfileOpen(false);
     setFollowAlertsOpen(false);
+    window.history.pushState({}, "", appRoute(tab));
+  }
+
+  function selectMoreSection(section: MoreSection) {
+    setActiveTab("More");
+    setMoreSection(section);
+    setSearchText("");
+    setSearchExpanded(false);
+    setFollowAlertsOpen(false);
+    window.history.pushState({}, "", appRoute("More", section));
   }
 
   return (
     <main className="browser-stage">
       <PwaRegister />
       <section className="app-window" aria-label="Rodeo Daily web app">
-        <CookieConsentBanner consent={appSettings.adConsent} onChoose={updateAdConsent} />
+        {preferencesLoaded && <CookieConsentBanner consent={appSettings.adConsent} onChoose={updateAdConsent} />}
         <header className="top-toolbar">
           <div className="identity">
             <RodeoDailyLogoMark />
@@ -716,9 +666,7 @@ export default function Home() {
               alertsEnabled={appSettings.followAlertsEnabled}
               onOpenAthlete={openAthleteProfile}
               onOpenSettings={() => {
-                setActiveTab("More");
-                setMoreSection("settings");
-                setFollowAlertsOpen(false);
+                selectMoreSection("settings");
               }}
               onClose={() => setFollowAlertsOpen(false)}
             />
@@ -745,7 +693,7 @@ export default function Home() {
             })}
           </aside>
 
-          <section className={showMobileContextStrip ? "phone-surface has-context-strip" : "phone-surface"}>
+          <section className="phone-surface">
             <div className="native-header">
               <div>
                 <h1>{activeTab}</h1>
@@ -769,26 +717,8 @@ export default function Home() {
               )}
             </div>
 
-            <MobileContextStrip
-              activeTab={activeTab}
-              athlete={selectedStanding}
-              rodeo={selectedResult}
-              hidden={!showMobileContextStrip}
-              onOpenAthlete={openAthleteProfile}
-              onOpenRodeo={openRodeoDetail}
-            />
-
             <div className="tab-scroll">
-              {activeTab === "Standings" && athleteProfileOpen && selectedStanding ? (
-                <AthleteProfileScreen
-                  athlete={selectedStanding}
-                  bio={athleteBio}
-                  state={athleteBioState}
-                  onBack={() => setAthleteProfileOpen(false)}
-                  toggleFavoriteAthlete={toggleFavoriteAthlete}
-                  toggleFollowedAthlete={toggleFollowedAthlete}
-                />
-              ) : activeTab === "Standings" && (
+              {activeTab === "Standings" && (
                 <StandingsView
                   standingType={standingType}
                   setStandingType={setStandingType}
@@ -798,67 +728,40 @@ export default function Home() {
                   setStandingYear={setStandingYear}
                   rows={filteredStandings}
                   state={standingsState}
-                  selectedStanding={selectedStanding}
-                  setSelectedStanding={setSelectedStanding}
                   onOpenAthlete={openAthleteProfile}
                   toggleFavoriteAthlete={toggleFavoriteAthlete}
                   toggleFollowedAthlete={toggleFollowedAthlete}
                 />
               )}
               {activeTab === "Results" && (
-                rodeoDetailSource === "results" && selectedResult ? (
-                  <RodeoDetailView
-                    rodeo={selectedResult}
-                    state={detailState}
-                    daysheetState={daysheetState}
-                    daysheets={daysheets}
-                    event={detailEvent}
-                    setEvent={setDetailEvent}
-                    source="results"
-                    onBack={() => setRodeoDetailSource(null)}
-                  />
-                ) : (
-                  <ResultsView
+                <ResultsView
                   resultEvent={resultEvent}
                   setResultEvent={updateResultEvent}
                   dateRange={resultsDateRange}
                   setDateRange={updateResultsDateRange}
                   selectedResult={selectedResult}
-                    onOpenRodeo={(rodeo) => openRodeoDetail(rodeo, "results")}
-                    onLoadMore={() => setResultsPage((page) => page + 1)}
-                    rows={resultsRows}
-                    state={resultsState}
-                  />
-                )
+                  onOpenRodeo={(rodeo) => openRodeoDetail(rodeo, "results")}
+                  onLoadMore={() => setResultsPage((page) => page + 1)}
+                  rows={resultsRows}
+                  state={resultsState}
+                />
               )}
               {activeTab === "Schedule" && (
-                rodeoDetailSource === "schedule" && selectedResult ? (
-                  <RodeoDetailView
-                    rodeo={selectedResult}
-                    state={detailState}
-                    daysheetState={daysheetState}
-                    daysheets={daysheets}
-                    event={detailEvent}
-                    setEvent={setDetailEvent}
-                    source="schedule"
-                    onBack={() => setRodeoDetailSource(null)}
-                  />
-                ) : (
-                  <ScheduleView
-                    rows={scheduleRows}
-                    state={scheduleState}
-                    dateRange={scheduleDateRange}
-                    setDateRange={updateScheduleDateRange}
-                    selectedResult={selectedResult}
-                    onOpenRodeo={(rodeo) => openRodeoDetail(rodeo, "schedule")}
-                    onLoadMore={() => setSchedulePage((page) => page + 1)}
-                  />
-                )
+                <ScheduleView
+                  rows={scheduleRows}
+                  state={scheduleState}
+                  dateRange={scheduleDateRange}
+                  setDateRange={updateScheduleDateRange}
+                  selectedResult={selectedResult}
+                  onOpenRodeo={(rodeo) => openRodeoDetail(rodeo, "schedule")}
+                  onLoadMore={() => setSchedulePage((page) => page + 1)}
+                />
               )}
               {activeTab === "More" && (
                 <MoreView
                   section={moreSection}
-                  setSection={setMoreSection}
+                  setSection={selectMoreSection}
+                  onOpenListing={openBusinessJournalListing}
                   favoriteAthletes={favoriteAthleteRows}
                   followedCount={followedAthletes.length}
                   scheduleRows={scheduleRows}
@@ -922,21 +825,6 @@ export default function Home() {
             </nav>
           </section>
 
-          <aside className="detail-pane">
-            {activeTab === "Standings" && selectedStanding ? (
-              <AthleteDetailPane
-                athlete={selectedStanding}
-                bio={athleteBio}
-                state={athleteBioState}
-                toggleFavoriteAthlete={toggleFavoriteAthlete}
-                toggleFollowedAthlete={toggleFollowedAthlete}
-              />
-            ) : selectedResult ? (
-              <DetailPane rodeo={selectedResult} state={detailState} />
-            ) : (
-              <EmptyDetailPane />
-            )}
-          </aside>
         </div>
       </section>
     </main>

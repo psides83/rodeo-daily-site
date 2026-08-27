@@ -14,6 +14,9 @@ export const metadata: Metadata = {
   icons: {
     icon: "/icon.svg",
     apple: "/apple-touch-icon.svg"
+  },
+  other: {
+    "google-adsense-account": "ca-pub-4837925489125062"
   }
 };
 

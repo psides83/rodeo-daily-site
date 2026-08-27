@@ -110,7 +110,7 @@ export function mapAthleteBio(payload: ApiAthleteBioResponse): AthleteBio | null
     worldTitles: bio.WorldTitles ?? null,
     nfrQualifications: bio.NFRQualifications ?? null,
     dateJoined: formatDate(bio.DateJoined ?? undefined),
-    biographyText: bio.BiographyText?.trim() ?? "",
+    biography: parseAthleteBiography(bio.BiographyText),
     events: bio.EventTypes ?? [],
     rankings: (bio.Rankings ?? []).slice(0, 6).map((ranking, index) => ({
       id: `${ranking.EventName ?? "event"}-${ranking.Season ?? index}-${ranking.RankType ?? "rank"}`,
@@ -133,8 +133,39 @@ export function mapAthleteBio(payload: ApiAthleteBioResponse): AthleteBio | null
         resultValue: formatAthleteResultValue(result.Time, result.Score),
         round: result.Round?.trim() ?? "",
         endDate: formatDate(result.EndDate)
-      }))
+      })),
+    career: (bio.Career ?? [])
+      .slice()
+      .sort((left, right) => (right.Season ?? 0) - (left.Season ?? 0))
+      .map((season, index) => ({
+        id: `${season.Season ?? index}-${season.EventType ?? "event"}`,
+        season: season.Season ?? 0,
+        eventType: season.EventType?.trim() ?? "",
+        earnings: formatCurrency(season.Earnings ?? 0),
+        worldTitles: season.WorldTitles ?? 0,
+        nfrQualified: Boolean(season.NFRQualified)
+      })),
+    highlights: parseHighlightVideos(bio.VideoHighlights)
   };
+}
+
+function parseHighlightVideos(value?: string | null) {
+  const seen = new Set<string>();
+  return (value ?? "")
+    .split(",")
+    .map((path) => path.trim().replace("/videos", "/video"))
+    .filter(Boolean)
+    .flatMap((path) => {
+      const id = path
+        .split("/")
+        .map((segment) => segment.trim())
+        .reverse()
+        .find((segment) => /^\d+$/.test(segment));
+      if (!id || seen.has(id)) return [];
+      seen.add(id);
+      return [{ id, path }];
+    })
+    .sort((left, right) => right.id.localeCompare(left.id));
 }
 
 export function mapAthleteSearchRows(payload: ApiAthleteSearchResponse, favoriteIds: number[]): AthleteSearchRow[] {
@@ -457,6 +488,123 @@ export function detailField(id: string, label: string, value?: string | null) {
 
 export function cleanText(value?: string | null) {
   return value?.trim() ?? "";
+}
+
+function parseAthleteBiography(value?: string | null) {
+  const html = cleanText(value);
+  if (!html) return { facts: [], summary: [], sections: [] };
+
+  const blocks = html
+    .replace(/<\s*strong[^>]*>([\s\S]*?)<\/\s*strong\s*>/gi, (_, text: string) => `[[strong]]${text}[[/strong]]`)
+    .replace(/<\s*br\s*\/?\s*>/gi, "\n")
+    .replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi, "\n")
+    .replace(/<\s*(p|div|li|h[1-6])[^>]*>/gi, "\n")
+    .split(/\n+/)
+    .map(parseBiographyBlock)
+    .filter((block): block is { text: string; strongText: string } => Boolean(block));
+
+  const facts: Array<{ id: string; label: string; value: string }> = [];
+  const summary: string[] = [];
+  const sections: Array<{ id: string; title: string; paragraphs: string[] }> = [];
+  let currentSection: { id: string; title: string; paragraphs: string[] } | null = null;
+
+  for (const block of blocks) {
+    const fact = parseBiographyFact(block);
+    if (fact && !currentSection) {
+      facts.push(fact);
+      continue;
+    }
+
+    const title = normalizeBiographyHeading(block.text, block.strongText);
+    if (title) {
+      currentSection = { id: slugify(title), title, paragraphs: [] };
+      sections.push(currentSection);
+    } else if (currentSection) {
+      currentSection.paragraphs.push(block.text);
+    } else {
+      summary.push(block.text);
+    }
+  }
+
+  return { facts, summary, sections: sections.filter((section) => section.paragraphs.length > 0) };
+}
+
+function parseBiographyBlock(block: string) {
+  const decoded = decodeHtmlEntities(stripHtml(block)).replace(/\s+/g, " ").trim();
+  if (!decoded) return null;
+  const strongMatches = Array.from(decoded.matchAll(/\[\[strong\]\](.*?)\[\[\/strong\]\]/g))
+    .map((match) => match[1].replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  const text = decoded.replace(/\[\[\/?strong\]\]/g, "").replace(/\s+/g, " ").trim();
+  if (!text) return null;
+  return { text, strongText: strongMatches[0] ?? "" };
+}
+
+function parseBiographyFact(block: { text: string; strongText: string }) {
+  const label = block.strongText.replace(/:$/, "").trim();
+  if (!label || !block.strongText.includes(":")) return null;
+  const value = block.text
+    .replace(block.strongText, "")
+    .replace(/^:/, "")
+    .trim();
+  if (!value) return null;
+  return { id: slugify(label), label, value };
+}
+
+function normalizeBiographyHeading(value: string, strongText = "") {
+  const cleaned = value.replace(/:$/, "").trim();
+  const strongHeading = strongText.replace(/:$/, "").trim();
+  const knownHeadings = new Set([
+    "All-Around",
+    "Awards",
+    "Bull Riding",
+    "Career Highlights",
+    "Education",
+    "Family",
+    "Hobbies",
+    "Injuries",
+    "Personal",
+    "Professional",
+    "Rodeo Career",
+    "Saddle Bronc Riding",
+    "Sponsors"
+  ]);
+  if (knownHeadings.has(cleaned)) return cleaned;
+  if (knownHeadings.has(strongHeading) && cleaned === strongHeading) return strongHeading;
+  if (/^\d{4}\s+Highlights$/.test(cleaned)) return cleaned;
+  return cleaned.length <= 34 && /^[A-Z][A-Za-z\s&/-]+$/.test(cleaned) ? cleaned : "";
+}
+
+function stripHtml(value: string) {
+  return value.replace(/<[^>]*>/g, "");
+}
+
+function decodeHtmlEntities(value: string) {
+  const namedEntities: Record<string, string> = {
+    amp: "&",
+    apos: "'",
+    hellip: "...",
+    nbsp: " ",
+    quot: "\"",
+    rsquo: "'",
+    lsquo: "'",
+    rdquo: "\"",
+    ldquo: "\""
+  };
+
+  return value.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (entity, code: string) => {
+    const normalized = code.toLowerCase();
+    if (normalized[0] === "#") {
+      const radix = normalized[1] === "x" ? 16 : 10;
+      const number = Number.parseInt(normalized.slice(radix === 16 ? 2 : 1), radix);
+      return Number.isFinite(number) ? String.fromCharCode(number) : entity;
+    }
+    return namedEntities[normalized] ?? entity;
+  });
+}
+
+function slugify(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
 function makeNfrRounds(contestant: ApiNfrContestant, currentRound: number, isRoughStock: boolean) {

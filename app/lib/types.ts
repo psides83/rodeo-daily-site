@@ -121,10 +121,30 @@ export type AthleteBio = {
   worldTitles: number | null;
   nfrQualifications: number | null;
   dateJoined: string;
-  biographyText: string;
+  biography: AthleteBiography;
   events: string[];
   rankings: AthleteBioRanking[];
   recentResults: AthleteBioResult[];
+  career: AthleteCareerSeason[];
+  highlights: AthleteHighlightVideo[];
+};
+
+export type AthleteBiography = {
+  facts: AthleteBiographyFact[];
+  summary: string[];
+  sections: AthleteBiographySection[];
+};
+
+export type AthleteBiographyFact = {
+  id: string;
+  label: string;
+  value: string;
+};
+
+export type AthleteBiographySection = {
+  id: string;
+  title: string;
+  paragraphs: string[];
 };
 
 export type AthleteBioRanking = {
@@ -145,6 +165,20 @@ export type AthleteBioResult = {
   resultValue: string;
   round: string;
   endDate: string;
+};
+
+export type AthleteCareerSeason = {
+  id: string;
+  season: number;
+  eventType: string;
+  earnings: string;
+  worldTitles: number;
+  nfrQualified: boolean;
+};
+
+export type AthleteHighlightVideo = {
+  id: string;
+  path: string;
 };
 
 export type DaysheetRow = {
@@ -329,6 +363,7 @@ export type ApiAthleteBio = {
   NFRQualifications?: number | null;
   DateJoined?: string | null;
   BiographyText?: string;
+  VideoHighlights?: string | null;
   EventTypes?: string[];
   Rankings?: Array<{
     Rank?: string;
@@ -349,6 +384,13 @@ export type ApiAthleteBio = {
     Time?: number;
     Score?: number;
     Round?: string;
+  }>;
+  Career?: Array<{
+    Season?: number;
+    EventType?: string;
+    Earnings?: number;
+    WorldTitles?: number;
+    NFRQualified?: boolean;
   }>;
 };
 

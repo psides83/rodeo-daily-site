@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ArrowLeft,
   ArrowDown,
   ArrowUp,
   Bell,
@@ -23,7 +24,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
-import type { ReactNode } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 import { useEffect, useState } from "react";
 import type {
   AppSettings,
@@ -104,17 +105,14 @@ const nfrEvents: EventName[] = [
   "Bull Riding"
 ];
 
+const athleteProfileTabs = ["Stats", "Results", "Career", "Highlights"] as const;
+type AthleteProfileTab = (typeof athleteProfileTabs)[number];
+
 export function RodeoDailyLogoMark() {
   return (
-    <svg className="logo-mark" viewBox="0 0 180 180" role="img" aria-label="Rodeo Daily">
-      <rect width="180" height="180" rx="40" />
-      <path className="logo-arc outer" d="M28 112c23-40 101-40 124 0" />
-      <path className="logo-arc inner" d="M52 76c13-23 63-23 76 0" />
-      <path className="logo-bar" d="M60 96h60" />
-      <text x="90" y="139" fontSize="38" fontWeight="900" textAnchor="middle">
-        RD
-      </text>
-    </svg>
+    <span className="logo-mark" role="img" aria-label="Rodeo Daily">
+      <Image src="/rodeo-daily-icon.png" alt="" width={42} height={42} priority />
+    </span>
   );
 }
 
@@ -201,8 +199,6 @@ export function StandingsView({
   setStandingYear,
   rows,
   state,
-  selectedStanding,
-  setSelectedStanding,
   onOpenAthlete,
   toggleFavoriteAthlete,
   toggleFollowedAthlete
@@ -215,8 +211,6 @@ export function StandingsView({
   setStandingYear: (year: string) => void;
   rows: StandingRow[];
   state: LoadState;
-  selectedStanding: StandingRow | null;
-  setSelectedStanding: (athlete: StandingRow) => void;
   onOpenAthlete: (athlete: StandingRow) => void;
   toggleFavoriteAthlete: (athlete: StandingRow) => void;
   toggleFollowedAthlete: (athleteId: number) => void;
@@ -257,8 +251,6 @@ export function StandingsView({
             <StandingCard
               key={position.id}
               position={position}
-              selected={selectedStanding?.id === position.id}
-              onSelect={() => setSelectedStanding(position)}
               onOpenProfile={() => onOpenAthlete(position)}
               onToggleFavorite={() => toggleFavoriteAthlete(position)}
               onToggleFollow={() => toggleFollowedAthlete(position.id)}
@@ -274,44 +266,69 @@ export function StandingsView({
 
 function StandingCard({
   position,
-  selected,
-  onSelect,
   onOpenProfile,
   onToggleFavorite,
   onToggleFollow
 }: {
   position: StandingRow;
-  selected: boolean;
-  onSelect: () => void;
   onOpenProfile: () => void;
   onToggleFavorite: () => void;
   onToggleFollow: () => void;
 }) {
+  function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onOpenProfile();
+    }
+  }
+
   return (
-    <article className={selected ? "app-card standings-card active" : "app-card standings-card"}>
-      <button className="card-main" onClick={onSelect}>
-        <AthleteAvatar athlete={position} size="card" />
-        <div>
+    <article
+      className="app-card standings-card"
+      role="button"
+      tabIndex={0}
+      onClick={onOpenProfile}
+      onKeyDown={handleKeyDown}
+      aria-label={`Open ${position.name} profile`}
+    >
+      <div className="standing-copy">
+        <div className="standing-name-stack">
           <span className="rank-badge">#{position.place}</span>
-          <h3>{position.name}</h3>
-          <p>{position.hometown}</p>
+          <div>
+            <h3>{position.name}</h3>
+            <p>{position.hometown}</p>
+          </div>
         </div>
-      </button>
+      </div>
       <div className="card-metrics">
         <div className="icons">
-          <button aria-label={position.followed ? "Unfollow athlete" : "Follow athlete"} onClick={onToggleFollow}>
+          <button
+            aria-label={position.followed ? "Unfollow athlete" : "Follow athlete"}
+            className={position.followed ? "status-control active" : "status-control"}
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleFollow();
+            }}
+          >
             <Bell size={16} fill={position.followed ? "currentColor" : "none"} />
           </button>
-          <button aria-label={position.favorite ? "Remove favorite athlete" : "Favorite athlete"} onClick={onToggleFavorite}>
+          <button
+            aria-label={position.favorite ? "Remove favorite athlete" : "Favorite athlete"}
+            className={position.favorite ? "status-control active" : "status-control"}
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleFavorite();
+            }}
+          >
             <Star size={16} fill={position.favorite ? "currentColor" : "none"} />
           </button>
           <ChevronRight size={17} />
         </div>
         <span>{position.metricLabel}</span>
         <strong>{position.metric}</strong>
-        <button className="profile-link-button" onClick={onOpenProfile}>
-          View Profile
-        </button>
+      </div>
+      <div className="standing-portrait" aria-hidden="true">
+        <AthleteAvatar athlete={position} size="card" />
       </div>
     </article>
   );
@@ -625,6 +642,7 @@ export function RodeoDetailView({
 export function MoreView({
   section,
   setSection,
+  onOpenListing,
   favoriteAthletes,
   followedCount,
   scheduleRows,
@@ -649,6 +667,7 @@ export function MoreView({
 }: {
   section: MoreSection;
   setSection: (section: MoreSection) => void;
+  onOpenListing: (listing: BusinessJournalRow) => void;
   favoriteAthletes: SavedAthlete[];
   followedCount: number;
   scheduleRows: RodeoRow[];
@@ -691,7 +710,12 @@ export function MoreView({
   if (section === "listings") {
     return (
       <SubViewShell title="Rodeo Listings" onBack={() => setSection("menu")}>
-        <BusinessJournalListingsView rows={businessJournalRows} state={businessJournalState} fallbackRows={scheduleRows} />
+        <BusinessJournalListingsView
+          rows={businessJournalRows}
+          state={businessJournalState}
+          fallbackRows={scheduleRows}
+          onOpenListing={onOpenListing}
+        />
       </SubViewShell>
     );
   }
@@ -1211,13 +1235,14 @@ function ChampionRow({ champion, showEvent }: { champion: PastChampion; showEven
 function BusinessJournalListingsView({
   rows,
   state,
-  fallbackRows
+  fallbackRows,
+  onOpenListing
 }: {
   rows: BusinessJournalRow[];
   state: LoadState;
   fallbackRows: RodeoRow[];
+  onOpenListing: (listing: BusinessJournalRow) => void;
 }) {
-  const [selectedListing, setSelectedListing] = useState<BusinessJournalRow | null>(null);
   const [query, setQuery] = useState("");
   const [sortOption, setSortOption] = useState("Event Date (Soonest)");
   const [dateMode, setDateMode] = useState("All Dates");
@@ -1228,10 +1253,6 @@ function BusinessJournalListingsView({
     .filter((item) => businessJournalMatchesSearch(item, query))
     .filter((item) => businessJournalMatchesDate(item, dateMode, range))
     .sort((left, right) => sortBusinessJournalRows(left, right, sortOption));
-
-  if (selectedListing) {
-    return <BusinessJournalListingDetailView item={selectedListing} onBack={() => setSelectedListing(null)} />;
-  }
 
   return (
     <div className="business-journal-view">
@@ -1274,7 +1295,7 @@ function BusinessJournalListingsView({
           <EmptyState title="Listings Unavailable" subtitle="The Business Journal feed could not be loaded." icon={Newspaper} />
         ) : visibleRows.length > 0 ? (
           visibleRows.map((item) => (
-            <button className="app-card business-listing-card" key={item.id} onClick={() => setSelectedListing(item)}>
+            <button className="app-card business-listing-card" key={item.id} onClick={() => onOpenListing(item)}>
               <div className="listing-card-title">
                 <h3>{item.title}</h3>
                 {item.subtitle && <p>{item.subtitle}</p>}
@@ -1310,7 +1331,7 @@ function BusinessJournalListingsView({
   );
 }
 
-function BusinessJournalListingDetailView({ item, onBack }: { item: BusinessJournalRow; onBack: () => void }) {
+export function BusinessJournalListingDetailView({ item, onBack }: { item: BusinessJournalRow; onBack: () => void }) {
   const detailFields = item.detailFields.filter((field) => !["Publish Date", "Rodeo Name"].includes(field.label));
 
   return (
@@ -1539,128 +1560,278 @@ export function AthleteDetailPane({
   toggleFavoriteAthlete: (athlete: StandingRow) => void;
   toggleFollowedAthlete: (athleteId: number) => void;
 }) {
+  const [selectedTab, setSelectedTab] = useState<AthleteProfileTab>("Stats");
+  const [showBioDocument, setShowBioDocument] = useState(false);
   const displayImageAthlete = bio?.imageUrl ? { name: bio.name || athlete.name, imageUrl: bio.imageUrl } : athlete;
+  const hasBio = Boolean(
+    bio && (bio.biography.facts.length > 0 || bio.biography.summary.length > 0 || bio.biography.sections.length > 0)
+  );
+  const currentRanking = bio?.rankings[0];
+  const eventLabel = currentRanking?.eventName || bio?.events[0] || athlete.metricLabel;
+  const seasonRanking = currentRanking ? `#${currentRanking.rank} ${currentRanking.eventName}` : athlete.metric ? `${athlete.metricLabel}: ${athlete.metric}` : "";
+
+  function selectTab(tab: AthleteProfileTab) {
+    setSelectedTab(tab);
+    setShowBioDocument(false);
+  }
 
   return (
-    <div className="detail-card">
-      <span className="kicker">Athlete Bio</span>
-      <AthleteAvatar athlete={displayImageAthlete} size="detail" />
-      <h2>{bio?.name || athlete.name}</h2>
-      <p>{bio?.hometown || athlete.hometown || "No hometown listed"}</p>
-      <div className="metric-grid">
-        <div>
-          <span>Rank</span>
-          <strong>#{athlete.place}</strong>
-        </div>
-        <div>
-          <span>{athlete.metricLabel}</span>
-          <strong>{athlete.metric}</strong>
-        </div>
-      </div>
-
-      {state === "loading" && (
-        <div className="athlete-bio-section">
-          <span className="loader" />
-          <strong>Loading athlete profile</strong>
-        </div>
-      )}
-
-      {state === "error" && (
-        <div className="athlete-bio-section">
-          <strong>Profile unavailable</strong>
-          <p>The full athlete profile could not be loaded right now.</p>
-        </div>
-      )}
-
-      {state === "loaded" && bio && (
-        <>
-          <div className="athlete-stat-grid">
-            {bio.age !== null && (
-              <div>
-                <span>Age</span>
-                <strong>{bio.age}</strong>
-              </div>
-            )}
-            {bio.totalEarnings && (
-              <div>
-                <span>Total</span>
-                <strong>{bio.totalEarnings}</strong>
-              </div>
-            )}
-            {bio.yearEarnings && (
-              <div>
-                <span>This Year</span>
-                <strong>{bio.yearEarnings}</strong>
-              </div>
-            )}
-            {bio.worldTitles !== null && (
-              <div>
-                <span>World Titles</span>
-                <strong>{bio.worldTitles}</strong>
-              </div>
-            )}
-            {bio.nfrQualifications !== null && (
-              <div>
-                <span>NFR Qual.</span>
-                <strong>{bio.nfrQualifications}</strong>
-              </div>
-            )}
+    <div className="athlete-profile-shell">
+      <section className="athlete-profile-hero">
+        {displayImageAthlete.imageUrl && <Image src={displayImageAthlete.imageUrl} alt="" fill priority sizes="760px" />}
+        <div className="athlete-profile-hero-scrim" />
+        <div className="athlete-profile-hero-content">
+          <div className="athlete-profile-title-row">
+            <div>
+              <h1>{bio?.name || athlete.name}</h1>
+              <p>{eventLabel}</p>
+            </div>
+            <div className="athlete-profile-action-buttons">
+              <button aria-label={athlete.favorite ? "Remove favorite athlete" : "Favorite athlete"} onClick={() => toggleFavoriteAthlete(athlete)}>
+                <Star size={18} fill={athlete.favorite ? "currentColor" : "none"} />
+              </button>
+              <button aria-label={athlete.followed ? "Unfollow athlete" : "Follow athlete"} onClick={() => toggleFollowedAthlete(athlete.id)}>
+                <Bell size={18} fill={athlete.followed ? "currentColor" : "none"} />
+              </button>
+            </div>
           </div>
 
-          {bio.biographyText && (
-            <section className="athlete-bio-section">
-              <strong>Bio</strong>
-              <p>{bio.biographyText}</p>
-            </section>
-          )}
+          {seasonRanking && <strong className="athlete-season-ranking">{seasonRanking}</strong>}
 
-          {bio.rankings.length > 0 && (
-            <section className="athlete-bio-section">
-              <strong>Rankings</strong>
-              <div className="athlete-ranking-list">
-                {bio.rankings.map((ranking) => (
-                  <div key={ranking.id}>
-                    <span>{ranking.rank}</span>
-                    <p>
-                      {ranking.eventName}
-                      {ranking.season ? ` - ${ranking.season}` : ""}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+          <div className="athlete-hero-stat-row">
+            <span>{bio?.nfrQualifications ? `${bio.nfrQualifications} NFR${bio.nfrQualifications === 1 ? "" : "'s"}` : "No NFRs"}</span>
+            <span>{bio?.worldTitles ? `${bio.worldTitles} World Title${bio.worldTitles === 1 ? "" : "s"}` : "No World Titles"}</span>
+            <span>{bio?.age ? `${bio.age} Years old` : "Age unknown"}</span>
+          </div>
 
-          {bio.recentResults.length > 0 && (
-            <section className="athlete-bio-section">
-              <strong>Recent Results</strong>
-              <div className="athlete-result-list">
-                {bio.recentResults.map((result) => (
-                  <div key={result.id}>
-                    <h3>{result.rodeoName}</h3>
-                    <p>{[result.location, result.eventType, result.round].filter(Boolean).join(" - ")}</p>
-                    <span>
-                      {result.place ? `#${result.place}` : "Result"} {result.resultValue || result.payoff}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-        </>
-      )}
+          <div className="athlete-profile-tabs" role="tablist" aria-label="Athlete profile sections">
+            {athleteProfileTabs.map((tab) => (
+              <button
+                aria-selected={!showBioDocument && selectedTab === tab}
+                className={!showBioDocument && selectedTab === tab ? "active" : undefined}
+                key={tab}
+                onClick={() => selectTab(tab)}
+                role="tab"
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
 
-      <div className="detail-actions">
-        <button onClick={() => toggleFavoriteAthlete(athlete)}>
-          <Star size={17} fill={athlete.favorite ? "currentColor" : "none"} />
-          {athlete.favorite ? "Favorited" : "Favorite"}
-        </button>
-        <button onClick={() => toggleFollowedAthlete(athlete.id)}>
-          <Bell size={17} fill={athlete.followed ? "currentColor" : "none"} />
-          {athlete.followed ? "Following" : "Follow"}
-        </button>
+      <section className="athlete-profile-tab-content">
+        {state === "loading" && <LoadingState title="Loading athlete profile" />}
+        {state === "error" && <EmptyState title="Profile Unavailable" subtitle="The full athlete profile could not be loaded right now." icon={Users} />}
+        {state === "loaded" && bio && showBioDocument && <AthleteBioDocument bio={bio} onBack={() => setShowBioDocument(false)} />}
+        {state === "loaded" && bio && !showBioDocument && selectedTab === "Stats" && (
+          <AthleteStatsTab bio={bio} athlete={athlete} hasBio={hasBio} onOpenBio={() => setShowBioDocument(true)} />
+        )}
+        {state === "loaded" && bio && !showBioDocument && selectedTab === "Results" && <AthleteResultsTab bio={bio} />}
+        {state === "loaded" && bio && !showBioDocument && selectedTab === "Career" && <AthleteCareerTab bio={bio} />}
+        {state === "loaded" && bio && !showBioDocument && selectedTab === "Highlights" && <AthleteHighlightsTab bio={bio} />}
+      </section>
+    </div>
+  );
+}
+
+function AthleteStatsTab({
+  bio,
+  athlete,
+  hasBio,
+  onOpenBio
+}: {
+  bio: AthleteBio;
+  athlete: StandingRow;
+  hasBio: boolean;
+  onOpenBio: () => void;
+}) {
+  const stats = [
+    { label: "Season Rank", value: athlete.place ? `#${athlete.place}` : bio.rankings[0]?.rank ? `#${bio.rankings[0].rank}` : "Unranked" },
+    { label: athlete.metricLabel || "This Year", value: athlete.metric || bio.yearEarnings || "-" },
+    { label: "Career Earnings", value: bio.totalEarnings || "-" },
+    { label: "Date Joined", value: bio.dateJoined || "-" }
+  ];
+
+  return (
+    <div className="athlete-profile-stack">
+      <section className="app-card athlete-tab-header-card">
+        <div>
+          <h2>Career Stats</h2>
+          <p>{bio.events[0] || athlete.metricLabel}</p>
+        </div>
+        {hasBio && (
+          <button className="athlete-bio-text-link" onClick={onOpenBio}>
+            Bio <ChevronRight size={16} />
+          </button>
+        )}
+      </section>
+      <div className="athlete-stat-grid">
+        {stats.map((stat) => (
+          <div key={stat.label}>
+            <span>{stat.label}</span>
+            <strong>{stat.value}</strong>
+          </div>
+        ))}
+      </div>
+      <section className="app-card athlete-performance-card">
+        <strong>Best Available Snapshot</strong>
+        <div>
+          <span>World Titles</span>
+          <p>{bio.worldTitles ?? 0}</p>
+        </div>
+        <div>
+          <span>NFR Qualifications</span>
+          <p>{bio.nfrQualifications ?? 0}</p>
+        </div>
+        <div>
+          <span>This Year</span>
+          <p>{bio.yearEarnings || "-"}</p>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function AthleteResultsTab({ bio }: { bio: AthleteBio }) {
+  if (bio.recentResults.length === 0) {
+    return <EmptyState title="No Results Found" subtitle="No recent rodeo results are available for this athlete." icon={ListOrdered} />;
+  }
+
+  return (
+    <div className="athlete-profile-stack">
+      <section className="app-card athlete-tab-header-card">
+        <div>
+          <h2>Results</h2>
+          <p>{bio.recentResults.length} recent results</p>
+        </div>
+      </section>
+      <div className="athlete-result-list">
+        {bio.recentResults.map((result) => (
+          <div className="app-card athlete-result-row" key={result.id}>
+            <div>
+              <h3>{result.rodeoName}</h3>
+              <p>{[result.location, result.endDate, result.round].filter(Boolean).join(" - ")}</p>
+            </div>
+            <span>{result.place ? `#${result.place}` : "Result"}</span>
+            <strong>{result.resultValue || result.payoff}</strong>
+          </div>
+        ))}
       </div>
     </div>
+  );
+}
+
+function AthleteCareerTab({ bio }: { bio: AthleteBio }) {
+  if (bio.career.length === 0 && bio.rankings.length === 0) {
+    return <EmptyState title="No Career Data" subtitle="No career rankings are available for this athlete." icon={ListOrdered} />;
+  }
+
+  return (
+    <div className="athlete-profile-stack">
+      <section className="app-card athlete-tab-header-card">
+        <div>
+          <h2>Career</h2>
+          <p>{bio.career.length || bio.rankings.length} seasons</p>
+        </div>
+      </section>
+      <div className="athlete-career-table">
+        <div className="athlete-career-heading">
+          <span>Season</span>
+          <span>Rank</span>
+          <span>Earnings</span>
+        </div>
+        {bio.career.length > 0
+          ? bio.career.map((season) => (
+              <div className="app-card athlete-career-row" key={season.id}>
+                <strong>{season.season || "-"}</strong>
+                <span>{season.nfrQualified ? "NFR" : season.worldTitles ? `${season.worldTitles} WT` : season.eventType || "-"}</span>
+                <p>{season.earnings}</p>
+              </div>
+            ))
+          : bio.rankings.map((ranking) => (
+              <div className="app-card athlete-career-row" key={ranking.id}>
+                <strong>{ranking.season || "-"}</strong>
+                <span>{ranking.rank ? `#${ranking.rank}` : "-"}</span>
+                <p>{ranking.eventName}</p>
+              </div>
+            ))}
+      </div>
+    </div>
+  );
+}
+
+function AthleteHighlightsTab({ bio }: { bio: AthleteBio }) {
+  if (bio.highlights.length === 0) {
+    return (
+      <EmptyState
+        title="No Highlights Available"
+        subtitle={`${bio.name} doesn't have any highlights available. Videos will be added as they become available.`}
+        icon={Trophy}
+      />
+    );
+  }
+
+  return (
+    <div className="athlete-profile-stack">
+      <section className="app-card athlete-tab-header-card">
+        <div>
+          <h2>Highlights</h2>
+          <p>{bio.highlights.length} videos</p>
+        </div>
+      </section>
+      {bio.highlights.map((video) => (
+        <iframe
+          allow="autoplay; fullscreen; picture-in-picture"
+          className="athlete-highlight-video"
+          key={video.id}
+          src={`https://player.vimeo.com/video/${video.id}`}
+          title={`${bio.name} highlight video`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function AthleteBioDocument({ bio, onBack }: { bio: AthleteBio; onBack: () => void }) {
+  const hasBio = bio.biography.facts.length > 0 || bio.biography.summary.length > 0 || bio.biography.sections.length > 0;
+
+  return (
+    <section className="app-card athlete-bio-document">
+      <div className="athlete-bio-document-header">
+        <button className="athlete-bio-text-link" onClick={onBack}>
+          Stats
+        </button>
+        <h2>{bio.name}</h2>
+      </div>
+      {!hasBio ? (
+        <EmptyState title="No Bio Available" subtitle={`${bio.name} does not have a published bio yet.`} icon={Users} />
+      ) : (
+        <div className="athlete-biography">
+          {bio.biography.facts.length > 0 && (
+            <div className="athlete-biography-facts">
+              {bio.biography.facts.map((fact) => (
+                <div key={fact.id}>
+                  <span>{fact.label}</span>
+                  <p>{fact.value}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {bio.biography.summary.map((paragraph, index) => (
+            <p key={`summary-${index}`}>{paragraph}</p>
+          ))}
+          {bio.biography.sections.map((section) => (
+            <div className="athlete-biography-section" key={section.id}>
+              <h3>{section.title}</h3>
+              {section.paragraphs.map((paragraph, index) => (
+                <p key={`${section.id}-${index}`}>{paragraph}</p>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -1681,8 +1852,11 @@ export function AthleteProfileScreen({
 }) {
   return (
     <div className="stack athlete-profile-screen">
-      <section className="app-card subview-header">
-        <button onClick={onBack}>Back</button>
+      <section className="app-card subview-header athlete-profile-nav">
+        <button onClick={onBack}>
+          <ArrowLeft size={16} />
+          Back
+        </button>
         <h2>{bio?.name || athlete.name}</h2>
       </section>
       <AthleteDetailPane
