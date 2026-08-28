@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Calendar, CircleDollarSign, Ellipsis, ListOrdered, Menu, Search, X } from "lucide-react";
+import { Calendar, CircleDollarSign, Ellipsis, ListOrdered, Menu, Search, X } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -8,7 +8,6 @@ import { PwaRegister } from "./pwa-register";
 import { GoogleAdsController } from "./components/google-ads";
 import {
   CookieConsentBanner,
-  FollowAlertsPanel,
   MoreView,
   ResultsView,
   RodeoDailyLogoMark,
@@ -16,7 +15,9 @@ import {
   StandingsView
 } from "./components/rodeo-views";
 import {
+  circuits,
   dateRangeParams,
+  defaultCircuitId,
   eventCodes,
   fetchJson,
   mapAthleteSearchRows,
@@ -26,6 +27,7 @@ import {
   mapPosition,
   mapRodeo,
   rodeoHasEvent,
+  sortStandingsPositions,
   standingTypes
 } from "./lib/rodeo-data";
 import type {
@@ -183,6 +185,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("Standings");
   const [standingType, setStandingType] = useState<StandingType>("World Standings");
   const [standingEvent, setStandingEvent] = useState<EventName>("Tie-Down Roping");
+  const [selectedCircuitId, setSelectedCircuitId] = useState(defaultCircuitId);
   const [standingYear, setStandingYear] = useState("2026");
   const [resultEvent, setResultEvent] = useState<EventName>("Tie-Down Roping");
   const [nfrEvent, setNfrEvent] = useState<EventName>("Bareback Riding");
@@ -219,11 +222,14 @@ export default function Home() {
   const resultsSearchText = activeTab === "Results" ? searchText : "";
   const scheduleSearchText = activeTab === "Schedule" ? searchText : "";
   const headerSubtitle = useMemo(() => {
-    if (activeTab === "Standings") return `${standingEvent} - ${standingYear} ${standingType}`;
+    if (activeTab === "Standings") {
+      const selectedCircuit = circuits.find((circuit) => circuit.id === selectedCircuitId) ?? circuits[0];
+      return `${standingType === "Circuit" ? selectedCircuit.title : standingEvent} - ${standingYear} ${standingType}`;
+    }
     if (activeTab === "Results") return `${resultEvent} Rodeo Results`;
     if (activeTab === "Schedule") return "Upcoming Rodeos";
     return "More Features";
-  }, [activeTab, resultEvent, standingEvent, standingType, standingYear]);
+  }, [activeTab, resultEvent, selectedCircuitId, standingEvent, standingType, standingYear]);
 
   const searchPlaceholder = useMemo(() => {
     if (activeTab === "Standings") return "Search athletes...";
@@ -380,8 +386,12 @@ export default function Home() {
           type: standingTypes[standingType],
           event: eventCodes[standingEvent]
         });
-        const payload = await fetchJson<{ data?: ApiPosition[] }>(`/api/rodeo?${params}`);
-        const rows = (payload.data ?? []).map(mapPosition);
+        if (standingType === "Circuit") {
+          params.set("circuitId", selectedCircuitId);
+        }
+        const payload = await fetchJson<{ data?: ApiPosition[] } | ApiPosition[]>(`/api/rodeo?${params}`);
+        const positions = Array.isArray(payload) ? payload : (payload.data ?? []);
+        const rows = sortStandingsPositions(positions).map(mapPosition);
         if (!cancelled) {
           setStandingsRows(rows);
           setStandingsState("loaded");
@@ -395,7 +405,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [standingEvent, standingType, standingYear]);
+  }, [selectedCircuitId, standingEvent, standingType, standingYear]);
 
   useEffect(() => {
     setResultsPage(1);
@@ -650,6 +660,8 @@ export default function Home() {
       payout: rodeo.payout,
       daysheets: String(rodeo.hasDaysheets)
     });
+    if (rodeo.startDateRaw) query.set("startRaw", rodeo.startDateRaw);
+    if (rodeo.endDateRaw) query.set("endRaw", rodeo.endDateRaw);
     if (event) query.set("event", event);
     if (rodeo.websiteUrl) query.set("website", rodeo.websiteUrl);
     router.push(`/${source}/${rodeo.id}?${query}`);
@@ -737,25 +749,10 @@ export default function Home() {
             </div>
           </div>
           <div className="toolbar-actions">
-            <button aria-label="Notifications" onClick={() => setFollowAlertsOpen((open) => !open)}>
-              <Bell size={19} />
-              {followedAthletes.length > 0 && <span className="badge-count">{followedAthletes.length}</span>}
-            </button>
             <button aria-label="Menu" onClick={() => selectTab("More")}>
               <Menu size={20} />
             </button>
           </div>
-          {followAlertsOpen && (
-            <FollowAlertsPanel
-              followedAthletes={followedAthleteRows}
-              alertsEnabled={appSettings.followAlertsEnabled}
-              onOpenAthlete={openAthleteProfile}
-              onOpenSettings={() => {
-                selectMoreSection("settings");
-              }}
-              onClose={() => setFollowAlertsOpen(false)}
-            />
-          )}
         </header>
 
         <div className="content-grid">
@@ -809,13 +806,14 @@ export default function Home() {
                   setStandingType={setStandingType}
                   standingEvent={standingEvent}
                   setStandingEvent={setStandingEvent}
+                  selectedCircuitId={selectedCircuitId}
+                  setSelectedCircuitId={setSelectedCircuitId}
                   standingYear={standingYear}
                   setStandingYear={setStandingYear}
                   rows={filteredStandings}
                   state={standingsState}
                   onOpenAthlete={openAthleteProfile}
                   toggleFavoriteAthlete={toggleFavoriteAthlete}
-                  toggleFollowedAthlete={toggleFollowedAthlete}
                 />
               )}
               {activeTab === "Results" && (

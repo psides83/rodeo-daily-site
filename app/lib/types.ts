@@ -1,5 +1,13 @@
 export type Tab = "Standings" | "Results" | "Schedule" | "More";
-export type StandingType = "World Standings" | "Circuit Standings" | "Rookie Standings";
+export type StandingType =
+  | "World Standings"
+  | "Playoff Series"
+  | "Rookie"
+  | "Circuit"
+  | "Xtreme Bulls"
+  | "Xtreme Broncs"
+  | "Permit"
+  | "Legacy Steer Roping";
 export type EventName =
   | "Bareback Riding"
   | "Steer Wrestling"
@@ -17,6 +25,11 @@ export type RodeoDetailSource = "results" | "schedule";
 export type DateRange = {
   start: string;
   end: string;
+};
+
+export type CircuitOption = {
+  id: string;
+  title: string;
 };
 
 export type AppSettings = {
@@ -212,17 +225,41 @@ export type DaysheetRow = {
 };
 
 export type ApiPosition = {
-  ContestantId?: number;
-  StandingId?: number;
+  ContestantId?: number | string;
+  contestant_id?: number | string;
+  StandingId?: number | string;
+  standing_id?: number | string;
+  id?: number | string;
   FirstName?: string;
+  first_name?: string;
   LastName?: string;
+  last_name?: string;
   NickName?: string;
+  nick_name?: string;
   Hometown?: string;
+  hometown?: string;
   SidearmPhotoUrl?: string | null;
-  Earnings?: number;
-  Points?: number;
-  Place?: number;
-  TourId?: number | null;
+  image_315_url?: string | null;
+  photo_url?: string | null;
+  image_url?: string | null;
+  Earnings?: number | string;
+  earnings?: number | string;
+  Points?: number | string;
+  points?: number | string;
+  Place?: number | string;
+  place?: number | string;
+  Event?: string;
+  event?: string;
+  event_abbrev?: string;
+  Type?: string;
+  type?: string;
+  standing_type?: string;
+  SeasonYear?: number | string;
+  season_year?: number | string;
+  TourId?: number | string | null;
+  tour_id?: number | string | null;
+  CircuitId?: number | string | null;
+  circuit_id?: number | string | null;
 };
 
 export type ApiRodeo = {

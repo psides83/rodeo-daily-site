@@ -1,117 +1,123 @@
-"use client";
+import type { Metadata } from "next";
+import { AthleteProfileClient } from "./athlete-profile-client";
+import { mapAthleteBio } from "../../lib/rodeo-data";
+import type { ApiAthleteBioResponse, AthleteBio } from "../../lib/types";
+import { absoluteUrl } from "../../lib/seo";
 
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { AthleteProfileScreen } from "../../components/rodeo-views";
-import { fetchJson, mapAthleteBio } from "../../lib/rodeo-data";
-import type { ApiAthleteBioResponse, AthleteBio, LoadState, SavedAthlete, StandingRow } from "../../lib/types";
+type AthleteRoutePageProps = {
+  params: {
+    athleteId: string;
+  };
+};
 
-function paramValue(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
+const athleteApiBaseUrl = "https://d1kfpvgfupbmyo.cloudfront.net/services/pro_rodeo.ashx/";
+
+export const revalidate = 1800;
+
+export async function generateMetadata({ params }: AthleteRoutePageProps): Promise<Metadata> {
+  const athleteId = safeAthleteId(params.athleteId);
+  if (!athleteId) {
+    return {
+      title: "Athlete Profile",
+      description: "View PRCA athlete standings, results, career earnings, and rodeo profile details on Rodeo Daily."
+    };
+  }
+
+  const bio = await fetchAthleteBio(athleteId);
+  const name = bio?.name || "PRCA Athlete";
+  const eventText = bio?.events.length ? `${bio.events.join(", ")} rodeo athlete` : "PRCA rodeo athlete";
+  const rankingText = bio?.rankings[0] ? ` Current ranking: #${bio.rankings[0].rank} ${bio.rankings[0].eventName}.` : "";
+  const earningsText = bio?.yearEarnings ? ` ${bio.yearEarnings} in current season earnings.` : "";
+  const description = `${name} profile on Rodeo Daily: ${eventText}, standings, results, career earnings, biography, and highlights.${rankingText}${earningsText}`;
+  const path = `/athletes/${athleteId}`;
+  const image = bio?.imageUrl ? absoluteImageUrl(bio.imageUrl) : undefined;
+
+  return {
+    title: `${name} PRCA Athlete Profile`,
+    description,
+    alternates: {
+      canonical: absoluteUrl(path)
+    },
+    openGraph: {
+      type: "profile",
+      url: absoluteUrl(path),
+      title: `${name} PRCA Athlete Profile | Rodeo Daily`,
+      description,
+      images: image ? [{ url: image }] : undefined
+    },
+    twitter: {
+      card: image ? "summary_large_image" : "summary",
+      title: `${name} PRCA Athlete Profile | Rodeo Daily`,
+      description,
+      images: image ? [image] : undefined
+    }
+  };
 }
 
-export default function AthleteRoutePage() {
-  const router = useRouter();
-  const params = useParams();
-  const athleteId = Number(paramValue(params.athleteId));
-  const [bio, setBio] = useState<AthleteBio | null>(null);
-  const [state, setState] = useState<LoadState>("idle");
-  const [favoriteAthletes, setFavoriteAthletes] = useState<Record<number, SavedAthlete>>({});
-  const [followedAthletes, setFollowedAthletes] = useState<number[]>([]);
-
-  useEffect(() => {
-    const storedFavorites = window.localStorage.getItem("rodeodaily.favoriteAthletes");
-    const storedFollows = window.localStorage.getItem("rodeodaily.followedAthletes");
-    if (storedFavorites) setFavoriteAthletes(JSON.parse(storedFavorites) as Record<number, SavedAthlete>);
-    if (storedFollows) setFollowedAthletes(JSON.parse(storedFollows) as number[]);
-  }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem("rodeodaily.favoriteAthletes", JSON.stringify(favoriteAthletes));
-  }, [favoriteAthletes]);
-
-  useEffect(() => {
-    window.localStorage.setItem("rodeodaily.followedAthletes", JSON.stringify(followedAthletes));
-  }, [followedAthletes]);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadAthlete() {
-      if (!athleteId) {
-        setState("error");
-        return;
-      }
-      setState("loading");
-      try {
-        const query = new URLSearchParams({ resource: "athlete", athleteId: String(athleteId) });
-        const payload = await fetchJson<ApiAthleteBioResponse>(`/api/rodeo?${query}`);
-        const loadedBio = mapAthleteBio(payload);
-        if (!cancelled) {
-          setBio(loadedBio);
-          setState(loadedBio ? "loaded" : "error");
-        }
-      } catch {
-        if (!cancelled) setState("error");
-      }
-    }
-    loadAthlete();
-    return () => {
-      cancelled = true;
-    };
-  }, [athleteId]);
-
-  const athlete = useMemo<StandingRow>(() => {
-    const saved = favoriteAthletes[athleteId];
-    return {
-      id: athleteId,
-      place: 0,
-      name: bio?.name || saved?.name || "Athlete Profile",
-      hometown: bio?.hometown || saved?.hometown || "",
-      imageUrl: bio?.imageUrl || saved?.imageUrl || null,
-      metric: bio?.yearEarnings || saved?.metric || "",
-      metricLabel: bio?.yearEarnings ? "This Year" : saved?.metricLabel || "Profile",
-      favorite: Boolean(favoriteAthletes[athleteId]),
-      followed: followedAthletes.includes(athleteId)
-    };
-  }, [athleteId, bio, favoriteAthletes, followedAthletes]);
-
-  function toggleFavoriteAthlete(nextAthlete: StandingRow) {
-    setFavoriteAthletes((current) => {
-      const next = { ...current };
-      if (next[nextAthlete.id]) {
-        delete next[nextAthlete.id];
-      } else {
-        next[nextAthlete.id] = {
-          id: nextAthlete.id,
-          name: nextAthlete.name,
-          hometown: nextAthlete.hometown,
-          imageUrl: nextAthlete.imageUrl,
-          metric: nextAthlete.metric,
-          metricLabel: nextAthlete.metricLabel
-        };
-      }
-      return next;
-    });
-  }
-
-  function toggleFollowedAthlete(nextAthleteId: number) {
-    setFollowedAthletes((current) =>
-      current.includes(nextAthleteId) ? current.filter((id) => id !== nextAthleteId) : [...current, nextAthleteId]
-    );
-  }
+export default async function AthleteRoutePage({ params }: AthleteRoutePageProps) {
+  const athleteId = safeAthleteId(params.athleteId) ?? 0;
+  const bio = athleteId ? await fetchAthleteBio(athleteId) : null;
+  const jsonLd = bio ? athleteJsonLd(bio) : null;
 
   return (
     <main className="browser-stage routed-stage">
-      <section className="routed-window">
-        <AthleteProfileScreen
-          athlete={athlete}
-          bio={bio}
-          state={state}
-          onBack={() => router.back()}
-          toggleFavoriteAthlete={toggleFavoriteAthlete}
-          toggleFollowedAthlete={toggleFollowedAthlete}
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c")
+          }}
         />
+      )}
+      <section className="routed-window">
+        <AthleteProfileClient athleteId={athleteId} initialBio={bio} />
       </section>
     </main>
   );
+}
+
+async function fetchAthleteBio(athleteId: number) {
+  try {
+    const url = new URL("athlete", athleteApiBaseUrl);
+    url.searchParams.set("id", String(athleteId));
+    const response = await fetch(url, { next: { revalidate } });
+    if (!response.ok) return null;
+    const payload = (await response.json()) as ApiAthleteBioResponse;
+    return mapAthleteBio(payload);
+  } catch {
+    return null;
+  }
+}
+
+function athleteJsonLd(bio: AthleteBio) {
+  const descriptionParts = [
+    bio.hometown ? `${bio.name} is a rodeo athlete from ${bio.hometown}.` : `${bio.name} is a rodeo athlete.`,
+    bio.yearEarnings ? `Current season earnings: ${bio.yearEarnings}.` : "",
+    bio.totalEarnings ? `Career earnings: ${bio.totalEarnings}.` : "",
+    bio.rankings[0] ? `Current ranking: #${bio.rankings[0].rank} ${bio.rankings[0].eventName}.` : ""
+  ].filter(Boolean);
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: bio.name,
+    url: absoluteUrl(`/athletes/${bio.id}`),
+    image: bio.imageUrl ? absoluteImageUrl(bio.imageUrl) : undefined,
+    homeLocation: bio.hometown || undefined,
+    description: descriptionParts.join(" "),
+    knowsAbout: bio.events.length ? bio.events : ["PRCA rodeo", "rodeo standings", "rodeo results"],
+    award: [
+      bio.worldTitles ? `${bio.worldTitles} world title${bio.worldTitles === 1 ? "" : "s"}` : "",
+      bio.nfrQualifications ? `${bio.nfrQualifications} NFR qualification${bio.nfrQualifications === 1 ? "" : "s"}` : ""
+    ].filter(Boolean)
+  };
+}
+
+function safeAthleteId(value: string) {
+  const id = Number(value);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+function absoluteImageUrl(value: string) {
+  return value.startsWith("http://") || value.startsWith("https://") ? value : absoluteUrl(value);
 }

@@ -13,6 +13,7 @@ import type {
   AthleteBio,
   AthleteSearchRow,
   BusinessJournalRow,
+  CircuitOption,
   DateRange,
   DaysheetEntry,
   DaysheetEventGroup,
@@ -40,6 +41,39 @@ export const events: EventName[] = [
 
 const rodeoResultListLimit = 20;
 
+export const standingTypeOptions: StandingType[] = [
+  "World Standings",
+  "Playoff Series",
+  "Rookie",
+  "Circuit",
+  "Xtreme Bulls",
+  "Xtreme Broncs",
+  "Permit",
+  "Legacy Steer Roping"
+];
+
+export const circuits: CircuitOption[] = [
+  { id: "1", title: "Columbia River" },
+  { id: "2", title: "California" },
+  { id: "3", title: "Wilderness" },
+  { id: "4", title: "Montana" },
+  { id: "5", title: "Mountain States" },
+  { id: "6", title: "Turquoise" },
+  { id: "7", title: "Texas" },
+  { id: "8", title: "Prairie" },
+  { id: "9", title: "Great Lakes" },
+  { id: "10", title: "Southeastern" },
+  { id: "11", title: "First Frontier" },
+  { id: "12", title: "Maple Leaf" },
+  { id: "13", title: "Badlands" },
+  { id: "14", title: "Mexico" },
+  { id: "15", title: "Brazil" }
+];
+
+export const defaultCircuitId = circuits[0].id;
+
+export const singleEventStandingTypes = new Set<StandingType>(["Xtreme Bulls", "Xtreme Broncs", "Legacy Steer Roping"]);
+
 export const eventCodes: Record<EventName, EventCode> = {
   "Bareback Riding": "BB",
   "Steer Wrestling": "SW",
@@ -53,9 +87,31 @@ export const eventCodes: Record<EventName, EventCode> = {
 
 export const standingTypes: Record<StandingType, string> = {
   "World Standings": "world",
-  "Circuit Standings": "circuit",
-  "Rookie Standings": "rookie"
+  "Playoff Series": "playoffSeries",
+  Rookie: "rookie",
+  Circuit: "circuit",
+  "Xtreme Bulls": "xtremeBulls",
+  "Xtreme Broncs": "xtremeBroncs",
+  Permit: "permit",
+  "Legacy Steer Roping": "legacySteerRoping"
 };
+
+export function standingEventsForType(type: StandingType) {
+  if (type === "Playoff Series") {
+    return events.filter((event) => event !== "Barrel Racing" && event !== "Breakaway Roping");
+  }
+
+  return events;
+}
+
+export function normalizeStandingEventForType(event: EventName, type: StandingType): EventName {
+  const availableEvents = standingEventsForType(type);
+  return availableEvents.includes(event) ? event : "Bareback Riding";
+}
+
+export function standingTypeHasEvents(type: StandingType) {
+  return !singleEventStandingTypes.has(type);
+}
 
 export async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url);
@@ -74,24 +130,49 @@ export function dateRangeParams(resource: "results-rodeos" | "schedule", range: 
 }
 
 export function mapPosition(position: ApiPosition): StandingRow {
-  const id = position.ContestantId ?? position.StandingId ?? position.Place ?? Math.random();
-  const first = position.FirstName?.trim() ?? "";
-  const last = position.LastName?.trim() ?? "";
-  const nick = position.NickName?.trim();
+  const id =
+    numberValue(
+      position.ContestantId ?? position.contestant_id ?? position.StandingId ?? position.standing_id ?? position.id ?? position.Place ?? position.place
+    ) ?? Math.random();
+  const first = cleanText(position.FirstName ?? position.first_name);
+  const last = cleanText(position.LastName ?? position.last_name);
+  const nick = cleanText(position.NickName ?? position.nick_name);
   const name = `${nick || first} ${last}`.trim() || "Unknown Athlete";
-  const isPoints = position.TourId === 2;
+  const tourId = numberValue(position.TourId ?? position.tour_id);
+  const isPoints = tourId === 2;
+  const earnings = numberValue(position.Earnings ?? position.earnings) ?? 0;
+  const points = numberValue(position.Points ?? position.points) ?? 0;
 
   return {
     id,
-    place: position.Place ?? 0,
+    place: numberValue(position.Place ?? position.place) ?? 0,
     name,
-    hometown: position.Hometown?.trim() ?? "",
-    imageUrl: normalizeAthleteImageUrl(position.SidearmPhotoUrl),
-    metric: isPoints ? formatNumber(position.Points ?? 0) : formatCurrency(position.Earnings ?? 0),
+    hometown: cleanText(position.Hometown ?? position.hometown),
+    imageUrl: normalizeAthleteImageUrl(position.SidearmPhotoUrl ?? position.image_315_url ?? position.photo_url ?? position.image_url),
+    metric: isPoints ? formatNumber(points) : formatCurrency(earnings),
     metricLabel: isPoints ? "Points" : "Earnings",
     followed: false,
     favorite: false
   };
+}
+
+export function sortStandingsPositions(positions: ApiPosition[]) {
+  return positions.slice().sort((left, right) => {
+    const leftPlace = numberValue(left.Place ?? left.place) ?? Number.MAX_SAFE_INTEGER;
+    const rightPlace = numberValue(right.Place ?? right.place) ?? Number.MAX_SAFE_INTEGER;
+    if (leftPlace !== rightPlace) return leftPlace - rightPlace;
+
+    const leftEarnings = numberValue(left.Earnings ?? left.earnings) ?? 0;
+    const rightEarnings = numberValue(right.Earnings ?? right.earnings) ?? 0;
+    return rightEarnings - leftEarnings;
+  });
+}
+
+function numberValue(value: number | string | null | undefined) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value !== "string") return null;
+  const parsed = Number(value.replace(/[$,]/g, "").trim());
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 export function mapAthleteBio(payload: ApiAthleteBioResponse): AthleteBio | null {

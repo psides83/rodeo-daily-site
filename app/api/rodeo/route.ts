@@ -1,9 +1,33 @@
 import { NextResponse } from "next/server";
 
 const baseUrl = "https://d1kfpvgfupbmyo.cloudfront.net/services/pro_rodeo.ashx/";
+const rodeoDataApiUrl = "https://rodeo-data-api.psides83.workers.dev";
 
 const allowedEvents = new Set(["BB", "SW", "TR", "SB", "TD", "GB", "BR", "SR", "LB"]);
-const allowedTypes = new Set(["world", "circuit", "rookie"]);
+const wpraEvents = new Set(["GB", "LB"]);
+const defaultCircuitId = "1";
+const standingTypeAliases = new Map([
+  ["world", "world"],
+  ["circuit", "circuit"],
+  ["rookie", "rookie"],
+  ["permit", "permit"],
+  ["playoffseries", "playoffSeries"],
+  ["playoffSeries", "playoffSeries"],
+  ["xtremebulls", "xtremeBulls"],
+  ["xtremeBulls", "xtremeBulls"],
+  ["xtremebroncs", "xtremeBroncs"],
+  ["xtremeBroncs", "xtremeBroncs"],
+  ["legacysteerroping", "legacySteerRoping"],
+  ["legacySteerRoping", "legacySteerRoping"]
+]);
+const tourStandingTypes = new Set(["playoffSeries", "xtremeBulls", "xtremeBroncs", "legacySteerRoping"]);
+const singleEventTourStandingTypes = new Set(["xtremeBulls", "xtremeBroncs", "legacySteerRoping"]);
+const tourIds: Record<string, string> = {
+  xtremeBulls: "4",
+  xtremeBroncs: "15",
+  legacySteerRoping: "16",
+  playoffSeries: "17"
+};
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -62,11 +86,29 @@ function standingsUrl(searchParams: URLSearchParams) {
   const event = safeEvent(searchParams.get("event") ?? "TD");
   const type = safeStandingType(searchParams.get("type") ?? "world");
 
+  if (wpraEvents.has(event) && !singleEventTourStandingTypes.has(type)) {
+    return wpraStandingsUrl(year, event, type, searchParams);
+  }
+
   const url = new URL("standings", baseUrl);
   url.searchParams.set("year", String(year));
-  url.searchParams.set("type", type);
-  url.searchParams.set("id", "");
+  url.searchParams.set("type", tourStandingTypes.has(type) ? "tour" : type);
+  url.searchParams.set("id", tourIds[type] ?? (type === "circuit" ? safeNumber(searchParams.get("circuitId"))?.toString() ?? defaultCircuitId : ""));
+  url.searchParams.set("event", singleEventTourStandingTypes.has(type) ? "AA" : event);
+  return url;
+}
+
+function wpraStandingsUrl(year: number, event: string, type: string, searchParams: URLSearchParams) {
+  const url = new URL("/v1/wpra/standings", rodeoDataApiUrl);
+  url.searchParams.set("season_year", String(year));
   url.searchParams.set("event", event);
+  url.searchParams.set("type", normalizedStandingType(type));
+  url.searchParams.set("refresh", wpraWeeklyRefreshKey());
+
+  if (type === "circuit") {
+    url.searchParams.set("circuit_id", safeNumber(searchParams.get("circuitId"))?.toString() ?? defaultCircuitId);
+  }
+
   return url;
 }
 
@@ -165,8 +207,39 @@ function safeEvent(value: string) {
 }
 
 function safeStandingType(value: string) {
-  const normalized = value.toLowerCase();
-  return allowedTypes.has(normalized) ? normalized : "world";
+  const trimmed = value.trim();
+  return standingTypeAliases.get(trimmed) ?? standingTypeAliases.get(trimmed.toLowerCase()) ?? "world";
+}
+
+function normalizedStandingType(value: string) {
+  const cleaned = value.trim().toLowerCase();
+  if (!cleaned) return "world";
+  if (cleaned.includes("world")) return "world";
+  if (cleaned.includes("circuit")) return "circuit";
+  if (cleaned.includes("rookie")) return "rookie";
+  if (cleaned.includes("permit")) return "permit";
+  if (cleaned.includes("xtremebull") || cleaned.includes("xbull")) return "xtremebulls";
+  if (cleaned.includes("xtremebronc") || cleaned.includes("xbronc")) return "xtremebroncs";
+  if (cleaned.includes("legacy")) return "legacysteerroping";
+  if (cleaned.includes("playoff")) return "playoffseries";
+  return cleaned.replace(/\s+/g, "");
+}
+
+function wpraWeeklyRefreshKey(date = new Date()) {
+  const updateHourUtc = 12;
+  const day = date.getUTCDay();
+  const daysSinceMonday = (day + 6) % 7;
+  let mondayNoon = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - daysSinceMonday, updateHourUtc);
+
+  if (date.getTime() < mondayNoon) {
+    mondayNoon -= 7 * 24 * 60 * 60 * 1000;
+  }
+
+  const refreshDate = new Date(mondayNoon);
+  const year = refreshDate.getUTCFullYear();
+  const month = String(refreshDate.getUTCMonth() + 1).padStart(2, "0");
+  const dayOfMonth = String(refreshDate.getUTCDate()).padStart(2, "0");
+  return `${year}${month}${dayOfMonth}`;
 }
 
 function safeNumber(value: string | null) {

@@ -1,103 +1,157 @@
-"use client";
+import type { Metadata } from "next";
+import { ResultsRodeoClient } from "./results-rodeo-client";
+import { eventCodes, events, mapWinners } from "../../lib/rodeo-data";
+import type { ApiRodeoResults, EventName } from "../../lib/types";
+import { absoluteUrl } from "../../lib/seo";
 
-import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { RodeoDetailView } from "../../components/rodeo-views";
-import { eventCodes, events, fetchJson, mapDaysheets, mapResultRounds, mapWinners } from "../../lib/rodeo-data";
-import type { ApiDaysheetResponse, ApiRodeoResults, DaysheetRow, EventName, LoadState, RodeoRow } from "../../lib/types";
+type ResultsRodeoRoutePageProps = {
+  params: {
+    rodeoId: string;
+  };
+  searchParams?: Record<string, string | string[] | undefined>;
+};
 
-function paramValue(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
+const rodeoApiBaseUrl = "https://d1kfpvgfupbmyo.cloudfront.net/services/pro_rodeo.ashx/";
+
+export const revalidate = 900;
+
+export async function generateMetadata({ params, searchParams }: ResultsRodeoRoutePageProps): Promise<Metadata> {
+  const rodeoId = safeRodeoId(params.rodeoId);
+  const rodeo = rodeoFromSearchParams(rodeoId ?? 0, searchParams);
+  const event = eventParam(searchParam(searchParams, "event"));
+  const title = `${rodeo.name} ${event} Results`;
+  const locationText = rodeo.location ? ` in ${rodeo.location}` : "";
+  const dateText = rodeo.endDate || rodeo.startDate ? ` from ${rodeo.startDate || rodeo.endDate}${rodeo.endDate && rodeo.endDate !== rodeo.startDate ? ` to ${rodeo.endDate}` : ""}` : "";
+  const description = `View ${event} rodeo results for ${rodeo.name}${locationText}${dateText}, including winners, round results, payouts, and athlete links on Rodeo Daily.`;
+  const path = `/results/${rodeoId ?? params.rodeoId}`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: absoluteUrl(path)
+    },
+    openGraph: {
+      type: "article",
+      url: absoluteUrl(path),
+      title: `${title} | Rodeo Daily`,
+      description
+    },
+    twitter: {
+      card: "summary",
+      title: `${title} | Rodeo Daily`,
+      description
+    }
+  };
 }
 
-function eventParam(value: string | null): EventName {
-  return events.includes(value as EventName) ? (value as EventName) : "Tie-Down Roping";
-}
-
-export default function ResultsRodeoRoutePage() {
-  const router = useRouter();
-  const params = useParams();
-  const searchParams = useSearchParams();
-  const rodeoId = Number(paramValue(params.rodeoId));
-  const [event, setEvent] = useState<EventName>(() => eventParam(searchParams.get("event")));
-  const [state, setState] = useState<LoadState>("idle");
-  const [daysheetState, setDaysheetState] = useState<LoadState>("idle");
-  const [daysheets, setDaysheets] = useState<DaysheetRow[]>([]);
-  const [rodeo, setRodeo] = useState<RodeoRow>({
-    id: rodeoId,
-    name: searchParams.get("name") || `Rodeo #${rodeoId || ""}`,
-    location: searchParams.get("location") || "",
-    venueName: searchParams.get("venue") || "",
-    websiteUrl: searchParams.get("website") || null,
-    startDate: searchParams.get("start") || "",
-    endDate: searchParams.get("end") || "",
-    payout: searchParams.get("payout") || "",
-    hasDaysheets: searchParams.get("daysheets") === "true",
-    inProgress: false,
-    winners: [],
-    resultRounds: []
-  });
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadWinners() {
-      if (!rodeoId) return;
-      setState("loading");
-      try {
-        const query = new URLSearchParams({ resource: "rodeo-results", rodeoId: String(rodeoId) });
-        const payload = await fetchJson<ApiRodeoResults>(`/api/rodeo?${query}`);
-        const winners = mapWinners(payload, eventCodes[event]);
-        const resultRounds = mapResultRounds(payload, eventCodes[event]);
-        if (!cancelled) {
-          setRodeo((current) => ({ ...current, winners, resultRounds }));
-          setState("loaded");
-        }
-      } catch {
-        if (!cancelled) setState("error");
-      }
-    }
-    loadWinners();
-    return () => {
-      cancelled = true;
-    };
-  }, [event, rodeoId]);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadDaysheets() {
-      if (!rodeoId || !rodeo.hasDaysheets) return;
-      setDaysheetState("loading");
-      try {
-        const query = new URLSearchParams({ resource: "daysheet", rodeoId: String(rodeoId) });
-        const payload = await fetchJson<ApiDaysheetResponse>(`/api/rodeo?${query}`);
-        if (!cancelled) {
-          setDaysheets(mapDaysheets(payload));
-          setDaysheetState("loaded");
-        }
-      } catch {
-        if (!cancelled) setDaysheetState("error");
-      }
-    }
-    loadDaysheets();
-    return () => {
-      cancelled = true;
-    };
-  }, [rodeo.hasDaysheets, rodeoId]);
+export default async function ResultsRodeoRoutePage({ params, searchParams }: ResultsRodeoRoutePageProps) {
+  const rodeoId = safeRodeoId(params.rodeoId) ?? 0;
+  const rodeo = rodeoFromSearchParams(rodeoId, searchParams);
+  const event = eventParam(searchParam(searchParams, "event"));
+  const winners = rodeoId ? await fetchWinners(rodeoId, event) : [];
+  const jsonLd = resultJsonLd(rodeo, event, winners);
 
   return (
     <main className="browser-stage routed-stage">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c")
+        }}
+      />
       <section className="routed-window">
-        <RodeoDetailView
-          rodeo={rodeo}
-          state={state}
-          daysheetState={daysheetState}
-          daysheets={daysheets}
-          event={event}
-          setEvent={setEvent}
-          source="results"
-          onBack={() => router.back()}
-        />
+        <ResultsRodeoClient rodeoId={rodeoId} />
       </section>
     </main>
   );
+}
+
+async function fetchWinners(rodeoId: number, event: EventName) {
+  try {
+    const url = new URL("results", rodeoApiBaseUrl);
+    url.searchParams.set("rodeoid", String(rodeoId));
+    const response = await fetch(url, { next: { revalidate } });
+    if (!response.ok) return [];
+    const payload = (await response.json()) as ApiRodeoResults;
+    return mapWinners(payload, eventCodes[event]);
+  } catch {
+    return [];
+  }
+}
+
+function resultJsonLd(rodeo: SeoRodeo, event: EventName, winners: Array<[string, string, string]>) {
+  const eventUrl = absoluteUrl(`/results/${rodeo.id}`);
+  return [
+    {
+      "@context": "https://schema.org",
+      "@type": "SportsEvent",
+      name: `${rodeo.name} ${event} Results`,
+      url: eventUrl,
+      startDate: rodeo.startDateRaw || undefined,
+      endDate: rodeo.endDateRaw || undefined,
+      location: rodeo.location
+        ? {
+            "@type": "Place",
+            name: rodeo.venueName || rodeo.name,
+            address: rodeo.location
+          }
+        : undefined,
+      sport: "Rodeo",
+      description: `Rodeo results for ${event} at ${rodeo.name}.`
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: `${rodeo.name} ${event} winners`,
+      url: eventUrl,
+      itemListElement: winners.map((winner, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        item: {
+          "@type": "Person",
+          name: winner[1],
+          description: `${winner[0]} with ${winner[2]}`
+        }
+      }))
+    }
+  ];
+}
+
+type SeoRodeo = {
+  id: number;
+  name: string;
+  location: string;
+  venueName: string;
+  startDate: string;
+  endDate: string;
+  startDateRaw: string;
+  endDateRaw: string;
+};
+
+function rodeoFromSearchParams(rodeoId: number, searchParams?: Record<string, string | string[] | undefined>): SeoRodeo {
+  return {
+    id: rodeoId,
+    name: searchParam(searchParams, "name") || `Rodeo #${rodeoId || ""}`,
+    location: searchParam(searchParams, "location") || "",
+    venueName: searchParam(searchParams, "venue") || "",
+    startDate: searchParam(searchParams, "start") || "",
+    endDate: searchParam(searchParams, "end") || "",
+    startDateRaw: searchParam(searchParams, "startRaw") || "",
+    endDateRaw: searchParam(searchParams, "endRaw") || ""
+  };
+}
+
+function eventParam(value?: string): EventName {
+  return events.includes(value as EventName) ? (value as EventName) : "Tie-Down Roping";
+}
+
+function searchParam(searchParams: Record<string, string | string[] | undefined> | undefined, key: string) {
+  const value = searchParams?.[key];
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function safeRodeoId(value: string) {
+  const id = Number(value);
+  return Number.isInteger(id) && id > 0 ? id : null;
 }

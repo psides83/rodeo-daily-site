@@ -76,7 +76,7 @@ export function GoogleAdSlot({
         data-ad-client={adsensePublisherId}
         data-ad-format="auto"
         data-ad-slot={slot}
-        data-full-width-responsive="true"
+        data-full-width-responsive="false"
         style={{ display: "block" }}
       />
     </div>

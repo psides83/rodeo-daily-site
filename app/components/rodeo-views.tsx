@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   ArrowDown,
   ArrowUp,
-  Bell,
   Calendar,
   ChevronDown,
   ChevronRight,
@@ -59,15 +58,21 @@ import {
   businessJournalMatchesDate,
   businessJournalMatchesSearch,
   championEvents,
+  circuits,
   events,
   filterChampions,
   formatDate,
-  initialsFor,
   makeDaysheetDisplayRows,
   mapScheduleToBusinessJournalRow,
+  normalizeStandingEventForType,
   sortBusinessJournalRows,
+  standingEventsForType,
+  standingTypeHasEvents,
+  standingTypeOptions,
   topChampionCounts
 } from "../lib/rodeo-data";
+
+const athletePlaceholderImage = "/noimage.png";
 
 const moreItems = [
   {
@@ -115,7 +120,9 @@ const iosAppStoreUrl = "https://apps.apple.com/us/app/rodeo-daily/id1671624492";
 export function RodeoDailyLogoMark() {
   return (
     <span className="logo-mark" role="img" aria-label="Rodeo Daily">
-      <Image src="/rodeo-daily-icon.png" alt="" width={42} height={42} priority />
+      <svg viewBox="0 0 42 42" aria-hidden="true" focusable="false">
+        <path d="M25.3 9.5c6.8.1 11.1 2.8 12.3 7.3 1.6 6-1.4 11.2-8.8 14.7l7.9 8.6-3.4 2.7-9.9-11.6v11.1h-4.1V14.7c-4.5.8-8 3.3-9.4 7.6-1.7 5.3.4 9.9 5.8 12.2l-2.9 3.1C6 34.5 3.4 28.4 5.8 21.2c2.4-7.5 9.5-11.6 19.5-11.7Zm-1.9 4v13.8c6.6-2.2 10.6-5.8 9.5-9.8-.7-2.7-3.4-4-8-4h-1.5Z" />
+      </svg>
     </span>
   );
 }
@@ -199,33 +206,40 @@ export function StandingsView({
   setStandingType,
   standingEvent,
   setStandingEvent,
+  selectedCircuitId,
+  setSelectedCircuitId,
   standingYear,
   setStandingYear,
   rows,
   state,
   onOpenAthlete,
-  toggleFavoriteAthlete,
-  toggleFollowedAthlete
+  toggleFavoriteAthlete
 }: {
   standingType: StandingType;
   setStandingType: (type: StandingType) => void;
   standingEvent: EventName;
   setStandingEvent: (event: EventName) => void;
+  selectedCircuitId: string;
+  setSelectedCircuitId: (circuitId: string) => void;
   standingYear: string;
   setStandingYear: (year: string) => void;
   rows: StandingRow[];
   state: LoadState;
   onOpenAthlete: (athlete: StandingRow) => void;
   toggleFavoriteAthlete: (athlete: StandingRow) => void;
-  toggleFollowedAthlete: (athleteId: number) => void;
 }) {
+  const availableStandingEvents = standingEventsForType(standingType);
+  const showsEventFilter = standingTypeHasEvents(standingType);
+  const selectedCircuit = circuits.find((circuit) => circuit.id === selectedCircuitId) ?? circuits[0];
+  const circuitLabels = Object.fromEntries(circuits.map((circuit) => [circuit.id, circuit.title]));
+
   return (
     <div className="stack">
       <section className="app-card header-card standings-filter-card">
         <div>
           <span>Standings</span>
           <h2>
-            {standingEvent}
+            {standingType === "Circuit" ? selectedCircuit.title : standingEvent}
             <br />
             {standingType}
           </h2>
@@ -246,10 +260,25 @@ export function StandingsView({
         <SelectChip
           label="Type"
           value={standingType}
-          options={["World Standings", "Circuit Standings", "Rookie Standings"]}
-          onChange={(value) => setStandingType(value as StandingType)}
+          options={standingTypeOptions}
+          onChange={(value) => {
+            const nextType = value as StandingType;
+            setStandingType(nextType);
+            setStandingEvent(normalizeStandingEventForType(standingEvent, nextType));
+          }}
         />
-        <SelectChip label="Event" value={standingEvent} options={events} onChange={(value) => setStandingEvent(value as EventName)} />
+        {showsEventFilter && (
+          <SelectChip label="Event" value={standingEvent} options={availableStandingEvents} onChange={(value) => setStandingEvent(value as EventName)} />
+        )}
+        {standingType === "Circuit" && (
+          <SelectChip
+            label="Circuit"
+            value={selectedCircuit.id}
+            options={circuits.map((circuit) => circuit.id)}
+            optionLabels={circuitLabels}
+            onChange={setSelectedCircuitId}
+          />
+        )}
       </div>
 
       <div className="list-stack standings-list">
@@ -266,7 +295,6 @@ export function StandingsView({
                   position={position}
                   onOpenProfile={() => onOpenAthlete(position)}
                   onToggleFavorite={() => toggleFavoriteAthlete(position)}
-                  onToggleFollow={() => toggleFollowedAthlete(position.id)}
                 />
               </div>
             ))}
@@ -283,13 +311,11 @@ export function StandingsView({
 function StandingCard({
   position,
   onOpenProfile,
-  onToggleFavorite,
-  onToggleFollow
+  onToggleFavorite
 }: {
   position: StandingRow;
   onOpenProfile: () => void;
   onToggleFavorite: () => void;
-  onToggleFollow: () => void;
 }) {
   function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
     if (event.key === "Enter" || event.key === " ") {
@@ -320,16 +346,6 @@ function StandingCard({
 
         <div className="card-metrics">
           <div className="icons">
-            <button
-              aria-label={position.followed ? "Unfollow athlete" : "Follow athlete"}
-              className={position.followed ? "status-control active" : "status-control"}
-              onClick={(event) => {
-                event.stopPropagation();
-                onToggleFollow();
-              }}
-            >
-              <Bell size={16} fill={position.followed ? "currentColor" : "none"} />
-            </button>
             <button
               aria-label={position.favorite ? "Remove favorite athlete" : "Favorite athlete"}
               className={position.favorite ? "status-control active" : "status-control"}
@@ -916,11 +932,17 @@ function AthleteResultIdentity({ row, label }: { row: RodeoResultRow; label?: st
 }
 
 function ResultAthleteAvatar({ row }: { row: RodeoResultRow }) {
-  if (row.imageUrl) {
-    return <Image alt="" src={row.imageUrl} width={38} height={38} sizes="38px" />;
-  }
-
-  return <i>{initialsFor(row.name)}</i>;
+  const hasImage = Boolean(row.imageUrl);
+  return (
+    <Image
+      alt=""
+      className={hasImage ? undefined : "athlete-placeholder-image"}
+      src={row.imageUrl || athletePlaceholderImage}
+      width={38}
+      height={38}
+      sizes="38px"
+    />
+  );
 }
 
 function teamRopingRows(rows: RodeoResultRow[]) {
@@ -1266,7 +1288,7 @@ function SettingsView({
             ))}
           </div>
           <label className="settings-toggle-row">
-            <Bell size={19} />
+            <Users size={19} />
             <span>
               <strong>Follow Alerts</strong>
               <em>{followedCount} athlete{followedCount === 1 ? "" : "s"} followed on this device</em>
@@ -1945,7 +1967,7 @@ export function FollowAlertsPanel({
         </div>
       ) : (
         <div className="follow-alert-empty">
-          <Bell size={22} />
+          <Users size={22} />
           <strong>No followed athletes</strong>
           <span>Follow athletes from Standings or a profile to track them here.</span>
         </div>
@@ -1962,18 +1984,17 @@ export function AthleteDetailPane({
   athlete,
   bio,
   state,
-  toggleFavoriteAthlete,
-  toggleFollowedAthlete
+  toggleFavoriteAthlete
 }: {
   athlete: StandingRow;
   bio: AthleteBio | null;
   state: LoadState;
   toggleFavoriteAthlete: (athlete: StandingRow) => void;
-  toggleFollowedAthlete: (athleteId: number) => void;
 }) {
   const [selectedTab, setSelectedTab] = useState<AthleteProfileTab>("Stats");
   const [showBioDocument, setShowBioDocument] = useState(false);
-  const displayImageAthlete = bio?.imageUrl ? { name: bio.name || athlete.name, imageUrl: bio.imageUrl } : athlete;
+  const displayImageUrl = bio?.imageUrl || athlete.imageUrl || athletePlaceholderImage;
+  const hasDisplayImage = Boolean(bio?.imageUrl || athlete.imageUrl);
   const hasBio = Boolean(
     bio && (bio.biography.facts.length > 0 || bio.biography.summary.length > 0 || bio.biography.sections.length > 0)
   );
@@ -1989,7 +2010,7 @@ export function AthleteDetailPane({
   return (
     <div className="athlete-profile-shell">
       <section className="athlete-profile-hero">
-        {displayImageAthlete.imageUrl && <Image src={displayImageAthlete.imageUrl} alt="" fill priority sizes="760px" />}
+        <Image className={hasDisplayImage ? undefined : "athlete-placeholder-image"} src={displayImageUrl} alt="" fill priority sizes="760px" />
         <div className="athlete-profile-hero-scrim" />
         <div className="athlete-profile-hero-content">
           <div className="athlete-profile-title-row">
@@ -2000,9 +2021,6 @@ export function AthleteDetailPane({
             <div className="athlete-profile-action-buttons">
               <button aria-label={athlete.favorite ? "Remove favorite athlete" : "Favorite athlete"} onClick={() => toggleFavoriteAthlete(athlete)}>
                 <Star size={18} fill={athlete.favorite ? "currentColor" : "none"} />
-              </button>
-              <button aria-label={athlete.followed ? "Unfollow athlete" : "Follow athlete"} onClick={() => toggleFollowedAthlete(athlete.id)}>
-                <Bell size={18} fill={athlete.followed ? "currentColor" : "none"} />
               </button>
             </div>
           </div>
@@ -2032,7 +2050,7 @@ export function AthleteDetailPane({
       </section>
 
       <section className="athlete-profile-tab-content">
-        {state === "loading" && <LoadingState title="Loading athlete profile" />}
+        {state === "loading" && <AthleteProfileSkeleton />}
         {state === "error" && <EmptyState title="Profile Unavailable" subtitle="The full athlete profile could not be loaded right now." icon={Users} />}
         {state === "loaded" && bio && showBioDocument && <AthleteBioDocument bio={bio} onBack={() => setShowBioDocument(false)} />}
         {state === "loaded" && bio && !showBioDocument && selectedTab === "Stats" && (
@@ -2625,15 +2643,13 @@ export function AthleteProfileScreen({
   bio,
   state,
   onBack,
-  toggleFavoriteAthlete,
-  toggleFollowedAthlete
+  toggleFavoriteAthlete
 }: {
   athlete: StandingRow;
   bio: AthleteBio | null;
   state: LoadState;
   onBack: () => void;
   toggleFavoriteAthlete: (athlete: StandingRow) => void;
-  toggleFollowedAthlete: (athleteId: number) => void;
 }) {
   return (
     <div className="stack athlete-profile-screen">
@@ -2649,7 +2665,6 @@ export function AthleteProfileScreen({
         bio={bio}
         state={state}
         toggleFavoriteAthlete={toggleFavoriteAthlete}
-        toggleFollowedAthlete={toggleFollowedAthlete}
       />
     </div>
   );
@@ -2657,15 +2672,18 @@ export function AthleteProfileScreen({
 
 function AthleteAvatar({ athlete, size }: { athlete: Pick<StandingRow, "name" | "imageUrl">; size: "small" | "card" | "detail" }) {
   const className = `athlete-avatar ${size}`;
-  if (athlete.imageUrl) {
-    return (
-      <span className={className}>
-        <Image src={athlete.imageUrl} alt="" fill sizes={size === "detail" ? "132px" : size === "card" ? "92px" : "42px"} />
-      </span>
-    );
-  }
-
-  return <span className={`${className} fallback`}>{initialsFor(athlete.name)}</span>;
+  const hasImage = Boolean(athlete.imageUrl);
+  return (
+    <span className={className}>
+      <Image
+        className={hasImage ? undefined : "athlete-placeholder-image"}
+        src={athlete.imageUrl || athletePlaceholderImage}
+        alt=""
+        fill
+        sizes={size === "detail" ? "132px" : size === "card" ? "92px" : "42px"}
+      />
+    </span>
+  );
 }
 
 export function EmptyDetailPane() {
@@ -2735,6 +2753,68 @@ function LoadingState({ title }: { title: string }) {
     <div className="empty-state">
       <span className="loader" />
       <strong>{title}</strong>
+    </div>
+  );
+}
+
+function AthleteProfileSkeleton() {
+  return (
+    <div className="athlete-profile-stack athlete-profile-skeleton" aria-label="Loading athlete profile">
+      <section className="app-card athlete-tab-header-card">
+        <div>
+          <span className="skeleton-line short" />
+          <span className="skeleton-line medium" />
+        </div>
+        <span className="skeleton-pill bio-link" />
+      </section>
+
+      <div className="athlete-season-chip-row" aria-hidden="true">
+        <span className="skeleton-pill season" />
+        <span className="skeleton-pill season" />
+        <span className="skeleton-pill season" />
+      </div>
+
+      <section className="app-card athlete-season-overview-card">
+        <div>
+          <span className="skeleton-line label" />
+          <span className="skeleton-line large" />
+          <span className="skeleton-line medium" />
+        </div>
+        <div>
+          <span className="skeleton-line label" />
+          <span className="skeleton-line amount" />
+        </div>
+      </section>
+
+      <section className="app-card athlete-performance-card athlete-best-performance-card">
+        <span className="skeleton-line medium" />
+        <div className="athlete-stat-row">
+          <span className="skeleton-line label" />
+          <span className="skeleton-line large" />
+          <span className="skeleton-line short" />
+        </div>
+        <div className="athlete-stat-row">
+          <span className="skeleton-line label" />
+          <span className="skeleton-line large" />
+          <span className="skeleton-line short" />
+        </div>
+      </section>
+
+      <section className="app-card athlete-monthly-card">
+        <div className="athlete-monthly-heading">
+          <span className="skeleton-line medium" />
+          <span className="skeleton-line short" />
+        </div>
+        <div className="athlete-monthly-list">
+          {["first", "second", "third"].map((row) => (
+            <div className="athlete-month-row" key={row}>
+              <span className="skeleton-line short" />
+              <i className="skeleton-bar" />
+              <strong className="skeleton-line amount" />
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

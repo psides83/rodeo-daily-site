@@ -1,5 +1,13 @@
-const CACHE_NAME = "rodeo-daily-shell-v1";
-const APP_SHELL = ["/", "/manifest.webmanifest", "/icon.svg", "/apple-touch-icon.svg", "/arena-night.svg"];
+const CACHE_NAME = "rodeo-daily-shell-v2";
+const APP_SHELL = [
+  "/",
+  "/manifest.webmanifest",
+  "/rodeo-daily-icon.png",
+  "/rodeo-daily-icon-192.png",
+  "/rodeo-daily-icon-512.png",
+  "/apple-touch-icon.png",
+  "/arena-night.svg"
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
