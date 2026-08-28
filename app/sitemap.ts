@@ -4,6 +4,7 @@ import type { ApiPosition, ApiRodeo } from "./lib/types";
 
 const now = new Date();
 const standingsSeoYears = ["2026", "2025"];
+const localizedPublicRoutes = ["/br/privacy", "/br/support", "/br/ios-app", "/mx/privacy", "/mx/support", "/mx/ios-app"];
 const standingsApiBaseUrl = "https://d1kfpvgfupbmyo.cloudfront.net/services/pro_rodeo.ashx/";
 const wpraApiBaseUrl = "https://rodeo-data-api.psides83.workers.dev";
 const wpraEvents = new Set(["GB", "LB"]);
@@ -106,10 +107,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: year === "2026" ? 0.96 : 0.82
     }))
   );
+  const localizedRoutes = localizedPublicRoutes.map((route) => ({
+    url: absoluteUrl(route),
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: route.endsWith("/ios-app") ? 0.72 : 0.48
+  }));
   const athleteRoutes = await topAthleteSitemapRoutes();
   const scheduleRoutes = await upcomingScheduleSitemapRoutes();
 
-  return [...staticRoutes, ...standingsRoutes, ...athleteRoutes, ...scheduleRoutes];
+  return [...staticRoutes, ...localizedRoutes, ...standingsRoutes, ...athleteRoutes, ...scheduleRoutes];
 }
 
 async function topAthleteSitemapRoutes(): Promise<MetadataRoute.Sitemap> {

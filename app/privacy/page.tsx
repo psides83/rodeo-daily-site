@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { RodeoDailyLogoMark } from "../components/rodeo-views";
+import { localeAlternates } from "../components/localized-public-pages";
 import { absoluteUrl } from "../lib/seo";
 
 export const metadata: Metadata = {
@@ -8,7 +9,8 @@ export const metadata: Metadata = {
   description:
     "Read the Rodeo Daily privacy policy for the iOS app, web app, PWA, advertising, cookies, local preferences, and rodeo data sources.",
   alternates: {
-    canonical: absoluteUrl("/privacy")
+    canonical: absoluteUrl("/privacy"),
+    languages: localeAlternates("privacy")
   },
   openGraph: {
     type: "website",

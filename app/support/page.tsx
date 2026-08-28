@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { RodeoDailyLogoMark } from "../components/rodeo-views";
+import { localeAlternates } from "../components/localized-public-pages";
 import { absoluteUrl } from "../lib/seo";
 
 const contactEmail = "thewaymediaco@gmail.com";
@@ -13,7 +14,8 @@ export const metadata: Metadata = {
   description:
     "Get support for Rodeo Daily, including the iOS app, web app, PWA, PRCA standings, rodeo results, schedules, athlete profiles, ads, and privacy.",
   alternates: {
-    canonical: absoluteUrl("/support")
+    canonical: absoluteUrl("/support"),
+    languages: localeAlternates("support")
   },
   openGraph: {
     type: "website",

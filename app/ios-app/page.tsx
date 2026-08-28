@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { localeAlternates } from "../components/localized-public-pages";
 import { RodeoDailyLogoMark } from "../components/rodeo-views";
 import { absoluteUrl } from "../lib/seo";
 
@@ -11,7 +12,8 @@ export const metadata: Metadata = {
   description:
     "Download Rodeo Daily for iPhone to follow PRCA standings, WPRA standings, rodeo results, schedules, daysheets, athlete profiles, favorites, and rodeo updates.",
   alternates: {
-    canonical: absoluteUrl("/ios-app")
+    canonical: absoluteUrl("/ios-app"),
+    languages: localeAlternates("ios-app")
   },
   openGraph: {
     type: "website",
