@@ -30,6 +30,16 @@ import {
   sortStandingsPositions,
   standingTypes
 } from "./lib/rodeo-data";
+import {
+  appSettingsStorageKey,
+  loadFavoriteAthleteState,
+  loadFollowedAthletes,
+  moveFavoriteAthleteOrder,
+  readJson,
+  saveFavoriteAthleteState,
+  saveFollowedAthletes,
+  toggleSavedAthlete
+} from "./lib/local-preferences";
 import type {
   ApiBusinessJournalResponse,
   ApiAthleteSearchResponse,
@@ -290,25 +300,15 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const storedFavorites = window.localStorage.getItem("rodeodaily.favoriteAthletes");
-    const storedFavoriteOrder = window.localStorage.getItem("rodeodaily.favoriteAthleteOrder");
-    const storedFollows = window.localStorage.getItem("rodeodaily.followedAthletes");
-    const storedSettings = window.localStorage.getItem("rodeodaily.settings");
+    const favoriteState = loadFavoriteAthleteState(window.localStorage);
+    const storedSettings = readJson<Partial<AppSettings> | null>(window.localStorage, appSettingsStorageKey, null);
 
-    if (storedFavorites) {
-      setFavoriteAthletes(JSON.parse(storedFavorites) as Record<number, SavedAthlete>);
-    }
-
-    if (storedFavoriteOrder) {
-      setFavoriteAthleteOrder(JSON.parse(storedFavoriteOrder) as number[]);
-    }
-
-    if (storedFollows) {
-      setFollowedAthletes(JSON.parse(storedFollows) as number[]);
-    }
+    setFavoriteAthletes(favoriteState.athletes);
+    setFavoriteAthleteOrder(favoriteState.order);
+    setFollowedAthletes(loadFollowedAthletes(window.localStorage));
 
     if (storedSettings) {
-      const settings = { ...defaultSettings, ...(JSON.parse(storedSettings) as Partial<AppSettings>) };
+      const settings = { ...defaultSettings, ...storedSettings };
       setAppSettings(settings);
       setStandingEvent(settings.favoriteStandingsEvent);
       setResultEvent(settings.favoriteResultsEvent);
@@ -319,27 +319,12 @@ export default function Home() {
 
   useEffect(() => {
     if (!preferencesLoaded) return;
-    window.localStorage.setItem("rodeodaily.favoriteAthletes", JSON.stringify(favoriteAthletes));
-  }, [favoriteAthletes, preferencesLoaded]);
-
-  useEffect(() => {
-    setFavoriteAthleteOrder((current) => {
-      const favoriteIds = Object.keys(favoriteAthletes).map(Number);
-      const kept = current.filter((id) => Boolean(favoriteAthletes[id]));
-      const missing = favoriteIds.filter((id) => !kept.includes(id));
-      const next = [...kept, ...missing];
-      return next.length === current.length && next.every((id, index) => id === current[index]) ? current : next;
-    });
-  }, [favoriteAthletes]);
+    saveFavoriteAthleteState(window.localStorage, { athletes: favoriteAthletes, order: favoriteAthleteOrder });
+  }, [favoriteAthletes, favoriteAthleteOrder, preferencesLoaded]);
 
   useEffect(() => {
     if (!preferencesLoaded) return;
-    window.localStorage.setItem("rodeodaily.favoriteAthleteOrder", JSON.stringify(favoriteAthleteOrder));
-  }, [favoriteAthleteOrder, preferencesLoaded]);
-
-  useEffect(() => {
-    if (!preferencesLoaded) return;
-    window.localStorage.setItem("rodeodaily.followedAthletes", JSON.stringify(followedAthletes));
+    saveFollowedAthletes(window.localStorage, followedAthletes);
   }, [followedAthletes, preferencesLoaded]);
 
   useEffect(() => {
@@ -351,7 +336,7 @@ export default function Home() {
 
     if (!preferencesLoaded) return;
 
-    window.localStorage.setItem("rodeodaily.settings", JSON.stringify(appSettings));
+    window.localStorage.setItem(appSettingsStorageKey, JSON.stringify(appSettings));
 
     const consentGranted = appSettings.adConsent === "personalized";
     const adsAllowed = appSettings.adConsent === "personalized" || appSettings.adConsent === "nonPersonalized";
@@ -610,38 +595,13 @@ export default function Home() {
   }, [athleteSearchText, favoriteAthletes, moreSection]);
 
   function toggleFavoriteAthlete(athlete: StandingRow) {
-    setFavoriteAthletes((current) => {
-      const next = { ...current };
-      if (next[athlete.id]) {
-        delete next[athlete.id];
-      } else {
-        next[athlete.id] = {
-          id: athlete.id,
-          name: athlete.name,
-          hometown: athlete.hometown,
-          imageUrl: athlete.imageUrl,
-          metric: athlete.metric,
-          metricLabel: athlete.metricLabel
-        };
-      }
-      return next;
-    });
-    setFavoriteAthleteOrder((current) =>
-      current.includes(athlete.id) ? current.filter((id) => id !== athlete.id) : [...current, athlete.id]
-    );
+    const nextState = toggleSavedAthlete({ athletes: favoriteAthletes, order: favoriteAthleteOrder }, athlete);
+    setFavoriteAthletes(nextState.athletes);
+    setFavoriteAthleteOrder(nextState.order);
   }
 
   function moveFavoriteAthlete(athleteId: number, direction: "up" | "down") {
-    setFavoriteAthleteOrder((current) => {
-      const favoriteIds = Object.keys(favoriteAthletes).map(Number);
-      const order = [...current.filter((id) => favoriteAthletes[id]), ...favoriteIds.filter((id) => !current.includes(id))];
-      const index = order.indexOf(athleteId);
-      const nextIndex = direction === "up" ? index - 1 : index + 1;
-      if (index < 0 || nextIndex < 0 || nextIndex >= order.length) return current;
-      const next = [...order];
-      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
-      return next;
-    });
+    setFavoriteAthleteOrder((current) => moveFavoriteAthleteOrder({ athletes: favoriteAthletes, order: current }, athleteId, direction));
   }
 
   function toggleFollowedAthlete(athleteId: number) {
