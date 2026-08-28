@@ -10,7 +10,6 @@ import {
   CircleHelp,
   CircleDollarSign,
   ExternalLink,
-  Heart,
   Mail,
   ListOrdered,
   MapPin,
@@ -1070,7 +1069,6 @@ export function MoreView({
           settings={appSettings}
           updateSettings={updateAppSettings}
           updateAdConsent={updateAdConsent}
-          followedCount={followedCount}
           favoriteCount={favoriteAthletes.length}
         />
       </SubViewShell>
@@ -1098,10 +1096,10 @@ export function MoreView({
           );
         })}
         <a className="app-card more-row more-app-store-row" href={iosAppStoreUrl} target="_blank" rel="noreferrer">
-          <RodeoDailyLogoMark />
+          <Image src="/app-store-badge.svg" alt="Download on the App Store" width={120} height={40} />
           <div>
             <h3>Rodeo Daily for iOS</h3>
-            <p>Open Rodeo Daily in the Apple App Store</p>
+            <p>Download on your iOS device</p>
           </div>
           <ExternalLink size={17} />
         </a>
@@ -1191,22 +1189,13 @@ function SettingsView({
   settings,
   updateSettings,
   updateAdConsent,
-  followedCount,
   favoriteCount
 }: {
   settings: AppSettings;
   updateSettings: (settings: Partial<AppSettings>) => void;
   updateAdConsent: (consent: AppSettings["adConsent"]) => void;
-  followedCount: number;
   favoriteCount: number;
 }) {
-  const themeOptions: Array<{ id: AppSettings["accentTheme"]; label: string; primary: string; secondary: string }> = [
-    { id: "classic", label: "Classic", primary: "#4d5d52", secondary: "#a08a59" },
-    { id: "arena", label: "Arena", primary: "#31484f", secondary: "#b57935" },
-    { id: "river", label: "River", primary: "#29555a", secondary: "#8f7c3f" },
-    { id: "rose", label: "Rose", primary: "#61424a", secondary: "#b47852" }
-  ];
-
   return (
     <div className="settings-grid">
       <section className="settings-form-section">
@@ -1257,58 +1246,6 @@ function SettingsView({
             </div>
             <ChevronRight size={17} />
           </div>
-        </div>
-      </section>
-
-      <section className="settings-form-section">
-        <h3>Web Preferences</h3>
-        <div className="app-card settings-form-card">
-          <div className="settings-navigation-row">
-            <Settings size={19} />
-            <div>
-              <strong>Appearance</strong>
-              <span>Change app and logo colors on this device.</span>
-            </div>
-          </div>
-          <div className="theme-swatch-grid">
-            {themeOptions.map((theme) => (
-              <button
-                className={settings.accentTheme === theme.id ? "theme-swatch active" : "theme-swatch"}
-                key={theme.id}
-                onClick={() => updateSettings({ accentTheme: theme.id })}
-              >
-                <span>
-                  <i style={{ background: theme.primary }} />
-                  <i style={{ background: theme.secondary }} />
-                </span>
-                {theme.label}
-              </button>
-            ))}
-          </div>
-          <label className="settings-toggle-row">
-            <Users size={19} />
-            <span>
-              <strong>Follow Alerts</strong>
-              <em>{followedCount} athlete{followedCount === 1 ? "" : "s"} followed on this device</em>
-            </span>
-            <input
-              type="checkbox"
-              checked={settings.followAlertsEnabled}
-              onChange={(event) => updateSettings({ followAlertsEnabled: event.target.checked })}
-            />
-          </label>
-          <label className="settings-toggle-row">
-            <Heart size={19} />
-            <span>
-              <strong>Compact List Rows</strong>
-              <em>Use tighter card spacing throughout the app.</em>
-            </span>
-            <input
-              type="checkbox"
-              checked={settings.compactLists}
-              onChange={(event) => updateSettings({ compactLists: event.target.checked })}
-            />
-          </label>
         </div>
       </section>
 

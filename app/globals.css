@@ -1939,13 +1939,14 @@ button:active {
 }
 
 .more-app-store-row {
+  grid-template-columns: 120px minmax(0, 1fr) auto;
   text-decoration: none;
 }
 
-.more-app-store-row .logo-mark {
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
+.more-app-store-row img {
+  display: block;
+  width: 120px;
+  height: auto;
 }
 
 .more-app-store-row > svg:last-child {
