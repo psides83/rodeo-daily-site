@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Rodeo Daily icon">
-  <rect width="512" height="512" rx="108" fill="#15130f"/>
-  <path d="M78 326c56-100 300-100 356 0" fill="none" stroke="#d7a942" stroke-width="34" stroke-linecap="round"/>
-  <path d="M150 214c32-58 180-58 212 0" fill="none" stroke="#fff8ec" stroke-width="24" stroke-linecap="round"/>
-  <path d="M168 274h176" stroke="#a94324" stroke-width="30" stroke-linecap="round"/>
-  <path d="M196 168c18-34 102-34 120 0" fill="none" stroke="#7aa5b8" stroke-width="22" stroke-linecap="round"/>
-  <text x="256" y="378" fill="#fff8ec" font-family="Arial, sans-serif" font-size="104" font-weight="900" text-anchor="middle">RD</text>
-</svg>

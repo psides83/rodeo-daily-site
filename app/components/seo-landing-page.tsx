@@ -42,6 +42,12 @@ export function SeoLandingPage({ eyebrow, title, description, primaryHref, prima
             </article>
           ))}
         </section>
+
+        <footer className="seo-page-footer" aria-label="Rodeo Daily legal and support links">
+          <Link href="/ios-app">iOS App</Link>
+          <Link href="/support">Support</Link>
+          <Link href="/privacy">Privacy Policy</Link>
+        </footer>
       </section>
     </main>
   );

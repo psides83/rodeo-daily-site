@@ -8,6 +8,8 @@ const standingsApiBaseUrl = "https://d1kfpvgfupbmyo.cloudfront.net/services/pro_
 const wpraApiBaseUrl = "https://rodeo-data-api.psides83.workers.dev";
 const wpraEvents = new Set(["GB", "LB"]);
 
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     {
@@ -39,6 +41,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "hourly",
       priority: 0.92
+    },
+    {
+      url: absoluteUrl("/privacy"),
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.45
+    },
+    {
+      url: absoluteUrl("/support"),
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.55
+    },
+    {
+      url: absoluteUrl("/ios-app"),
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.82
     },
     {
       url: absoluteUrl("/?tab=standings"),

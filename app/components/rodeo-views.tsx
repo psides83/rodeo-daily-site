@@ -120,9 +120,7 @@ const iosAppStoreUrl = "https://apps.apple.com/us/app/rodeo-daily/id1671624492";
 export function RodeoDailyLogoMark() {
   return (
     <span className="logo-mark" role="img" aria-label="Rodeo Daily">
-      <svg viewBox="0 0 42 42" aria-hidden="true" focusable="false">
-        <path d="M25.3 9.5c6.8.1 11.1 2.8 12.3 7.3 1.6 6-1.4 11.2-8.8 14.7l7.9 8.6-3.4 2.7-9.9-11.6v11.1h-4.1V14.7c-4.5.8-8 3.3-9.4 7.6-1.7 5.3.4 9.9 5.8 12.2l-2.9 3.1C6 34.5 3.4 28.4 5.8 21.2c2.4-7.5 9.5-11.6 19.5-11.7Zm-1.9 4v13.8c6.6-2.2 10.6-5.8 9.5-9.8-.7-2.7-3.4-4-8-4h-1.5Z" />
-      </svg>
+      <Image className="logo-mark-image" src="/rodeo-daily-icon.png" alt="" width={84} height={84} priority />
     </span>
   );
 }
@@ -1321,8 +1319,21 @@ function SettingsView({
             <ShieldCheck size={19} />
             <div>
               <strong>Ads & Privacy</strong>
-              <span>Choose how Rodeo Daily can use ad cookies on this device.</span>
+              <span>Choose ad cookies on this device or read the full privacy policy.</span>
             </div>
+            <a href="/privacy" aria-label="Open privacy policy">
+              <ExternalLink size={16} />
+            </a>
+          </div>
+          <div className="settings-navigation-row">
+            <CircleHelp size={19} />
+            <div>
+              <strong>Support & Privacy Requests</strong>
+              <span>Get help, report issues, or contact support about privacy questions.</span>
+            </div>
+            <a href="/support" aria-label="Open support page">
+              <ExternalLink size={16} />
+            </a>
           </div>
           <div className="consent-choice-grid">
             <button
@@ -1350,6 +1361,16 @@ function SettingsView({
       <section className="settings-form-section">
         <h3>About</h3>
         <div className="app-card settings-form-card settings-link-list">
+          <a href="/support">
+            <CircleHelp size={17} />
+            <span>App Support</span>
+            <ChevronRight size={16} />
+          </a>
+          <a href="/privacy">
+            <ShieldCheck size={17} />
+            <span>Privacy Policy</span>
+            <ChevronRight size={16} />
+          </a>
           <a href="mailto:thewaymediaco@gmail.com">
             <Mail size={17} />
             <span>Submit Feedback</span>
