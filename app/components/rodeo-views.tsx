@@ -25,7 +25,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 import type { KeyboardEvent, ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GoogleAdSlot } from "./google-ads";
 import { shouldShowBottomAd, shouldShowListAd } from "../lib/ads";
 import type {
@@ -229,10 +229,37 @@ export function StandingsView({
   const showsEventFilter = standingTypeHasEvents(standingType);
   const selectedCircuit = circuits.find((circuit) => circuit.id === selectedCircuitId) ?? circuits[0];
   const circuitLabels = Object.fromEntries(circuits.map((circuit) => [circuit.id, circuit.title]));
+  const filterHeaderRef = useRef<HTMLElement | null>(null);
+  const [showCurrentOverlay, setShowCurrentOverlay] = useState(false);
+
+  useEffect(() => {
+    const filterHeader = filterHeaderRef.current;
+    const scrollContainer = filterHeader?.closest(".tab-scroll");
+    if (!filterHeader || !scrollContainer) {
+      return;
+    }
+    const headerElement = filterHeader;
+    const scrollElement = scrollContainer;
+
+    function updateOverlayVisibility() {
+      const headerBounds = headerElement.getBoundingClientRect();
+      const containerBounds = scrollElement.getBoundingClientRect();
+      setShowCurrentOverlay(headerBounds.bottom <= containerBounds.top + 10);
+    }
+
+    updateOverlayVisibility();
+    scrollElement.addEventListener("scroll", updateOverlayVisibility, { passive: true });
+    window.addEventListener("resize", updateOverlayVisibility);
+
+    return () => {
+      scrollElement.removeEventListener("scroll", updateOverlayVisibility);
+      window.removeEventListener("resize", updateOverlayVisibility);
+    };
+  }, []);
 
   return (
     <div className="stack">
-      <section className="app-card header-card standings-filter-card">
+      <section className="app-card header-card standings-filter-card" ref={filterHeaderRef}>
         <div>
           <span>Standings</span>
           <h2>
@@ -276,6 +303,17 @@ export function StandingsView({
             onChange={setSelectedCircuitId}
           />
         )}
+      </div>
+
+      <div
+        className={showCurrentOverlay ? "standings-current-overlay visible" : "standings-current-overlay"}
+        aria-hidden={!showCurrentOverlay}
+        aria-label="Current standings selection"
+      >
+        <strong>{standingType === "Circuit" ? selectedCircuit.title : standingEvent}</strong>
+        <span>
+          {standingYear} {standingType}
+        </span>
       </div>
 
       <div className="list-stack standings-list">
