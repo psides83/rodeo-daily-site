@@ -12,7 +12,7 @@ const supportMailto =
 export const metadata: Metadata = {
   title: "Support",
   description:
-    "Get support for Rodeo Daily, including the iOS app, web app, PWA, PRCA standings, rodeo results, schedules, athlete profiles, ads, and privacy.",
+    "Get support for Rodeo Daily, including the iOS app, web app, PWA, PRCA standings, PRCA & WPRA rodeo results, schedules, athlete profiles, ads, and privacy.",
   alternates: {
     canonical: absoluteUrl("/support"),
     languages: localeAlternates("support")
@@ -22,13 +22,13 @@ export const metadata: Metadata = {
     url: absoluteUrl("/support"),
     title: "Support | Rodeo Daily",
     description:
-      "Contact Rodeo Daily support and find help for the iOS app, web app, PWA, PRCA standings, rodeo results, schedules, athlete profiles, ads, and privacy."
+      "Contact Rodeo Daily support and find help for the iOS app, web app, PWA, PRCA standings, PRCA & WPRA rodeo results, schedules, athlete profiles, ads, and privacy."
   },
   twitter: {
     card: "summary",
     title: "Support | Rodeo Daily",
     description:
-      "Contact Rodeo Daily support and find help for the iOS app, web app, PWA, PRCA standings, rodeo results, schedules, athlete profiles, ads, and privacy."
+      "Contact Rodeo Daily support and find help for the iOS app, web app, PWA, PRCA standings, PRCA & WPRA rodeo results, schedules, athlete profiles, ads, and privacy."
   }
 };
 
@@ -87,7 +87,7 @@ export default function SupportPage() {
     "@type": "ContactPage",
     name: "Rodeo Daily Support",
     url: absoluteUrl("/support"),
-    about: "Support for Rodeo Daily iOS app, web app, PWA, PRCA standings, rodeo results, schedules, and athlete profiles.",
+    about: "Support for Rodeo Daily iOS app, web app, PWA, PRCA standings, PRCA & WPRA rodeo results, schedules, and athlete profiles.",
     publisher: {
       "@type": "Organization",
       name: "Rodeo Daily",
@@ -124,7 +124,7 @@ export default function SupportPage() {
           <span>Support</span>
           <h1>Rodeo Daily Support</h1>
           <p>
-            Get help with the Rodeo Daily iOS app, web app, PWA, PRCA standings, rodeo results, schedules, athlete
+            Get help with the Rodeo Daily iOS app, web app, PWA, PRCA standings, PRCA & WPRA rodeo results, schedules, athlete
             profiles, ads, and privacy settings.
           </p>
         </section>

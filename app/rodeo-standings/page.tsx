@@ -16,7 +16,7 @@ export default function RodeoStandingsPage() {
     <SeoLandingPage
       eyebrow="Rodeo Standings"
       title="Rodeo Standings, Rankings, and Athlete Profiles"
-      description="Rodeo Daily makes it easy to check rodeo standings by event, season, and standings type, then open athlete profiles for stats, results, career history, highlights, and bios."
+      description="Rodeo Daily makes it easy to check PRCA and WPRA rodeo standings by event, season, and standings type, then open athlete profiles for stats, results, career history, highlights, and bios."
       primaryHref="/?tab=standings"
       primaryLabel="View Rodeo Standings"
       sections={[
