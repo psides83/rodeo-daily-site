@@ -10,7 +10,7 @@ const appStoreUrl = "https://apps.apple.com/us/app/rodeo-daily/id1671624492";
 export const metadata: Metadata = {
   title: "Rodeo Daily iPhone App",
   description:
-    "Download Rodeo Daily for iPhone to follow PRCA standings, WPRA standings, PRCA rodeo results, schedules, daysheets, athlete profiles, favorites, and rodeo updates.",
+    "Download Rodeo Daily for iPhone to follow PRCA standings, WPRA standings, PRCA & WPRA rodeo results, schedules, daysheets, athlete profiles, favorites, and rodeo updates.",
   alternates: {
     canonical: absoluteUrl("/ios-app"),
     languages: localeAlternates("ios-app")
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     url: absoluteUrl("/ios-app"),
     title: "Rodeo Daily iPhone App",
     description:
-      "Follow PRCA standings, WPRA standings, PRCA rodeo results, schedules, daysheets, athlete profiles, favorites, and rodeo updates from your iPhone."
+      "Follow PRCA standings, WPRA standings, PRCA & WPRA rodeo results, schedules, daysheets, athlete profiles, favorites, and rodeo updates from your iPhone."
   },
   twitter: {
     card: "summary",
@@ -41,7 +41,7 @@ const featureCards = [
   },
   {
     title: "Schedule",
-    body: "Find upcoming PRCA and WPRArodeos, date ranges, locations, daysheets, and event details."
+    body: "Find upcoming PRCA and WPRA rodeos, date ranges, locations, daysheets, and event details."
   },
   {
     title: "Athletes",
