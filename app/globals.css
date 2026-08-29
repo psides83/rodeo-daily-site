@@ -4407,42 +4407,6 @@ html[data-compact-lists="true"] .champion-row {
   backdrop-filter: blur(12px);
 }
 
-.athlete-event-filter {
-  display: grid;
-  gap: 2px;
-  min-width: 112px;
-  max-width: 170px;
-  padding: 5px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  color: #fff;
-  backdrop-filter: blur(12px);
-}
-
-.athlete-event-filter span {
-  font-size: 0.58rem;
-  font-weight: 900;
-  letter-spacing: 0;
-  line-height: 1;
-  opacity: 0.72;
-  text-transform: uppercase;
-}
-
-.athlete-event-filter select {
-  width: 100%;
-  border: 0;
-  background: transparent;
-  color: #fff;
-  font-size: 0.74rem;
-  font-weight: 900;
-  outline: 0;
-}
-
-.athlete-event-filter option {
-  color: #111;
-}
-
 .athlete-season-ranking {
   width: fit-content;
   padding: 6px 10px;

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 const baseUrl = "https://d1kfpvgfupbmyo.cloudfront.net/services/pro_rodeo.ashx/";
 const rodeoDataApiUrl = "https://rodeo-data-api.psides83.workers.dev";
 
-const allowedEvents = new Set(["AA", "BB", "SW", "TR", "TRHD", "TRHL", "SB", "TD", "GB", "BR", "XB", "SR", "LB"]);
+const allowedEvents = new Set(["BB", "SW", "TR", "SB", "TD", "GB", "BR", "SR", "LB"]);
 const wpraEvents = new Set(["GB", "LB"]);
 const defaultCircuitId = "1";
 const standingTypeAliases = new Map([

@@ -36,21 +36,6 @@ export const events: EventName[] = [
   "Tie-Down Roping",
   "Barrel Racing",
   "Bull Riding",
-  "Steer Roping",
-  "Breakaway Roping"
-];
-
-export const standingEvents: EventName[] = [
-  "All Around",
-  "Bareback Riding",
-  "Steer Wrestling",
-  "Team Roping (Headers)",
-  "Team Roping (Heelers)",
-  "Saddle Bronc Riding",
-  "Tie-Down Roping",
-  "Barrel Racing",
-  "Bull Riding",
-  "Steer Roping",
   "Breakaway Roping"
 ];
 
@@ -90,18 +75,13 @@ export const defaultCircuitId = circuits[0].id;
 export const singleEventStandingTypes = new Set<StandingType>(["Xtreme Bulls", "Xtreme Broncs", "Legacy Steer Roping"]);
 
 export const eventCodes: Record<EventName, EventCode> = {
-  "All Around": "AA",
   "Bareback Riding": "BB",
   "Steer Wrestling": "SW",
   "Team Roping": "TR",
-  "Team Roping (Headers)": "TRHD",
-  "Team Roping (Heelers)": "TRHL",
   "Saddle Bronc Riding": "SB",
   "Tie-Down Roping": "TD",
   "Barrel Racing": "GB",
   "Bull Riding": "BR",
-  "Xtreme Bulls": "XB",
-  "Steer Roping": "SR",
   "Breakaway Roping": "LB"
 };
 
@@ -118,16 +98,15 @@ export const standingTypes: Record<StandingType, string> = {
 
 export function standingEventsForType(type: StandingType) {
   if (type === "Playoff Series") {
-    return standingEvents.filter((event) => event !== "All Around" && event !== "Barrel Racing" && event !== "Breakaway Roping");
+    return events.filter((event) => event !== "Barrel Racing" && event !== "Breakaway Roping");
   }
 
-  return standingEvents;
+  return events;
 }
 
 export function normalizeStandingEventForType(event: EventName, type: StandingType): EventName {
-  const normalizedEvent = event === "Team Roping" ? "Team Roping (Headers)" : event === "Xtreme Bulls" ? "All Around" : event;
   const availableEvents = standingEventsForType(type);
-  return availableEvents.includes(normalizedEvent) ? normalizedEvent : "Bareback Riding";
+  return availableEvents.includes(event) ? event : "Bareback Riding";
 }
 
 export function standingTypeHasEvents(type: StandingType) {
@@ -216,8 +195,7 @@ export function mapAthleteBio(payload: ApiAthleteBioResponse): AthleteBio | null
     nfrQualifications: bio.NFRQualifications ?? null,
     dateJoined: formatDate(bio.DateJoined ?? undefined),
     biography: parseAthleteBiography(bio.BiographyText),
-    events: athleteBioEvents(bio),
-    earnings: mapAthleteBioEarnings(bio.Earnings),
+    events: bio.EventTypes ?? [],
     rankings: (bio.Rankings ?? []).map((ranking, index) => ({
       id: `${ranking.EventName ?? "event"}-${ranking.Season ?? index}-${ranking.RankType ?? "rank"}`,
       rank: ranking.Rank?.trim() ?? "Unranked",
@@ -225,22 +203,20 @@ export function mapAthleteBio(payload: ApiAthleteBioResponse): AthleteBio | null
       eventName: ranking.EventName?.trim() ?? "",
       season: ranking.Season ?? 0
     })),
-    recentResults: [...(bio.Results ?? []), ...(bio.Averages ?? [])]
+    recentResults: (bio.Results ?? [])
       .slice()
       .sort((left, right) => (right.EndDate ?? "").localeCompare(left.EndDate ?? ""))
       .map((result, index) => ({
-        id: `${athleteResultId(result) ?? "result"}-${index}`,
-        rodeoId: result.RodeoId ?? 0,
+        id: `${result.RodeoResultId ?? result.RodeoId ?? "result"}-${index}`,
         rodeoName: result.RodeoName?.trim() ?? "Unnamed Rodeo",
         location: [result.City, result.StateAbbrv].filter(Boolean).join(", "),
         eventType: result.EventType?.trim() ?? "",
         place: result.Place ?? 0,
         payoff: formatCurrency(result.Payoff ?? 0),
-        resultValue: formatAthleteResultValue(result.EventType, result.Time, result.Score),
+        resultValue: formatAthleteResultValue(result.Time, result.Score),
         round: result.Round?.trim() ?? "",
         endDate: formatDate(result.EndDate),
-        endDateRaw: result.EndDate ?? "",
-        season: athleteResultSeason(result)
+        season: resultSeason(result.EndDate)
       })),
     career: (bio.Career ?? [])
       .slice()
@@ -274,24 +250,6 @@ function parseHighlightVideos(value?: string | null) {
       return [{ id, path }];
     })
     .sort((left, right) => right.id.localeCompare(left.id));
-}
-
-function athleteBioEvents(bio: NonNullable<ApiAthleteBioResponse["data"]>) {
-  const eventsFromResults = [...(bio.Results ?? []), ...(bio.Averages ?? [])].map((result) => cleanText(result.EventType)).filter(Boolean);
-  return Array.from(new Set([...eventsFromResults, ...(bio.EventTypes ?? []).map(cleanText).filter(Boolean)]));
-}
-
-function mapAthleteBioEarnings(earnings?: NonNullable<ApiAthleteBioResponse["data"]>["Earnings"]) {
-  return Object.fromEntries(
-    Object.entries(earnings ?? {}).map(([season, rows]) => [
-      season,
-      rows.map((row) => ({
-        seasonYear: row.SeasonYear ?? (Number(season) || 0),
-        earnings: row.Earnings ?? 0,
-        eventType: cleanText(row.EventType)
-      }))
-    ])
-  );
 }
 
 export function mapAthleteSearchRows(payload: ApiAthleteSearchResponse, favoriteIds: number[]): AthleteSearchRow[] {
@@ -394,35 +352,18 @@ export function normalizeAthleteImageUrl(value?: string | null) {
   return `https://d1kfpvgfupbmyo.cloudfront.net/${trimmed}`;
 }
 
-function formatAthleteResultValue(eventType?: string, time?: number, score?: number) {
-  const isRoughStock = ["BB", "SB", "BR"].includes((eventType ?? "").toUpperCase());
-  const value = isRoughStock ? score : time;
-  if (!value || value === -99) return isRoughStock ? "NS" : "NT";
-  return formatNumber(value);
+function formatAthleteResultValue(time?: number, score?: number) {
+  if (time && time > 0) return `${time.toFixed(2)} sec`;
+  if (score && score > 0) return `${score.toFixed(1)} pts`;
+  return "";
 }
 
-function athleteResultSeason(result: { RodeoName?: string; EndDate?: string; SeasonYear?: number }) {
-  const seasonYear = result.SeasonYear ?? rodeoSeasonYearFromDate(result.EndDate);
-  if (!seasonYear) return 0;
-  return isNationalFinalsRodeo(result.RodeoName) ? seasonYear - 1 : seasonYear;
-}
-
-function athleteResultId(result: { RodeoId?: number; RodeoResultId?: number; AggregateId?: number }) {
-  return result.RodeoResultId ?? result.AggregateId ?? result.RodeoId;
-}
-
-function rodeoSeasonYearFromDate(value?: string) {
+function resultSeason(value?: string) {
   if (!value) return 0;
   const date = new Date(value);
-  if (!Number.isNaN(date.getTime())) {
-    return date.getMonth() >= 9 ? date.getFullYear() + 1 : date.getFullYear();
-  }
+  if (!Number.isNaN(date.getTime())) return date.getFullYear();
   const match = value.match(/\b(19|20)\d{2}\b/);
   return match ? Number(match[0]) : 0;
-}
-
-function isNationalFinalsRodeo(value?: string) {
-  return (value ?? "").toLowerCase().includes("national finals");
 }
 
 export function normalizeWebsiteUrl(value?: string | null) {
@@ -838,18 +779,13 @@ export function rodeoHasEvent(rodeo: ApiRodeo, event: EventName) {
   if (!html) return true;
 
   const phrases: Record<EventName, string[]> = {
-    "All Around": ["all around", "all-around"],
     "Bareback Riding": ["bareback"],
     "Steer Wrestling": ["steer wrestling"],
     "Team Roping": ["team roping"],
-    "Team Roping (Headers)": ["team roping"],
-    "Team Roping (Heelers)": ["team roping"],
     "Saddle Bronc Riding": ["saddle bronc"],
     "Tie-Down Roping": ["tie-down", "tie down"],
     "Barrel Racing": ["barrel racing"],
     "Bull Riding": ["bull riding"],
-    "Xtreme Bulls": ["xtreme bulls", "bull riding"],
-    "Steer Roping": ["steer roping"],
     "Breakaway Roping": ["breakaway"]
   };
 

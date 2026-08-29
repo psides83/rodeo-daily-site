@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import { SeoLandingPage } from "../components/seo-landing-page";
-import { pageMetadata, seoResultEvents } from "../lib/seo";
+import { absoluteUrl } from "../lib/seo";
 
-export const metadata: Metadata = pageMetadata({
+export const metadata: Metadata = {
   title: "PRCA Results",
   description:
     "View PRCA results and rodeo results by event, including rodeo leaders, round results, payouts, schedules, and daysheets in Rodeo Daily.",
-  path: "/prca-results"
-});
+  alternates: {
+    canonical: absoluteUrl("/prca-results")
+  }
+};
 
 export default function PrcaResultsPage() {
   return (
@@ -31,10 +33,6 @@ export default function PrcaResultsPage() {
           body: "Rodeo Daily is designed as a fast web version of the Rodeo Daily app for checking PRCA results, rodeo standings, schedules, athletes, and more."
         }
       ]}
-      relatedLinks={seoResultEvents.map((event) => ({
-        href: `/prca-results/${event.slug}`,
-        label: `PRCA ${event.name} Results`
-      }))}
     />
   );
 }

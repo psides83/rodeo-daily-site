@@ -26,7 +26,6 @@ import {
   mapPastChampions,
   mapPosition,
   mapRodeo,
-  normalizeStandingEventForType,
   rodeoHasEvent,
   sortStandingsPositions,
   standingTypes
@@ -100,7 +99,7 @@ const moreSectionRoutes = Object.entries(moreSectionRouteValues).reduce(
 const defaultSettings: AppSettings = {
   accentTheme: "classic",
   appearanceMode: "device",
-  favoriteStandingsEvent: "All Around",
+  favoriteStandingsEvent: "Tie-Down Roping",
   favoriteResultsEvent: "Tie-Down Roping",
   followAlertsEnabled: true,
   compactLists: false,
@@ -209,7 +208,7 @@ export default function Home() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("Standings");
   const [standingType, setStandingType] = useState<StandingType>("World Standings");
-  const [standingEvent, setStandingEvent] = useState<EventName>("All Around");
+  const [standingEvent, setStandingEvent] = useState<EventName>("Tie-Down Roping");
   const [selectedCircuitId, setSelectedCircuitId] = useState(defaultCircuitId);
   const [standingYear, setStandingYear] = useState("2026");
   const [resultEvent, setResultEvent] = useState<EventName>("Tie-Down Roping");
@@ -272,16 +271,16 @@ export default function Home() {
   useEffect(() => {
     if (activeTab === "Standings") {
       updateDocumentSeo(
-        `${standingYear} PRCA Standings, WPRA Standings & Pro Rodeo Standings | Rodeo Daily`,
-        `Follow ${standingYear} PRCA standings, WPRA standings, pro rodeo standings, world standings, circuit standings, rookie standings, and athlete rankings by event.`
+        `${standingYear} PRCA Standings & Rodeo Standings | Rodeo Daily`,
+        `Follow ${standingYear} PRCA standings, rodeo standings, world standings, circuit standings, rookie standings, and athlete rankings by event.`
       );
       return;
     }
 
     if (activeTab === "Results") {
       updateDocumentSeo(
-        "PRCA Results, WPRA Results & Pro Rodeo Results | Rodeo Daily",
-        `View PRCA results, WPRA results, and pro rodeo results for ${resultEvent}, including leaders, round results, payouts, and rodeo detail pages.`
+        "PRCA Results & Rodeo Results | Rodeo Daily",
+        `View PRCA results and rodeo results for ${resultEvent}, including leaders, round results, payouts, and rodeo detail pages.`
       );
       return;
     }
@@ -367,11 +366,9 @@ export default function Home() {
 
     if (storedSettings) {
       const settings = { ...defaultSettings, ...storedSettings };
-      const favoriteStandingsEvent = normalizeStandingEventForType(settings.favoriteStandingsEvent, "World Standings");
-      const normalizedSettings = { ...settings, favoriteStandingsEvent };
-      setAppSettings(normalizedSettings);
-      setStandingEvent(normalizedSettings.favoriteStandingsEvent);
-      setResultEvent(normalizedSettings.favoriteResultsEvent);
+      setAppSettings(settings);
+      setStandingEvent(settings.favoriteStandingsEvent);
+      setResultEvent(settings.favoriteResultsEvent);
     }
 
     setPreferencesLoaded(true);
@@ -735,7 +732,7 @@ export default function Home() {
   function updateAppSettings(nextSettings: Partial<AppSettings>) {
     setAppSettings((current) => ({ ...current, ...nextSettings }));
     if (nextSettings.favoriteStandingsEvent) {
-      setStandingEvent(normalizeStandingEventForType(nextSettings.favoriteStandingsEvent, "World Standings"));
+      setStandingEvent(nextSettings.favoriteStandingsEvent);
     }
     if (nextSettings.favoriteResultsEvent) {
       setResultsPage(1);

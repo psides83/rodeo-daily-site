@@ -9,21 +9,16 @@ export type StandingType =
   | "Permit"
   | "Legacy Steer Roping";
 export type EventName =
-  | "All Around"
   | "Bareback Riding"
   | "Steer Wrestling"
   | "Team Roping"
-  | "Team Roping (Headers)"
-  | "Team Roping (Heelers)"
   | "Saddle Bronc Riding"
   | "Tie-Down Roping"
   | "Barrel Racing"
   | "Bull Riding"
-  | "Xtreme Bulls"
-  | "Steer Roping"
   | "Breakaway Roping";
 
-export type EventCode = "AA" | "BB" | "SW" | "TR" | "TRHD" | "TRHL" | "SB" | "TD" | "GB" | "BR" | "XB" | "SR" | "LB";
+export type EventCode = "BB" | "SW" | "TR" | "SB" | "TD" | "GB" | "BR" | "SR" | "LB";
 export type LoadState = "idle" | "loading" | "loaded" | "error";
 export type MoreSection = "menu" | "favorites" | "nfr" | "listings" | "champions" | "settings";
 export type RodeoDetailSource = "results" | "schedule";
@@ -163,7 +158,6 @@ export type AthleteBio = {
   dateJoined: string;
   biography: AthleteBiography;
   events: string[];
-  earnings: Record<string, AthleteBioEarning[]>;
   rankings: AthleteBioRanking[];
   recentResults: AthleteBioResult[];
   career: AthleteCareerSeason[];
@@ -196,15 +190,8 @@ export type AthleteBioRanking = {
   season: number;
 };
 
-export type AthleteBioEarning = {
-  seasonYear: number;
-  earnings: number;
-  eventType: string;
-};
-
 export type AthleteBioResult = {
   id: string;
-  rodeoId: number;
   rodeoName: string;
   location: string;
   eventType: string;
@@ -213,7 +200,6 @@ export type AthleteBioResult = {
   resultValue: string;
   round: string;
   endDate: string;
-  endDateRaw: string;
   season: number;
 };
 
@@ -444,14 +430,6 @@ export type ApiAthleteBio = {
   BiographyText?: string;
   VideoHighlights?: string | null;
   EventTypes?: string[];
-  Earnings?: Record<
-    string,
-    Array<{
-      SeasonYear?: number;
-      Earnings?: number;
-      EventType?: string;
-    }>
-  >;
   Rankings?: Array<{
     Rank?: string;
     RankType?: string;
@@ -463,7 +441,6 @@ export type ApiAthleteBio = {
     RodeoName?: string;
     City?: string;
     StateAbbrv?: string;
-    StartDate?: string;
     EndDate?: string;
     RodeoResultId?: number;
     EventType?: string;
@@ -472,23 +449,6 @@ export type ApiAthleteBio = {
     Time?: number;
     Score?: number;
     Round?: string;
-    SeasonYear?: number;
-  }>;
-  Averages?: Array<{
-    RodeoId?: number;
-    RodeoName?: string;
-    City?: string;
-    StateAbbrv?: string;
-    StartDate?: string;
-    EndDate?: string;
-    AggregateId?: number;
-    EventType?: string;
-    Place?: number;
-    Payoff?: number;
-    Time?: number;
-    Score?: number;
-    Round?: string;
-    SeasonYear?: number;
   }>;
   Career?: Array<{
     Season?: number;

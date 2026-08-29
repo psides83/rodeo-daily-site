@@ -28,7 +28,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 import type { KeyboardEvent, ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GoogleAdSlot } from "./google-ads";
 import { shouldShowBottomAd, shouldShowListAd } from "../lib/ads";
 import type {
@@ -68,7 +68,6 @@ import {
   mapScheduleToBusinessJournalRow,
   normalizeStandingEventForType,
   sortBusinessJournalRows,
-  standingEvents,
   standingEventsForType,
   standingTypeHasEvents,
   standingTypeOptions,
@@ -108,8 +107,7 @@ const standingYears = ["2026", "2025", "2024", "2023", "2022", "2021", "2020"];
 const nfrEvents: EventName[] = [
   "Bareback Riding",
   "Steer Wrestling",
-  "Team Roping (Headers)",
-  "Team Roping (Heelers)",
+  "Team Roping",
   "Saddle Bronc Riding",
   "Tie-Down Roping",
   "Barrel Racing",
@@ -118,7 +116,7 @@ const nfrEvents: EventName[] = [
 
 const athleteProfileTabs = ["Stats", "Results", "Career", "Highlights"] as const;
 type AthleteProfileTab = (typeof athleteProfileTabs)[number];
-type AthleteResultSort = "Date" | "Result" | "Earnings";
+type AthleteResultSort = "Date" | "Rodeo" | "Result" | "Earnings";
 const iosAppStoreUrl = "https://apps.apple.com/us/app/rodeo-daily/id1671624492";
 
 export function RodeoDailyLogoMark() {
@@ -1262,7 +1260,7 @@ function SettingsView({
                 value={settings.favoriteStandingsEvent}
                 onChange={(event) => updateSettings({ favoriteStandingsEvent: event.target.value as EventName })}
               >
-                {standingEvents.map((event) => (
+                {events.map((event) => (
                   <option key={event} value={event}>
                     {event}
                   </option>
@@ -2028,27 +2026,14 @@ export function AthleteDetailPane({
 }) {
   const [selectedTab, setSelectedTab] = useState<AthleteProfileTab>("Stats");
   const [showBioDocument, setShowBioDocument] = useState(false);
-  const availableEvents = useMemo(() => (bio ? athleteBioEventOptions(bio) : []), [bio]);
-  const defaultEvent = bio ? defaultAthleteBioEvent(bio, availableEvents) : "";
-  const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
-  const activeEvent = selectedEvent && availableEvents.includes(selectedEvent) ? selectedEvent : defaultEvent;
   const displayImageUrl = bio?.imageUrl || athlete.imageUrl || athletePlaceholderImage;
   const hasDisplayImage = Boolean(bio?.imageUrl || athlete.imageUrl);
   const hasBio = Boolean(
     bio && (bio.biography.facts.length > 0 || bio.biography.summary.length > 0 || bio.biography.sections.length > 0)
   );
-  const currentRanking = bio?.rankings.find((ranking) => ranking.season === new Date().getFullYear() && rankMatchesEvent(ranking.eventName, activeEvent)) ?? bio?.rankings[0];
-  const eventLabel = activeEvent ? displayAthleteEvent(activeEvent) : currentRanking?.eventName || athlete.metricLabel;
+  const currentRanking = bio?.rankings[0];
+  const eventLabel = currentRanking?.eventName || bio?.events[0] || athlete.metricLabel;
   const seasonRanking = currentRanking ? `#${currentRanking.rank} ${currentRanking.eventName}` : athlete.metric ? `${athlete.metricLabel}: ${athlete.metric}` : "";
-
-  useEffect(() => {
-    if (!bio) {
-      setSelectedEvent(null);
-      return;
-    }
-
-    setSelectedEvent((current) => (current && availableEvents.includes(current) ? current : defaultAthleteBioEvent(bio, availableEvents)));
-  }, [availableEvents, bio]);
 
   function selectTab(tab: AthleteProfileTab) {
     setSelectedTab(tab);
@@ -2067,18 +2052,6 @@ export function AthleteDetailPane({
               <p>{eventLabel}</p>
             </div>
             <div className="athlete-profile-action-buttons">
-              {bio && availableEvents.length > 1 && (
-                <label className="athlete-event-filter">
-                  <span>Event</span>
-                  <select value={activeEvent} onChange={(event) => setSelectedEvent(event.target.value)}>
-                    {availableEvents.map((event) => (
-                      <option key={event} value={event}>
-                        {displayAthleteEvent(event)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
               <button aria-label={athlete.favorite ? "Remove favorite athlete" : "Favorite athlete"} onClick={() => toggleFavoriteAthlete(athlete)}>
                 <Star size={18} fill={athlete.favorite ? "currentColor" : "none"} />
               </button>
@@ -2114,10 +2087,10 @@ export function AthleteDetailPane({
         {state === "error" && <EmptyState title="Profile Unavailable" subtitle="The full athlete profile could not be loaded right now." icon={Users} />}
         {state === "loaded" && bio && showBioDocument && <AthleteBioDocument bio={bio} onBack={() => setShowBioDocument(false)} />}
         {state === "loaded" && bio && !showBioDocument && selectedTab === "Stats" && (
-          <AthleteStatsTab bio={bio} athlete={athlete} hasBio={hasBio} selectedEvent={activeEvent} onOpenBio={() => setShowBioDocument(true)} />
+          <AthleteStatsTab bio={bio} athlete={athlete} hasBio={hasBio} onOpenBio={() => setShowBioDocument(true)} />
         )}
-        {state === "loaded" && bio && !showBioDocument && selectedTab === "Results" && <AthleteResultsTab bio={bio} selectedEvent={activeEvent} />}
-        {state === "loaded" && bio && !showBioDocument && selectedTab === "Career" && <AthleteCareerTab bio={bio} selectedEvent={activeEvent} />}
+        {state === "loaded" && bio && !showBioDocument && selectedTab === "Results" && <AthleteResultsTab bio={bio} />}
+        {state === "loaded" && bio && !showBioDocument && selectedTab === "Career" && <AthleteCareerTab bio={bio} />}
         {state === "loaded" && bio && !showBioDocument && selectedTab === "Highlights" && <AthleteHighlightsTab bio={bio} />}
         {state === "loaded" && bio && !showBioDocument && <GoogleAdSlot placement="athleteBioSection" />}
       </section>
@@ -2129,36 +2102,39 @@ function AthleteStatsTab({
   bio,
   athlete,
   hasBio,
-  selectedEvent,
   onOpenBio
 }: {
   bio: AthleteBio;
   athlete: StandingRow;
   hasBio: boolean;
-  selectedEvent: string;
   onOpenBio: () => void;
 }) {
-  const seasons = athleteProfileSeasons(bio);
-  const [selectedSeason, setSelectedSeason] = useState(seasons[0] ?? currentRodeoSeason().toString());
+  const seasons = Array.from(
+    new Set([
+      ...bio.career.map((season) => String(season.season)).filter((season) => season !== "0"),
+      ...bio.rankings.map((ranking) => String(ranking.season)).filter((season) => season !== "0"),
+      ...bio.recentResults.map((result) => String(result.season)).filter((season) => season !== "0")
+    ])
+  ).sort((left, right) => Number(right) - Number(left));
+  const [selectedSeason, setSelectedSeason] = useState(seasons[0] ?? new Date().getFullYear().toString());
   const activeSeason = seasons.includes(selectedSeason) ? selectedSeason : seasons[0] ?? selectedSeason;
-  const seasonCareer = bio.career.find((season) => String(season.season) === activeSeason && season.eventType === selectedEvent);
-  const seasonRanking = bio.rankings.find((ranking) => String(ranking.season) === activeSeason && rankMatchesEvent(ranking.eventName, selectedEvent));
-  const seasonResults = regularAthleteResultsForSeason(bio, activeSeason, selectedEvent);
+  const seasonCareer = bio.career.find((season) => String(season.season) === activeSeason);
+  const seasonRanking = bio.rankings.find((ranking) => String(ranking.season) === activeSeason);
+  const seasonResults = bio.recentResults.filter((result) => String(result.season) === activeSeason);
   const hasSeasonStats = Boolean(seasonCareer || seasonRanking || seasonResults.length > 0);
-  const bestResult = bestAthleteResult(seasonResults, selectedEvent);
+  const bestResult = bestAthleteResult(seasonResults, bio.events[0]);
   const bestPayingGo = [...seasonResults].sort((left, right) => currencyNumber(right.payoff) - currencyNumber(left.payoff))[0];
   const bestPayingRodeo = bestAthletePayingRodeo(seasonResults);
   const monthlyRows = monthlyEarningsRows(seasonResults);
   const monthlyTotal = monthlyRows.reduce((total, row) => total + row.total, 0);
   const maxMonthTotal = Math.max(...monthlyRows.map((row) => row.total), 1);
-  const nfrSummary = nfrSummaryForSeason(bio, activeSeason, selectedEvent);
 
   return (
     <div className="athlete-profile-stack">
       <section className="app-card athlete-tab-header-card">
         <div>
           <h2>Career Stats</h2>
-          <p>{displayAthleteEvent(selectedEvent) || athlete.metricLabel}</p>
+          <p>{bio.events[0] || athlete.metricLabel}</p>
         </div>
         {hasBio && (
           <button className="athlete-bio-text-link" onClick={onOpenBio}>
@@ -2194,7 +2170,7 @@ function AthleteStatsTab({
 
           <section className="app-card athlete-performance-card athlete-best-performance-card">
             <strong>Best Performances</strong>
-            <AthleteStatRow title={resultMetricTitle(selectedEvent)} rodeo={bestResult?.rodeoName || "No result listed"} trailing={bestResult?.resultValue || "-"} />
+            <AthleteStatRow title={resultMetricTitle(bio.events[0])} rodeo={bestResult?.rodeoName || "No result listed"} trailing={bestResult?.resultValue || "-"} />
             <AthleteStatRow
               title="Best Paying Go"
               rodeo={bestPayingGo?.rodeoName || "No payoff listed"}
@@ -2205,24 +2181,18 @@ function AthleteStatsTab({
 
           <section className="app-card athlete-performance-card">
             <strong>NFR Summary</strong>
-            {nfrSummary.bestResult || nfrSummary.earnings ? (
-              <>
-                {nfrSummary.bestResult && (
-                  <div>
-                    <span>NFR {resultMetricTitle(selectedEvent)}</span>
-                    <p>{nfrSummary.bestResult}</p>
-                  </div>
-                )}
-                {nfrSummary.earnings && (
-                  <div>
-                    <span>NFR Earnings</span>
-                    <p>{nfrSummary.earnings}</p>
-                  </div>
-                )}
-              </>
-            ) : (
-              <p>No NFR stats for this season.</p>
-            )}
+            <div>
+              <span>NFR Qualifications</span>
+              <p>{seasonCareer?.nfrQualified ? "Qualified" : "No NFR stats for this season"}</p>
+            </div>
+            <div>
+              <span>World Titles</span>
+              <p>{seasonCareer?.worldTitles ?? 0}</p>
+            </div>
+            <div>
+              <span>NFR Earnings</span>
+              <p>{seasonCareer?.nfrQualified ? seasonCareer.earnings : "No NFR stats for this season"}</p>
+            </div>
           </section>
 
           <section className="app-card athlete-monthly-card">
@@ -2274,7 +2244,7 @@ function formatMoneyFromNumber(value: number) {
 }
 
 function monthlyEarningsRows(results: AthleteBio["recentResults"]) {
-  const monthKeys = ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep"];
+  const monthKeys = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct"];
   return monthKeys.map((month) => ({
     month,
     total: results
@@ -2301,106 +2271,20 @@ function bestAthletePayingRodeo(results: AthleteBio["recentResults"]) {
   return best ? { rodeoName: best.rodeoName, payoff: formatMoneyFromNumber(best.payoff) } : null;
 }
 
-function nfrSummaryForSeason(bio: AthleteBio, season: string, eventType = "") {
-  const results = nfrResultsForSeason(bio, season, eventType);
-  if (results.length === 0) return { bestResult: null, earnings: null };
-
-  const isRoughStock = roughstockEventTypes.has(eventType.toUpperCase());
-  const validResults = results.filter((result) => !isNonQualifierResult(result.resultValue));
-  const best = isRoughStock
-    ? validResults.sort((left, right) => resultNumber(right.resultValue) - resultNumber(left.resultValue))[0] ?? results[0]
-    : validResults.sort((left, right) => resultNumber(left.resultValue) - resultNumber(right.resultValue))[0];
-  const earnings = results.reduce((total, result) => total + currencyNumber(result.payoff), 0);
-
-  return {
-    bestResult: best?.resultValue ?? null,
-    earnings: formatMoneyFromNumber(earnings)
-  };
-}
-
-function nfrResultsForSeason(bio: AthleteBio, season: string, eventType = "") {
-  const targetSeason = Number(season);
-  const deduped = new Map<string, AthleteBioResult>();
-
-  for (const result of bio.recentResults) {
-    if (result.season !== targetSeason) continue;
-    if (eventType && result.eventType !== eventType) continue;
-    if (!result.rodeoName.toLowerCase().includes("national finals")) continue;
-
-    const key = [result.season, result.eventType, result.rodeoId, result.round.trim().toUpperCase(), result.payoff, result.resultValue].join("|");
-    if (!deduped.has(key)) deduped.set(key, result);
-  }
-
-  return [...deduped.values()].sort((left, right) => {
-    const dateComparison = resultDateNumber(left.endDateRaw || left.endDate) - resultDateNumber(right.endDateRaw || right.endDate);
-    if (dateComparison !== 0) return dateComparison;
-    return left.id.localeCompare(right.id);
-  });
-}
-
 function resultMetricTitle(eventType?: string) {
   return roughstockEventTypes.has((eventType ?? "").toUpperCase()) ? "Score" : "Time";
 }
 
-function athleteBioEventOptions(bio: AthleteBio) {
-  return Array.from(new Set(bio.events.filter(Boolean))).sort((left, right) =>
-    displayAthleteEvent(left).localeCompare(displayAthleteEvent(right))
-  );
-}
-
-function defaultAthleteBioEvent(bio: AthleteBio, availableEvents = athleteBioEventOptions(bio)) {
-  if (availableEvents.length === 0) return "";
-
-  const currentYear = new Date().getFullYear();
-  const topEarningEvent = bio.earnings[String(currentYear)]
-    ?.slice()
-    .sort((left, right) => right.earnings - left.earnings)[0]?.eventType;
-  const rankingEvent = topEarningEvent
-    ? bio.rankings.find(
-        (ranking) =>
-          ranking.season === currentYear &&
-          ranking.eventName.toLowerCase().includes(displayAthleteEvent(topEarningEvent).toLowerCase())
-      )?.eventName
-    : "";
-  const rankedEvent = eventCodeFromRankingName(rankingEvent ?? "");
-  const preferredEvent = teamRopingResultEvent(rankedEvent || topEarningEvent || "");
-
-  if (preferredEvent && availableEvents.includes(preferredEvent)) return preferredEvent;
-  return availableEvents[0];
-}
-
-function eventCodeFromRankingName(eventName: string) {
-  const normalized = eventName.toLowerCase();
-  if (!normalized) return "";
-  if (normalized.includes("team roping")) return "TR";
-  if (normalized.includes("bareback")) return "BB";
-  if (normalized.includes("steer wrestling")) return "SW";
-  if (normalized.includes("saddle bronc")) return "SB";
-  if (normalized.includes("tie-down") || normalized.includes("tie down")) return "TD";
-  if (normalized.includes("barrel")) return "GB";
-  if (normalized.includes("bull")) return "BR";
-  if (normalized.includes("steer roping")) return "SR";
-  if (normalized.includes("breakaway")) return "LB";
-  return "";
-}
-
-function teamRopingResultEvent(eventType: string) {
-  return eventType === "TRHD" || eventType === "TRHL" ? "TR" : eventType;
-}
-
-function AthleteResultsTab({ bio, selectedEvent }: { bio: AthleteBio; selectedEvent: string }) {
+function AthleteResultsTab({ bio }: { bio: AthleteBio }) {
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState<AthleteResultSort>("Date");
-  const seasons = athleteProfileSeasons(bio);
-  const [selectedSeason, setSelectedSeason] = useState(seasons[0] ?? currentRodeoSeason().toString());
-  const activeSeason = seasons.includes(selectedSeason) ? selectedSeason : seasons[0] ?? selectedSeason;
   const [isSearching, setIsSearching] = useState(false);
-  const results = athleteResultsForSeason(bio, activeSeason, selectedEvent).filter((result) => athleteResultMatches(result, query));
-  const sortedResults = results.slice().sort((left, right) => sortAthleteResults(left, right, sortBy, selectedEvent));
+  const results = bio.recentResults.filter((result) => athleteResultMatches(result, query));
+  const sortedResults = results.slice().sort((left, right) => sortAthleteResults(left, right, sortBy));
   const usesFlatResultList = sortBy === "Result" || sortBy === "Earnings";
   const groupedResults = groupAthleteResults(sortedResults);
   const resultCount = sortedResults.length;
-  const resultMetricLabel = roughstockEventTypes.has(selectedEvent.toUpperCase()) ? "Score" : "Time";
+  const resultMetricLabel = roughstockEventTypes.has((bio.events[0] ?? "").toUpperCase()) ? "Score" : "Time";
   const summaryText = usesFlatResultList ? `${resultCount} results` : `${groupedResults.length} rodeos • ${resultCount} results`;
 
   if (bio.recentResults.length === 0) {
@@ -2413,7 +2297,7 @@ function AthleteResultsTab({ bio, selectedEvent }: { bio: AthleteBio; selectedEv
         <div className="athlete-results-title-row">
           <div>
             <h2>Results</h2>
-            <p>{[displayAthleteEvent(selectedEvent), activeSeason, summaryText].filter(Boolean).join(" • ")}</p>
+            <p>{[bio.events[0], summaryText].filter(Boolean).join(" • ")}</p>
           </div>
           <button
             type="button"
@@ -2450,22 +2334,17 @@ function AthleteResultsTab({ bio, selectedEvent }: { bio: AthleteBio; selectedEv
             <span>Sort</span>
             <select value={sortBy} onChange={(event) => setSortBy(event.target.value as AthleteResultSort)}>
               <option>Date</option>
+              <option>Rodeo</option>
               <option>Result</option>
               <option>Earnings</option>
             </select>
           </label>
+          <div>
+            <span>Season</span>
+            <strong>{bio.career[0]?.season || new Date().getFullYear()}</strong>
+          </div>
         </div>
       </section>
-
-      {seasons.length > 0 && (
-        <div className="athlete-season-chip-row" aria-label="Results season">
-          {seasons.map((season) => (
-            <button className={activeSeason === season ? "active" : undefined} key={season} onClick={() => setSelectedSeason(season)}>
-              {season}
-            </button>
-          ))}
-        </div>
-      )}
 
       {resultCount === 0 ? (
         <EmptyState title="No Results Found" subtitle="Try a different sort option or search term." icon={ListOrdered} />
@@ -2563,26 +2442,22 @@ function athleteResultMatches(result: AthleteBioResult, query: string) {
     .includes(normalizedQuery);
 }
 
-function sortAthleteResults(left: AthleteBioResult, right: AthleteBioResult, sortBy: AthleteResultSort, eventType = "") {
+function sortAthleteResults(left: AthleteBioResult, right: AthleteBioResult, sortBy: AthleteResultSort) {
   switch (sortBy) {
+    case "Rodeo":
+      return left.rodeoName.localeCompare(right.rodeoName) || compareResultDates(right, left);
     case "Result":
-      return compareAthleteResultValues(left, right, eventType);
+      return resultNumber(left.resultValue) - resultNumber(right.resultValue);
     case "Earnings":
       return currencyNumber(right.payoff) - currencyNumber(left.payoff);
     case "Date":
     default:
-      return compareResultDates(left, right);
+      return compareResultDates(right, left);
   }
 }
 
 function compareResultDates(left: AthleteBioResult, right: AthleteBioResult) {
-  const dateComparison = resultDateNumber(right.endDateRaw || right.endDate) - resultDateNumber(left.endDateRaw || left.endDate);
-  if (dateComparison !== 0) return dateComparison;
-
-  const rodeoComparison = right.rodeoName.localeCompare(left.rodeoName);
-  if (rodeoComparison !== 0) return rodeoComparison;
-
-  return roundSortValue(left.round) - roundSortValue(right.round);
+  return resultDateNumber(left.endDate) - resultDateNumber(right.endDate);
 }
 
 function resultDateNumber(value: string) {
@@ -2593,62 +2468,6 @@ function resultDateNumber(value: string) {
 function resultNumber(value: string) {
   const parsed = Number(value.replace(/[^0-9.-]/g, ""));
   return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
-}
-
-function compareAthleteResultValues(left: AthleteBioResult, right: AthleteBioResult, eventType = "") {
-  const leftNonQualifier = isNonQualifierResult(left.resultValue);
-  const rightNonQualifier = isNonQualifierResult(right.resultValue);
-  if (leftNonQualifier && rightNonQualifier) return 0;
-  if (leftNonQualifier) return 1;
-  if (rightNonQualifier) return -1;
-
-  return roughstockEventTypes.has(eventType.toUpperCase())
-    ? resultNumber(right.resultValue) - resultNumber(left.resultValue)
-    : resultNumber(left.resultValue) - resultNumber(right.resultValue);
-}
-
-function isNonQualifierResult(value: string) {
-  return value === "NT" || value === "NS";
-}
-
-function roundSortValue(round: string) {
-  if (round === "Avg") return 0;
-  if (round === "Finals") return 1;
-  const parsed = Number.parseInt(round, 10);
-  return Number.isFinite(parsed) ? 100 - parsed : 100;
-}
-
-function athleteProfileSeasons(bio: AthleteBio) {
-  return Array.from(
-    new Set([
-      ...bio.career.map((season) => String(season.season)).filter((season) => season !== "0"),
-      ...bio.rankings.map((ranking) => String(ranking.season)).filter((season) => season !== "0"),
-      ...bio.recentResults.map((result) => String(result.season)).filter((season) => season !== "0")
-    ])
-  ).sort((left, right) => Number(right) - Number(left));
-}
-
-function currentRodeoSeason() {
-  const now = new Date();
-  return now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
-}
-
-function athleteResultsForSeason(bio: AthleteBio, season: string, eventType = "") {
-  const targetSeason = Number(season);
-  const seen = new Set<string>();
-  return bio.recentResults.filter((result) => {
-    if (result.season !== targetSeason) return false;
-    if (eventType && result.eventType !== eventType) return false;
-
-    const key = `${result.rodeoId}${result.round}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-function regularAthleteResultsForSeason(bio: AthleteBio, season: string, eventType = "") {
-  return athleteResultsForSeason(bio, season, eventType).filter((result) => !result.rodeoName.toLowerCase().includes("national finals"));
 }
 
 function groupAthleteResults(results: AthleteBioResult[]) {
@@ -2678,9 +2497,9 @@ function groupAthleteResults(results: AthleteBioResult[]) {
   return groups;
 }
 
-function AthleteCareerTab({ bio, selectedEvent }: { bio: AthleteBio; selectedEvent: string }) {
-  const careerRows = athleteCareerRows(bio, selectedEvent);
-  const eventLabel = displayAthleteEvent(selectedEvent || bio.rankings[0]?.eventName || bio.career[0]?.eventType || "");
+function AthleteCareerTab({ bio }: { bio: AthleteBio }) {
+  const careerRows = athleteCareerRows(bio);
+  const eventLabel = displayAthleteEvent(bio.events[0] || bio.rankings[0]?.eventName || bio.career[0]?.eventType || "");
 
   if (bio.career.length === 0 && bio.rankings.length === 0) {
     return <EmptyState title="No Career Data" subtitle="No career rankings are available for this athlete." icon={ListOrdered} />;
@@ -2713,16 +2532,15 @@ function AthleteCareerTab({ bio, selectedEvent }: { bio: AthleteBio; selectedEve
   );
 }
 
-function athleteCareerRows(bio: AthleteBio, selectedEvent = "") {
+function athleteCareerRows(bio: AthleteBio) {
   if (bio.career.length > 0) {
     return bio.career
-      .filter((season) => !selectedEvent || season.eventType === selectedEvent)
       .slice()
       .sort((left, right) => right.season - left.season)
       .map((season) => {
         const ranking =
           bio.rankings.find((rank) => rank.season === season.season && rankMatchesEvent(rank.eventName, season.eventType)) ??
-          bio.rankings.find((rank) => rank.season === season.season && (!selectedEvent || rankMatchesEvent(rank.eventName, selectedEvent)));
+          bio.rankings.find((rank) => rank.season === season.season);
 
         return {
           id: season.id,
@@ -2734,7 +2552,6 @@ function athleteCareerRows(bio: AthleteBio, selectedEvent = "") {
   }
 
   return bio.rankings
-    .filter((ranking) => !selectedEvent || rankMatchesEvent(ranking.eventName, selectedEvent))
     .slice()
     .sort((left, right) => right.season - left.season)
     .map((ranking) => ({
@@ -2770,7 +2587,7 @@ function displayAthleteEvent(value: string) {
     GB: "Barrel Racing",
     BR: "Bull Riding",
     LB: "Breakaway Roping",
-    SR: "Steer Roping"
+    SR: "Breakaway Roping"
   };
   return names[normalized] ?? value;
 }
