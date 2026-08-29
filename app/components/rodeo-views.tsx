@@ -13,11 +13,14 @@ import {
   Mail,
   ListOrdered,
   MapPin,
+  MonitorSmartphone,
+  Moon,
   Newspaper,
   Search,
   Settings,
   ShieldCheck,
   Star,
+  Sun,
   Trophy,
   Users,
   X
@@ -310,10 +313,12 @@ export function StandingsView({
         aria-hidden={!showCurrentOverlay}
         aria-label="Current standings selection"
       >
-        <strong>{standingType === "Circuit" ? selectedCircuit.title : standingEvent}</strong>
-        <span>
-          {standingYear} {standingType}
-        </span>
+        <div className="standings-current-pill">
+          <strong>{standingType === "Circuit" ? selectedCircuit.title : standingEvent}</strong>
+          <span>
+            {standingYear} {standingType}
+          </span>
+        </div>
       </div>
 
       <div className="list-stack standings-list">
@@ -1283,6 +1288,38 @@ function SettingsView({
               <span>{favoriteCount} saved in this browser</span>
             </div>
             <ChevronRight size={17} />
+          </div>
+        </div>
+      </section>
+
+      <section className="settings-form-section">
+        <h3>Appearance</h3>
+        <div className="app-card settings-form-card">
+          <div className="settings-navigation-row">
+            <MonitorSmartphone size={19} />
+            <div>
+              <strong>Display Mode</strong>
+              <span>Use light mode, dark mode, or match this device.</span>
+            </div>
+          </div>
+          <div className="appearance-choice-grid">
+            {[
+              { label: "Light Mode", value: "light", icon: Sun },
+              { label: "Dark Mode", value: "dark", icon: Moon },
+              { label: "Device", value: "device", icon: MonitorSmartphone }
+            ].map((option) => {
+              const Icon = option.icon;
+              return (
+                <button
+                  className={settings.appearanceMode === option.value ? "appearance-choice active" : "appearance-choice"}
+                  key={option.value}
+                  onClick={() => updateSettings({ appearanceMode: option.value as AppSettings["appearanceMode"] })}
+                >
+                  <Icon size={17} />
+                  <span>{option.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -2724,14 +2761,14 @@ function DateRangeFilter({ value, onChange }: { value: DateRange; onChange: (ran
   const hasRange = Boolean(value.start || value.end);
 
   return (
-    <div className="date-range-filter">
+    <div className="date-range-filter compact-date-range">
       <span>Dates</span>
       <label>
-        From
+        <span>From</span>
         <input type="date" value={value.start} onChange={(event) => onChange({ ...value, start: event.target.value })} />
       </label>
       <label>
-        To
+        <span>To</span>
         <input type="date" value={value.end} onChange={(event) => onChange({ ...value, end: event.target.value })} />
       </label>
       {hasRange && (

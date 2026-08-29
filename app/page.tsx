@@ -3,7 +3,7 @@
 import { Calendar, CircleDollarSign, Ellipsis, ListOrdered, Menu, Search, X } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PwaRegister } from "./pwa-register";
 import { GoogleAdsController } from "./components/google-ads";
 import {
@@ -98,6 +98,7 @@ const moreSectionRoutes = Object.entries(moreSectionRouteValues).reduce(
 
 const defaultSettings: AppSettings = {
   accentTheme: "classic",
+  appearanceMode: "device",
   favoriteStandingsEvent: "Tie-Down Roping",
   favoriteResultsEvent: "Tie-Down Roping",
   followAlertsEnabled: true,
@@ -131,6 +132,19 @@ const themeVariables: Record<AppSettings["accentTheme"], Record<string, string>>
     "--app-tertiary": "#756970"
   }
 };
+
+const darkThemeVariables: Record<string, string> = {
+  "--app-primary": "#f5f5f5",
+  "--app-secondary": "#ffd478",
+  "--app-tertiary": "#bcbccf"
+};
+
+function resolveAppearanceMode(mode: AppSettings["appearanceMode"]) {
+  if (mode === "device") {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  return mode;
+}
 
 function appendUniqueRodeos(current: RodeoRow[], incoming: RodeoRow[]) {
   const seen = new Set(current.map((rodeo) => rodeo.id));
@@ -203,7 +217,13 @@ export default function Home() {
   const [scheduleDateRange, setScheduleDateRange] = useState<DateRange>({ start: "", end: "" });
   const [resultsPage, setResultsPage] = useState(1);
   const [schedulePage, setSchedulePage] = useState(1);
+  const tabScrollRef = useRef<HTMLDivElement | null>(null);
+  const lastTabScrollTopRef = useRef(0);
+  const searchCloseTimerRef = useRef<number | null>(null);
+  const [tabBarHidden, setTabBarHidden] = useState(false);
   const [searchExpanded, setSearchExpanded] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [searchClosing, setSearchClosing] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [standingsRows, setStandingsRows] = useState<StandingRow[]>([]);
   const [resultsRows, setResultsRows] = useState<RodeoRow[]>([]);
@@ -285,7 +305,9 @@ export default function Home() {
       setActiveTab(route.tab);
       setMoreSection(route.section);
       setSearchText("");
+      setTabBarHidden(false);
       setSearchExpanded(false);
+      setSearchFocused(false);
       setFollowAlertsOpen(false);
     }
 
@@ -295,8 +317,43 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const scrollElement = tabScrollRef.current;
+    if (!scrollElement) return;
+    const scrollContainer = scrollElement;
+
+    function updateTabBarForScroll() {
+      const scrollTop = scrollContainer.scrollTop;
+      const lastScrollTop = lastTabScrollTopRef.current;
+      const scrollDelta = scrollTop - lastScrollTop;
+
+      if (scrollTop < 32) {
+        setTabBarHidden(false);
+      } else if (scrollDelta > 8 && scrollTop > 96 && !searchExpanded) {
+        setTabBarHidden(true);
+      } else if (scrollDelta < -8) {
+        setTabBarHidden(false);
+      }
+
+      lastTabScrollTopRef.current = scrollTop;
+    }
+
+    lastTabScrollTopRef.current = scrollContainer.scrollTop;
+    updateTabBarForScroll();
+    scrollContainer.addEventListener("scroll", updateTabBarForScroll, { passive: true });
+    return () => scrollContainer.removeEventListener("scroll", updateTabBarForScroll);
+  }, [activeTab, searchExpanded]);
+
+  useEffect(() => {
     const dismissed = window.localStorage.getItem(iosAppBannerDismissedKey) === "true";
     setShowIosAppBanner(isAppleDevice() && !dismissed);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (searchCloseTimerRef.current) {
+        window.clearTimeout(searchCloseTimerRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -329,7 +386,13 @@ export default function Home() {
 
   useEffect(() => {
     const root = document.documentElement;
-    for (const [key, value] of Object.entries(themeVariables[appSettings.accentTheme])) {
+    const resolvedAppearance = resolveAppearanceMode(appSettings.appearanceMode);
+    const activeVariables = resolvedAppearance === "dark" ? darkThemeVariables : themeVariables[appSettings.accentTheme];
+    root.dataset.theme = resolvedAppearance;
+    root.dataset.appearanceMode = appSettings.appearanceMode;
+    root.style.colorScheme = resolvedAppearance;
+
+    for (const [key, value] of Object.entries(activeVariables)) {
       root.style.setProperty(key, value);
     }
     root.dataset.compactLists = appSettings.compactLists ? "true" : "false";
@@ -358,6 +421,30 @@ export default function Home() {
       googleWindow.dataLayer.push(["consent", "update", consentUpdate]);
     }
   }, [appSettings, preferencesLoaded]);
+
+  useEffect(() => {
+    if (appSettings.appearanceMode !== "device") return;
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+    function updateDeviceTheme() {
+      const root = document.documentElement;
+      const resolvedAppearance = mediaQuery.matches ? "dark" : "light";
+      const activeVariables = resolvedAppearance === "dark" ? darkThemeVariables : themeVariables[appSettings.accentTheme];
+      root.dataset.theme = resolvedAppearance;
+      root.style.colorScheme = resolvedAppearance;
+      for (const [key, value] of Object.entries(activeVariables)) {
+        root.style.setProperty(key, value);
+      }
+    }
+
+    updateDeviceTheme();
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener("change", updateDeviceTheme);
+      return () => mediaQuery.removeEventListener("change", updateDeviceTheme);
+    }
+    mediaQuery.addListener(updateDeviceTheme);
+    return () => mediaQuery.removeListener(updateDeviceTheme);
+  }, [appSettings.accentTheme, appSettings.appearanceMode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -672,21 +759,49 @@ export default function Home() {
   }
 
   function selectTab(tab: Tab) {
+    if (searchCloseTimerRef.current) {
+      window.clearTimeout(searchCloseTimerRef.current);
+      searchCloseTimerRef.current = null;
+    }
     setActiveTab(tab);
     setMoreSection("menu");
     setSearchText("");
+    setTabBarHidden(false);
     setSearchExpanded(false);
+    setSearchFocused(false);
+    setSearchClosing(false);
     setFollowAlertsOpen(false);
     window.history.pushState({}, "", appRoute(tab));
   }
 
   function selectMoreSection(section: MoreSection) {
+    if (searchCloseTimerRef.current) {
+      window.clearTimeout(searchCloseTimerRef.current);
+      searchCloseTimerRef.current = null;
+    }
     setActiveTab("More");
     setMoreSection(section);
     setSearchText("");
+    setTabBarHidden(false);
     setSearchExpanded(false);
+    setSearchFocused(false);
+    setSearchClosing(false);
     setFollowAlertsOpen(false);
     window.history.pushState({}, "", appRoute("More", section));
+  }
+
+  function closeSearch() {
+    if (searchCloseTimerRef.current) {
+      window.clearTimeout(searchCloseTimerRef.current);
+    }
+    setSearchText("");
+    setSearchFocused(false);
+    setSearchClosing(true);
+    searchCloseTimerRef.current = window.setTimeout(() => {
+      setSearchExpanded(false);
+      setSearchClosing(false);
+      searchCloseTimerRef.current = null;
+    }, 560);
   }
 
   function dismissIosAppBanner() {
@@ -759,7 +874,7 @@ export default function Home() {
               )}
             </div>
 
-            <div className="tab-scroll">
+            <div className="tab-scroll" ref={tabScrollRef}>
               {activeTab === "Standings" && (
                 <StandingsView
                   standingType={standingType}
@@ -828,46 +943,83 @@ export default function Home() {
               )}
             </div>
 
-            <nav className={searchExpanded ? "tab-bar search-mode" : "tab-bar"} aria-label="Bottom tabs">
-              {!searchExpanded && (
-                <div className="tab-items">
-                  {tabs.map((tab) => {
+            <nav
+              className={[
+                "tab-bar",
+                searchExpanded ? "search-mode" : "",
+                searchExpanded && (searchFocused || searchClosing) ? "search-focused" : "",
+                searchClosing ? "search-closing" : "",
+                tabBarHidden && !searchExpanded ? "hidden" : ""
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              aria-label="Bottom tabs"
+            >
+              <div className={searchExpanded ? "tab-items search-active-tab" : "tab-items"}>
+                {tabs
+                  .filter((tab) => !searchExpanded || tab.label === activeTab)
+                  .map((tab) => {
                     const Icon = tab.icon;
                     return (
                       <button
                         className={activeTab === tab.label ? "tab-button active" : "tab-button"}
                         key={tab.label}
-                        onClick={() => selectTab(tab.label)}
+                        onClick={() => {
+                          if (searchExpanded && tab.label === activeTab) {
+                            closeSearch();
+                            return;
+                          }
+                          selectTab(tab.label);
+                        }}
                       >
                         <Icon size={21} />
                         <span>{tab.label}</span>
                       </button>
                     );
                   })}
-                </div>
-              )}
+              </div>
               <div className={searchExpanded ? "bottom-search expanded" : "bottom-search"}>
                 {searchExpanded && (
                   <>
                     <Search size={18} />
                     <input
-                      autoFocus
                       value={searchText}
                       onChange={(event) => setSearchText(event.target.value)}
+                      onFocus={() => setSearchFocused(true)}
+                      onBlur={() => setSearchFocused(false)}
                       placeholder={searchPlaceholder}
+                      aria-label={searchPlaceholder}
                     />
                   </>
                 )}
+                {!searchExpanded && (
+                  <button
+                    aria-label="Search"
+                    onClick={() => {
+                      if (searchCloseTimerRef.current) {
+                        window.clearTimeout(searchCloseTimerRef.current);
+                        searchCloseTimerRef.current = null;
+                      }
+                      setSearchClosing(false);
+                      setSearchExpanded(true);
+                    }}
+                  >
+                    <Search size={21} />
+                  </button>
+                )}
+              </div>
+              {searchExpanded && (searchFocused || searchClosing) && (
                 <button
-                  aria-label={searchExpanded ? "Close search" : "Search"}
-                  onClick={() => {
-                    setSearchExpanded((expanded) => !expanded);
-                    if (searchExpanded) setSearchText("");
+                  className="search-close-button"
+                  aria-label="Close search"
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    closeSearch();
                   }}
                 >
-                  {searchExpanded ? <X size={20} /> : <Search size={21} />}
+                  <X size={27} />
                 </button>
-              </div>
+              )}
             </nav>
           </section>
 

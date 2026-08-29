@@ -34,6 +34,7 @@ export type CircuitOption = {
 
 export type AppSettings = {
   accentTheme: "classic" | "arena" | "river" | "rose";
+  appearanceMode: "light" | "dark" | "device";
   favoriteStandingsEvent: EventName;
   favoriteResultsEvent: EventName;
   followAlertsEnabled: boolean;
