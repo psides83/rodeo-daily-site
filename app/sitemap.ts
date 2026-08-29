@@ -80,19 +80,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.85
     },
     {
-      url: absoluteUrl("/?tab=more&section=nfr"),
+      url: absoluteUrl("/?tab=more&amp;section=nfr"),
       lastModified: now,
       changeFrequency: "daily",
       priority: 0.75
     },
     {
-      url: absoluteUrl("/?tab=more&section=champions"),
+      url: absoluteUrl("/?tab=more&amp;section=champions"),
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.7
     },
     {
-      url: absoluteUrl("/?tab=more&section=listings"),
+      url: absoluteUrl("/?tab=more&amp;section=listings"),
       lastModified: now,
       changeFrequency: "daily",
       priority: 0.7
