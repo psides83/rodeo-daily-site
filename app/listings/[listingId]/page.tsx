@@ -1,14 +1,124 @@
-"use client";
+import type { Metadata } from "next";
+import BusinessJournalListingClient from "./listing-client";
+import { mapBusinessJournalRows } from "../../lib/rodeo-data";
+import type { ApiBusinessJournalResponse, BusinessJournalRow } from "../../lib/types";
+import { absoluteUrl } from "../../lib/seo";
 
-import { Newspaper } from "lucide-react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { BusinessJournalListingDetailView } from "../../components/rodeo-views";
-import { fetchJson, mapBusinessJournalRows } from "../../lib/rodeo-data";
-import type { ApiBusinessJournalResponse, BusinessJournalRow, LoadState } from "../../lib/types";
+type BusinessJournalListingPageProps = {
+  params: {
+    listingId: string;
+  };
+};
 
-function paramValue(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
+const businessJournalFeedUrl = "https://psides83.github.io/pbj-scraper/pbj-detailed.json";
+
+export const revalidate = 1800;
+
+export async function generateMetadata({ params }: BusinessJournalListingPageProps): Promise<Metadata> {
+  const listingId = safeDecode(params.listingId);
+  const listing = await fetchListing(listingId);
+  const path = `/listings/${encodeURIComponent(listingId)}`;
+
+  if (!listing) {
+    return {
+      title: "Rodeo Listing",
+      description: "View rodeo listing details, entry windows, performances, events, and added money on Rodeo Daily.",
+      alternates: {
+        canonical: absoluteUrl(path)
+      }
+    };
+  }
+
+  const title = `${listing.title} Rodeo Listing`;
+  const description = listingDescription(listing);
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: absoluteUrl(path)
+    },
+    openGraph: {
+      type: "article",
+      url: absoluteUrl(path),
+      title: `${title} | Rodeo Daily`,
+      description,
+      siteName: "Rodeo Daily"
+    },
+    twitter: {
+      card: "summary",
+      title: `${title} | Rodeo Daily`,
+      description
+    }
+  };
+}
+
+export default async function BusinessJournalListingRoutePage({ params }: BusinessJournalListingPageProps) {
+  const listingId = safeDecode(params.listingId);
+  const listing = await fetchListing(listingId);
+  const jsonLd = listing ? listingJsonLd(listing) : null;
+
+  return (
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c")
+          }}
+        />
+      )}
+      <BusinessJournalListingClient />
+    </>
+  );
+}
+
+async function fetchListing(listingId: string) {
+  try {
+    const response = await fetch(businessJournalFeedUrl, { next: { revalidate } });
+    if (!response.ok) return null;
+    const payload = (await response.json()) as ApiBusinessJournalResponse;
+    return mapBusinessJournalRows(payload).find((listing) => listing.id === listingId) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function listingDescription(listing: BusinessJournalRow) {
+  const details = [
+    listing.subtitle,
+    listing.dateText,
+    listing.eventsText,
+    listing.entryWindowText ? `Entries: ${listing.entryWindowText}` : "",
+    listing.addedMoneyText
+  ].filter(Boolean);
+
+  return `View ${listing.title} rodeo listing details on Rodeo Daily${details.length ? `, including ${details.join(", ")}` : ""}.`;
+}
+
+function listingJsonLd(listing: BusinessJournalRow) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "SportsEvent",
+    name: listing.subtitle || listing.title,
+    url: absoluteUrl(`/listings/${encodeURIComponent(listing.id)}`),
+    startDate: listing.eventStartDate || undefined,
+    endDate: listing.eventEndDate || undefined,
+    sport: "Rodeo",
+    location: listing.locationText
+      ? {
+          "@type": "Place",
+          name: listing.title,
+          address: listing.locationText
+        }
+      : undefined,
+    description: listingDescription(listing),
+    organizer: {
+      "@type": "Organization",
+      name: "Rodeo Daily",
+      url: absoluteUrl("/")
+    }
+  };
 }
 
 function safeDecode(value: string) {
@@ -17,110 +127,4 @@ function safeDecode(value: string) {
   } catch {
     return value;
   }
-}
-
-function fallbackListing(id: string, searchParams: ReturnType<typeof useSearchParams>): BusinessJournalRow {
-  return {
-    id,
-    title: searchParams.get("title") || "Rodeo Listing",
-    subtitle: "",
-    dateText: searchParams.get("date") || "",
-    eventStartDate: null,
-    eventEndDate: null,
-    locationText: searchParams.get("location") || "",
-    eventsText: "",
-    perfsText: "",
-    specialEntryFeesText: "",
-    addedMoneyText: "",
-    addedMoneyTotal: null,
-    entryWindowText: "",
-    source: searchParams.get("source") || "Listing",
-    link: "https://pbj.prorodeo.org/",
-    detailFields: []
-  };
-}
-
-export default function BusinessJournalListingRoutePage() {
-  const router = useRouter();
-  const params = useParams();
-  const searchParams = useSearchParams();
-  const listingId = safeDecode(paramValue(params.listingId) ?? "");
-  const [listing, setListing] = useState<BusinessJournalRow>(() => fallbackListing(listingId, searchParams));
-  const [state, setState] = useState<LoadState>("idle");
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadListing() {
-      if (!listingId) {
-        setState("error");
-        return;
-      }
-
-      setState("loading");
-      try {
-        const query = new URLSearchParams({ resource: "business-journal" });
-        const payload = await fetchJson<ApiBusinessJournalResponse>(`/api/rodeo?${query}`);
-        const rows = mapBusinessJournalRows(payload);
-        const match = rows.find((row) => row.id === listingId);
-        if (!cancelled) {
-          if (match) {
-            setListing(match);
-            setState("loaded");
-          } else {
-            setState("error");
-          }
-        }
-      } catch {
-        if (!cancelled) setState("error");
-      }
-    }
-
-    loadListing();
-    return () => {
-      cancelled = true;
-    };
-  }, [listingId]);
-
-  return (
-    <main className="browser-stage routed-stage">
-      <section className="routed-window">
-        {state === "loading" ? (
-          <div className="business-listing-detail">
-            <section className="app-card detail-screen-header">
-              <button onClick={() => router.push("/?tab=more&section=listings")}>Back</button>
-              <div>
-                <span>Rodeo</span>
-                <h2>{listing.title}</h2>
-                <p>Loading listing...</p>
-              </div>
-            </section>
-          </div>
-        ) : state === "error" && listing.detailFields.length === 0 ? (
-          <div className="business-listing-detail">
-            <section className="app-card detail-screen-header">
-              <button onClick={() => router.push("/?tab=more&section=listings")}>Back</button>
-              <div>
-                <span>Rodeo</span>
-                <h2>{listing.title}</h2>
-                <p>{listing.dateText || listing.locationText || "Listing details could not be loaded."}</p>
-              </div>
-            </section>
-            <section className="app-card detail-section">
-              <div className="section-title-row">
-                <div>
-                  <span>{listing.source || "Listing"}</span>
-                  <h3>Listing Unavailable</h3>
-                </div>
-                <Newspaper size={18} />
-              </div>
-              <p className="muted-copy">This listing is no longer available in the Business Journal feed.</p>
-            </section>
-          </div>
-        ) : (
-          <BusinessJournalListingDetailView item={listing} onBack={() => router.push("/?tab=more&section=listings")} />
-        )}
-      </section>
-    </main>
-  );
 }

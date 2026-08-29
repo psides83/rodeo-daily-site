@@ -5,7 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Rodeo Daily | PRCA Results, PRCA Standings & Rodeo Standings",
+    default: "Rodeo Daily | PRCA Results, PRCA Standings & Pro Rodeo Results",
     template: "%s | Rodeo Daily"
   },
   description: siteDescription,
@@ -29,12 +29,12 @@ export const metadata: Metadata = {
     type: "website",
     url: absoluteUrl("/"),
     siteName: "Rodeo Daily",
-    title: "Rodeo Daily | PRCA Results, PRCA Standings & Rodeo Standings",
+    title: "Rodeo Daily | PRCA Results, PRCA Standings & Pro Rodeo Results",
     description: siteDescription
   },
   twitter: {
     card: "summary",
-    title: "Rodeo Daily | PRCA Results, PRCA Standings & Rodeo Standings",
+    title: "Rodeo Daily | PRCA Results, PRCA Standings & Pro Rodeo Results",
     description: siteDescription
   },
   robots: {
@@ -80,6 +80,9 @@ export default function RootLayout({
     about: [
       "PRCA results",
       "PRCA standings",
+      "pro rodeo results",
+      "WPRA results",
+      "WPRA standings",
       "rodeo results",
       "rodeo standings",
       "NFR standings"

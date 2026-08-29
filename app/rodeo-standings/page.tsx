@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
 import { SeoLandingPage } from "../components/seo-landing-page";
-import { absoluteUrl } from "../lib/seo";
+import { pageMetadata } from "../lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Rodeo Standings",
   description:
     "Track rodeo standings, PRCA standings, world standings, circuit standings, rookie standings, athlete rankings, and earnings in Rodeo Daily.",
-  alternates: {
-    canonical: absoluteUrl("/rodeo-standings")
-  }
-};
+  path: "/rodeo-standings"
+});
 
 export default function RodeoStandingsPage() {
   return (
