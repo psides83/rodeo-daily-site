@@ -1,4 +1,4 @@
-export const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://rodeodaily.com";
+export const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://rodeo-daily-site.vercel.app";
 
 export const seoKeywords = [
   "PRCA results",
