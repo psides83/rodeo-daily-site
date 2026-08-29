@@ -122,7 +122,7 @@ export default function IosAppMarketingPage() {
               priority
             />
             <span>Rodeo Daily for iPhone</span>
-            <h1>Follow rodeo standings, results, schedules, and athletes from one app.</h1>
+            <h2>Follow rodeo standings, results, schedules, and athletes from one app.</h2>
             <p>
               Rodeo Daily brings PRCA standings, WPRA standings, PRCA and WPRA rodeo results, schedules, daysheets, athlete profiles,
               favorites, and rodeo reference tools into a fast iPhone experience.
