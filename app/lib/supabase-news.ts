@@ -96,11 +96,13 @@ export async function fetchNewsPostBySlug(slug: string) {
 
 export async function fetchAdminNewsPosts(accessToken: string) {
   await assertAdminUser(accessToken);
-  const rows = await supabaseRequest<SupabaseNewsPostRow[]>("/rest/v1/news_posts?select=*&order=updated_at.desc", {
+  const rows = await supabaseRequest<SupabaseNewsPostRow[]>("/rest/v1/news_posts?select=*&limit=100", {
     serviceRole: true,
     cache: "no-store"
   });
-  return rows.map(mapAdminNewsPostRow);
+  return rows
+    .map(mapAdminNewsPostRow)
+    .sort((left, right) => (right.updatedAt ?? right.publishedAt ?? "").localeCompare(left.updatedAt ?? left.publishedAt ?? ""));
 }
 
 export async function upsertAdminNewsPost(input: NewsPostInput, accessToken: string) {

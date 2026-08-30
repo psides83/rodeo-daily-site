@@ -44,6 +44,7 @@ export function NewsAdminEditor() {
 
     try {
       const response = await fetch("/api/admin/news", {
+        cache: "no-store",
         headers: {
           Authorization: `Bearer ${activeToken}`
         }
@@ -122,6 +123,7 @@ export function NewsAdminEditor() {
 
       const response = await fetch("/api/admin/news", {
         method: "POST",
+        cache: "no-store",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
