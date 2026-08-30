@@ -11,8 +11,10 @@ export async function GET(request: Request) {
     const token = bearerToken(request);
     if (!token) return NextResponse.json({ error: "Login required." }, { status: 401 });
 
+    const posts = await fetchAdminNewsPosts(token);
     return NextResponse.json({
-      data: await fetchAdminNewsPosts(token)
+      data: posts,
+      count: posts.length
     });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to load news posts." }, { status: 403 });

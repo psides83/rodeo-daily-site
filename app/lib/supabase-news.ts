@@ -62,7 +62,7 @@ export async function fetchPublishedNewsPosts() {
   try {
     const rows = await supabaseRequest<SupabaseNewsPostRow[]>(
       "/rest/v1/news_posts?select=*&status=eq.published&order=published_at.desc.nullslast,created_at.desc",
-      { cache: "no-store" }
+      { cache: "no-store", serviceRole: Boolean(supabaseServiceRoleKey) }
     );
     return rows.map(mapNewsPostRow);
   } catch {
@@ -76,7 +76,7 @@ export async function fetchNewsPostBySlug(slug: string) {
   try {
     const rows = await supabaseRequest<SupabaseNewsPostRow[]>(
       `/rest/v1/news_posts?select=*&slug=eq.${encodeURIComponent(slug)}&status=eq.published&limit=1`,
-      { cache: "no-store" }
+      { cache: "no-store", serviceRole: Boolean(supabaseServiceRoleKey) }
     );
     return rows[0] ? mapNewsPostRow(rows[0]) : undefined;
   } catch {

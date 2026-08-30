@@ -31,6 +31,7 @@ export function NewsAdminEditor() {
   const [posts, setPosts] = useState<AdminNewsPost[]>([]);
   const [draft, setDraft] = useState<NewsPostInput>(emptyPost);
   const [message, setMessage] = useState("");
+  const [postListMessage, setPostListMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   const canSave = useMemo(() => draft.title.trim() && draft.slug.trim() && draft.excerpt.trim() && draft.content.trim(), [draft]);
@@ -38,7 +39,7 @@ export function NewsAdminEditor() {
   const loadPosts = useCallback(async (activeToken = token) => {
     if (!activeToken) return;
     setLoading(true);
-    setMessage("");
+    setPostListMessage("Loading posts...");
 
     try {
       const response = await fetch("/api/admin/news", {
@@ -46,11 +47,13 @@ export function NewsAdminEditor() {
           Authorization: `Bearer ${activeToken}`
         }
       });
-      const payload = (await response.json()) as { data?: AdminNewsPost[]; error?: string };
+      const payload = (await response.json()) as { data?: AdminNewsPost[]; count?: number; error?: string };
       if (!response.ok) throw new Error(payload.error || "Unable to load posts.");
       setPosts(payload.data ?? []);
+      const count = payload.count ?? payload.data?.length ?? 0;
+      setPostListMessage(`${count} post${count === 1 ? "" : "s"} loaded.`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to load posts.");
+      setPostListMessage(error instanceof Error ? error.message : "Unable to load posts.");
     } finally {
       setLoading(false);
     }
@@ -126,9 +129,12 @@ export function NewsAdminEditor() {
       const payload = (await response.json()) as { data?: AdminNewsPost; error?: string };
       if (!response.ok) throw new Error(payload.error || "Unable to save post.");
 
-      setMessage("Post saved.");
+      if (payload.data) {
+        setPosts((current) => [payload.data!, ...current.filter((post) => post.slug !== payload.data!.slug)]);
+      }
+      setMessage(input.status === "published" ? "Post saved and published. It should now appear on /news." : "Draft saved. It will not appear on /news until Published is checked.");
       setDraft(emptyPost);
-      await loadPosts(token);
+      void loadPosts(token);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to save post.");
     } finally {
@@ -141,6 +147,7 @@ export function NewsAdminEditor() {
     setToken("");
     setPosts([]);
     setDraft(emptyPost);
+    setPostListMessage("");
   }
 
   return (
@@ -256,6 +263,7 @@ export function NewsAdminEditor() {
                   Refresh
                 </button>
               </div>
+              {postListMessage && <p>{postListMessage}</p>}
               {posts.length === 0 && <p>No posts found.</p>}
               {posts.map((post) => (
                 <button type="button" key={post.slug} onClick={() => setDraft(post)}>
