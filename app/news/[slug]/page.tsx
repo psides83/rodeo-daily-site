@@ -13,10 +13,7 @@ type NewsArticlePageProps = {
   };
 };
 
-export async function generateStaticParams() {
-  const posts = await fetchPublishedNewsPosts();
-  return posts.map((post) => ({ slug: post.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: NewsArticlePageProps): Promise<Metadata> {
   const post = await fetchNewsPostBySlug(params.slug);
@@ -144,5 +141,7 @@ export default async function NewsArticlePage({ params }: NewsArticlePageProps) 
 }
 
 function formatNewsDate(value: string) {
-  return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(new Date(value));
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Recently Published";
+  return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(date);
 }

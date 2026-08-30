@@ -56,5 +56,8 @@ export function newsPostUrl(post: RodeoNewsPost) {
 }
 
 export function newsPostImage(post: RodeoNewsPost) {
+  if (post.heroImage?.startsWith("http://") || post.heroImage?.startsWith("https://")) {
+    return post.heroImage;
+  }
   return absoluteUrl(post.heroImage || "/rodeo-daily-icon.png");
 }

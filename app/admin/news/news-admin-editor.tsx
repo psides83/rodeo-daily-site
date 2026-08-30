@@ -132,7 +132,11 @@ export function NewsAdminEditor() {
       if (!response.ok) throw new Error(payload.error || "Unable to save post.");
 
       if (payload.data) {
-        setPosts((current) => [payload.data!, ...current.filter((post) => post.slug !== payload.data!.slug)]);
+        setPosts((current) => {
+          const nextPosts = [payload.data!, ...current.filter((post) => post.slug !== payload.data!.slug)];
+          setPostListMessage(`${nextPosts.length} post${nextPosts.length === 1 ? "" : "s"} in this editor.`);
+          return nextPosts;
+        });
       }
       setMessage(input.status === "published" ? "Post saved and published. It should now appear on /news." : "Draft saved. It will not appear on /news until Published is checked.");
       setDraft(emptyPost);
@@ -278,7 +282,7 @@ export function NewsAdminEditor() {
               {posts.map((post) => (
                 <button type="button" key={post.slug} onClick={() => setDraft(post)}>
                   <strong>{post.title}</strong>
-                  <span>{post.status}</span>
+                  <span>{post.status === "published" ? "Published on /news" : "Draft - hidden from /news"}</span>
                 </button>
               ))}
             </aside>
