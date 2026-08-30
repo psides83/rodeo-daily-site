@@ -16,9 +16,10 @@ import type { ApiAthleteBioResponse, AthleteBio, LoadState, SavedAthlete, Standi
 type AthleteProfileClientProps = {
   athleteId: number;
   initialBio: AthleteBio | null;
+  preferredEvent: string | null;
 };
 
-export function AthleteProfileClient({ athleteId, initialBio }: AthleteProfileClientProps) {
+export function AthleteProfileClient({ athleteId, initialBio, preferredEvent }: AthleteProfileClientProps) {
   const router = useRouter();
   const [bio, setBio] = useState<AthleteBio | null>(initialBio);
   const [state, setState] = useState<LoadState>(initialBio ? "loaded" : "idle");
@@ -104,6 +105,7 @@ export function AthleteProfileClient({ athleteId, initialBio }: AthleteProfileCl
       athlete={athlete}
       bio={bio}
       state={state}
+      preferredEvent={preferredEvent}
       onBack={() => router.back()}
       toggleFavoriteAthlete={toggleFavoriteAthlete}
     />

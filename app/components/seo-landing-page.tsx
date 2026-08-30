@@ -11,9 +11,13 @@ type SeoLandingPageProps = {
     title: string;
     body: string;
   }>;
+  relatedLinks?: Array<{
+    href: string;
+    label: string;
+  }>;
 };
 
-export function SeoLandingPage({ eyebrow, title, description, primaryHref, primaryLabel, sections }: SeoLandingPageProps) {
+export function SeoLandingPage({ eyebrow, title, description, primaryHref, primaryLabel, sections, relatedLinks = [] }: SeoLandingPageProps) {
   return (
     <main className="seo-page">
       <section className="seo-page-shell">
@@ -43,7 +47,23 @@ export function SeoLandingPage({ eyebrow, title, description, primaryHref, prima
           ))}
         </section>
 
+        {relatedLinks.length > 0 && (
+          <section className="seo-page-footer" aria-label="Related rodeo pages">
+            {relatedLinks.map((link) => (
+              <Link href={link.href} key={link.href}>
+                {link.label}
+              </Link>
+            ))}
+          </section>
+        )}
+
         <footer className="seo-page-footer" aria-label="Rodeo Daily legal and support links">
+          <Link href="/prca-results">PRCA Results</Link>
+          <Link href="/pro-rodeo-results">Pro Rodeo Results</Link>
+          <Link href="/prca-standings">PRCA Standings</Link>
+          <Link href="/wpra-results">WPRA Results</Link>
+          <Link href="/wpra-standings">WPRA Standings</Link>
+          <Link href="/news">Rodeo News</Link>
           <Link href="/ios-app">iOS App</Link>
           <Link href="/support">Support</Link>
           <Link href="/privacy">Privacy Policy</Link>

@@ -8,6 +8,9 @@ type AthleteRoutePageProps = {
   params: {
     athleteId: string;
   };
+  searchParams?: {
+    event?: string;
+  };
 };
 
 const athleteApiBaseUrl = "https://d1kfpvgfupbmyo.cloudfront.net/services/pro_rodeo.ashx/";
@@ -54,7 +57,7 @@ export async function generateMetadata({ params }: AthleteRoutePageProps): Promi
   };
 }
 
-export default async function AthleteRoutePage({ params }: AthleteRoutePageProps) {
+export default async function AthleteRoutePage({ params, searchParams }: AthleteRoutePageProps) {
   const athleteId = safeAthleteId(params.athleteId) ?? 0;
   const bio = athleteId ? await fetchAthleteBio(athleteId) : null;
   const jsonLd = bio ? athleteJsonLd(bio) : null;
@@ -70,7 +73,7 @@ export default async function AthleteRoutePage({ params }: AthleteRoutePageProps
         />
       )}
       <section className="routed-window">
-        <AthleteProfileClient athleteId={athleteId} initialBio={bio} />
+        <AthleteProfileClient athleteId={athleteId} initialBio={bio} preferredEvent={searchParams?.event ?? null} />
       </section>
     </main>
   );

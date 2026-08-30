@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
 import { SeoLandingPage } from "../components/seo-landing-page";
-import { absoluteUrl } from "../lib/seo";
+import { pageMetadata, seoStandingEvents } from "../lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "PRCA Standings",
   description:
     "Follow PRCA standings, rodeo standings, world standings, circuit standings, rookie standings, and athlete profiles by event in Rodeo Daily.",
-  alternates: {
-    canonical: absoluteUrl("/prca-standings")
-  }
-};
+  path: "/prca-standings"
+});
 
 export default function PrcaStandingsPage() {
   return (
@@ -33,6 +31,10 @@ export default function PrcaStandingsPage() {
           body: "Open athlete pages from the standings to view stats, results, career information, highlights, and biography details where available."
         }
       ]}
+      relatedLinks={seoStandingEvents.map((event) => ({
+        href: `/prca-standings/2026/${event.slug}`,
+        label: `2026 PRCA ${event.name} Standings`
+      }))}
     />
   );
 }

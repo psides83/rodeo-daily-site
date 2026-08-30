@@ -1,9 +1,11 @@
 "use client";
 
-import { Calendar, CircleDollarSign, Ellipsis, ListOrdered, Menu, Search, X } from "lucide-react";
+import { Calendar, CircleDollarSign, ListOrdered, MonitorSmartphone, Newspaper, Search, Settings, ShieldCheck, Trophy, Users, X } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { PwaRegister } from "./pwa-register";
 import { GoogleAdsController } from "./components/google-ads";
 import {
@@ -26,6 +28,7 @@ import {
   mapPastChampions,
   mapPosition,
   mapRodeo,
+  normalizeStandingEventForType,
   rodeoHasEvent,
   sortStandingsPositions,
   standingTypes
@@ -64,12 +67,32 @@ import type {
 } from "./lib/types";
 
 
-const tabs: Array<{ label: Tab; icon: typeof ListOrdered }> = [
+const tabs: Array<{ label: Tab; icon: LucideIcon }> = [
   { label: "Standings", icon: ListOrdered },
   { label: "Results", icon: CircleDollarSign },
-  { label: "Schedule", icon: Calendar },
-  { label: "More", icon: Ellipsis }
+  { label: "More", icon: Settings }
 ];
+
+const primaryDesktopTabs = tabs.filter((tab) => tab.label !== "More");
+
+const desktopMoreItems: Array<{ section: Exclude<MoreSection, "menu">; icon: LucideIcon; label: string }> = [
+  { section: "schedule", icon: Calendar, label: "Schedule" },
+  { section: "favorites", icon: Users, label: "Favorite Athletes" },
+  { section: "nfr", icon: Trophy, label: "NFR Standings" },
+  { section: "listings", icon: Newspaper, label: "Rodeo Listings" },
+  { section: "champions", icon: ShieldCheck, label: "Past Champions" },
+  { section: "settings", icon: Settings, label: "Settings" }
+];
+
+const moreSectionLabels: Record<MoreSection, string> = {
+  menu: "More",
+  schedule: "Schedule",
+  favorites: "Favorite Athletes",
+  nfr: "NFR Standings",
+  listings: "Rodeo Listings",
+  champions: "Past Champions",
+  settings: "Settings"
+};
 
 const tabRouteValues: Record<Tab, string> = {
   Standings: "standings",
@@ -84,6 +107,7 @@ const tabRoutes = Object.entries(tabRouteValues).reduce(
 );
 
 const moreSectionRouteValues: Record<Exclude<MoreSection, "menu">, string> = {
+  schedule: "schedule",
   favorites: "favorites",
   nfr: "nfr",
   listings: "listings",
@@ -99,7 +123,7 @@ const moreSectionRoutes = Object.entries(moreSectionRouteValues).reduce(
 const defaultSettings: AppSettings = {
   accentTheme: "classic",
   appearanceMode: "device",
-  favoriteStandingsEvent: "Tie-Down Roping",
+  favoriteStandingsEvent: "All Around",
   favoriteResultsEvent: "Tie-Down Roping",
   followAlertsEnabled: true,
   compactLists: false,
@@ -208,7 +232,7 @@ export default function Home() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("Standings");
   const [standingType, setStandingType] = useState<StandingType>("World Standings");
-  const [standingEvent, setStandingEvent] = useState<EventName>("Tie-Down Roping");
+  const [standingEvent, setStandingEvent] = useState<EventName>("All Around");
   const [selectedCircuitId, setSelectedCircuitId] = useState(defaultCircuitId);
   const [standingYear, setStandingYear] = useState("2026");
   const [resultEvent, setResultEvent] = useState<EventName>("Tie-Down Roping");
@@ -250,42 +274,48 @@ export default function Home() {
   const [athleteSearchState, setAthleteSearchState] = useState<LoadState>("idle");
   const standingsSearchText = activeTab === "Standings" ? searchText : "";
   const resultsSearchText = activeTab === "Results" ? searchText : "";
-  const scheduleSearchText = activeTab === "Schedule" ? searchText : "";
+  const isScheduleViewActive = activeTab === "Schedule" || (activeTab === "More" && moreSection === "schedule");
+  const scheduleSearchText = isScheduleViewActive ? searchText : "";
   const headerSubtitle = useMemo(() => {
     if (activeTab === "Standings") {
       const selectedCircuit = circuits.find((circuit) => circuit.id === selectedCircuitId) ?? circuits[0];
       return `${standingType === "Circuit" ? selectedCircuit.title : standingEvent} - ${standingYear} ${standingType}`;
     }
     if (activeTab === "Results") return `${resultEvent} Rodeo Results`;
-    if (activeTab === "Schedule") return "Upcoming Rodeos";
+    if (isScheduleViewActive) return "Upcoming Rodeos";
+    if (moreSection === "favorites") return `${followedAthletes.length} followed athletes`;
+    if (moreSection === "nfr") return `${nfrEvent} NFR standings`;
+    if (moreSection === "listings") return "Rodeo business listings and schedule details";
+    if (moreSection === "champions") return "Historic PRCA world champions";
+    if (moreSection === "settings") return "Preferences and app info";
     return "More Features";
-  }, [activeTab, resultEvent, selectedCircuitId, standingEvent, standingType, standingYear]);
+  }, [activeTab, followedAthletes.length, isScheduleViewActive, moreSection, nfrEvent, resultEvent, selectedCircuitId, standingEvent, standingType, standingYear]);
 
   const searchPlaceholder = useMemo(() => {
     if (activeTab === "Standings") return "Search athletes...";
     if (activeTab === "Results") return "Search results rodeos...";
-    if (activeTab === "Schedule") return "Search upcoming rodeos...";
+    if (isScheduleViewActive) return "Search upcoming rodeos...";
     return "Search...";
-  }, [activeTab]);
+  }, [activeTab, isScheduleViewActive]);
 
   useEffect(() => {
     if (activeTab === "Standings") {
       updateDocumentSeo(
-        `${standingYear} PRCA Standings & Rodeo Standings | Rodeo Daily`,
-        `Follow ${standingYear} PRCA standings, rodeo standings, world standings, circuit standings, rookie standings, and athlete rankings by event.`
+        `${standingYear} PRCA Standings, WPRA Standings & Pro Rodeo Standings | Rodeo Daily`,
+        `Follow ${standingYear} PRCA standings, WPRA standings, pro rodeo standings, world standings, circuit standings, rookie standings, and athlete rankings by event.`
       );
       return;
     }
 
     if (activeTab === "Results") {
       updateDocumentSeo(
-        "PRCA Results & Rodeo Results | Rodeo Daily",
-        `View PRCA results and rodeo results for ${resultEvent}, including leaders, round results, payouts, and rodeo detail pages.`
+        "PRCA Results, WPRA Results & Pro Rodeo Results | Rodeo Daily",
+        `View PRCA results, WPRA results, and pro rodeo results for ${resultEvent}, including leaders, round results, payouts, and rodeo detail pages.`
       );
       return;
     }
 
-    if (activeTab === "Schedule") {
+    if (isScheduleViewActive) {
       updateDocumentSeo(
         "Rodeo Schedule, Daysheets & Upcoming Rodeos | Rodeo Daily",
         "Find upcoming rodeos, PRCA rodeo schedules, daysheets, venues, dates, payouts, and rodeo detail pages."
@@ -297,7 +327,7 @@ export default function Home() {
       "NFR Standings, Rodeo Listings & Past Champions | Rodeo Daily",
       "Explore NFR standings, rodeo listings, past world champions, favorite athletes, and Rodeo Daily settings."
     );
-  }, [activeTab, resultEvent, standingYear]);
+  }, [activeTab, isScheduleViewActive, resultEvent, standingYear]);
 
   useEffect(() => {
     function syncFromRoute() {
@@ -366,9 +396,11 @@ export default function Home() {
 
     if (storedSettings) {
       const settings = { ...defaultSettings, ...storedSettings };
-      setAppSettings(settings);
-      setStandingEvent(settings.favoriteStandingsEvent);
-      setResultEvent(settings.favoriteResultsEvent);
+      const favoriteStandingsEvent = normalizeStandingEventForType(settings.favoriteStandingsEvent, "World Standings");
+      const normalizedSettings = { ...settings, favoriteStandingsEvent };
+      setAppSettings(normalizedSettings);
+      setStandingEvent(normalizedSettings.favoriteStandingsEvent);
+      setResultEvent(normalizedSettings.favoriteResultsEvent);
     }
 
     setPreferencesLoaded(true);
@@ -732,7 +764,7 @@ export default function Home() {
   function updateAppSettings(nextSettings: Partial<AppSettings>) {
     setAppSettings((current) => ({ ...current, ...nextSettings }));
     if (nextSettings.favoriteStandingsEvent) {
-      setStandingEvent(nextSettings.favoriteStandingsEvent);
+      setStandingEvent(normalizeStandingEventForType(nextSettings.favoriteStandingsEvent, "World Standings"));
     }
     if (nextSettings.favoriteResultsEvent) {
       setResultsPage(1);
@@ -744,8 +776,11 @@ export default function Home() {
     updateAppSettings({ adConsent, consentUpdatedAt: new Date().toISOString() });
   }
 
-  function openAthleteProfile(athlete: StandingRow) {
-    router.push(`/athletes/${athlete.id}`);
+  function openAthleteProfile(athlete: StandingRow, preferredEvent?: EventName) {
+    const event = preferredEvent ?? (activeTab === "Standings" ? standingEvent : undefined);
+    const query = new URLSearchParams();
+    if (event) query.set("event", eventCodes[event]);
+    router.push(`/athletes/${athlete.id}${query.size ? `?${query}` : ""}`);
   }
 
   function openBusinessJournalListing(listing: BusinessJournalRow) {
@@ -823,11 +858,6 @@ export default function Home() {
               <strong>Rodeo Daily</strong>
             </div>
           </div>
-          <div className="toolbar-actions">
-            <button aria-label="Menu" onClick={() => selectTab("More")}>
-              <Menu size={20} />
-            </button>
-          </div>
         </header>
 
         <div className="content-grid">
@@ -835,7 +865,7 @@ export default function Home() {
             <div className="sidebar-title">
               <span>Tabs</span>
             </div>
-            {tabs.map((tab) => {
+            {primaryDesktopTabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
@@ -848,15 +878,40 @@ export default function Home() {
                 </button>
               );
             })}
+            <Link className="sidebar-tab" href="/news">
+              <Newspaper size={19} />
+              <span>News</span>
+            </Link>
+            <div className="sidebar-title sidebar-title-spaced">
+              <span>More</span>
+            </div>
+            {desktopMoreItems.map((item) => {
+              const Icon = item.icon;
+              const active = activeTab === "More" && moreSection === item.section;
+              return (
+                <button
+                  className={active ? "sidebar-tab active" : "sidebar-tab"}
+                  key={item.section}
+                  onClick={() => selectMoreSection(item.section)}
+                >
+                  <Icon size={19} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+            <Link className="sidebar-tab" href="/ios-app">
+              <MonitorSmartphone size={19} />
+              <span>iOS App</span>
+            </Link>
           </aside>
 
           <section className="phone-surface">
             <div className="native-header">
               <div>
-                <h1>{activeTab}</h1>
+                <h1>{activeTab === "More" ? moreSectionLabels[moreSection] : activeTab}</h1>
                 <p>{headerSubtitle}</p>
               </div>
-              {activeTab !== "More" && (
+              {(activeTab !== "More" || moreSection === "schedule") && (
                 <label className="header-search">
                   <Search size={17} />
                   <input
@@ -921,6 +976,11 @@ export default function Home() {
                   favoriteAthletes={favoriteAthleteRows}
                   followedCount={followedAthletes.length}
                   scheduleRows={scheduleRows}
+                  scheduleState={scheduleState}
+                  scheduleDateRange={scheduleDateRange}
+                  setScheduleDateRange={updateScheduleDateRange}
+                  onOpenScheduleRodeo={(rodeo) => openRodeoDetail(rodeo, "schedule", rodeo.event)}
+                  onLoadMoreSchedule={() => setSchedulePage((page) => page + 1)}
                   businessJournalRows={businessJournalRows}
                   businessJournalState={businessJournalState}
                   pastChampions={pastChampions}
@@ -961,20 +1021,28 @@ export default function Home() {
                   .map((tab) => {
                     const Icon = tab.icon;
                     return (
-                      <button
-                        className={activeTab === tab.label ? "tab-button active" : "tab-button"}
-                        key={tab.label}
-                        onClick={() => {
-                          if (searchExpanded && tab.label === activeTab) {
-                            closeSearch();
-                            return;
-                          }
-                          selectTab(tab.label);
-                        }}
-                      >
-                        <Icon size={21} />
-                        <span>{tab.label}</span>
-                      </button>
+                      <Fragment key={tab.label}>
+                        {tab.label === "More" && !searchExpanded && (
+                          <Link className="tab-button" href="/news">
+                            <Newspaper size={21} />
+                            <span>News</span>
+                          </Link>
+                        )}
+                        <button
+                          className={activeTab === tab.label ? "tab-button active" : "tab-button"}
+                          key={tab.label}
+                          onClick={() => {
+                            if (searchExpanded && tab.label === activeTab) {
+                              closeSearch();
+                              return;
+                            }
+                            selectTab(tab.label);
+                          }}
+                        >
+                          <Icon size={21} />
+                          <span>{tab.label}</span>
+                        </button>
+                      </Fragment>
                     );
                   })}
               </div>
