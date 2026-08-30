@@ -48,6 +48,16 @@ export type AdminNewsPost = NewsPostInput & {
   updatedAt?: string;
 };
 
+export type NewsAdminDiagnostics = {
+  configured: boolean;
+  projectHost: string;
+  adminEmailCount: number;
+  serviceRolePresent: boolean;
+  directCount?: number;
+  directStatus?: number;
+  directError?: string;
+};
+
 export function supabaseNewsConfigured() {
   return Boolean(supabaseUrl && supabaseAnonKey);
 }
@@ -106,6 +116,40 @@ export async function upsertAdminNewsPost(input: NewsPostInput, accessToken: str
   return mapAdminNewsPostRow(row);
 }
 
+export async function fetchNewsAdminDiagnostics(accessToken: string): Promise<NewsAdminDiagnostics> {
+  await assertAdminUser(accessToken);
+
+  const diagnostics: NewsAdminDiagnostics = {
+    configured: supabaseAdminConfigured(),
+    projectHost: supabaseUrl ? new URL(supabaseUrl).host : "",
+    adminEmailCount: adminEmails.length,
+    serviceRolePresent: Boolean(supabaseServiceRoleKey)
+  };
+
+  try {
+    const response = await fetch(`${supabaseUrl}/rest/v1/news_posts?select=slug`, {
+      headers: {
+        apikey: supabaseServiceRoleKey,
+        Authorization: `Bearer ${supabaseServiceRoleKey}`,
+        Prefer: "count=exact",
+        "Accept-Profile": "public"
+      },
+      cache: "no-store"
+    });
+    diagnostics.directStatus = response.status;
+    const contentRange = response.headers.get("content-range");
+    const countText = contentRange?.split("/")[1];
+    diagnostics.directCount = countText && countText !== "*" ? Number(countText) : undefined;
+    if (!response.ok) {
+      diagnostics.directError = await response.text();
+    }
+  } catch (error) {
+    diagnostics.directError = error instanceof Error ? error.message : "Unable to run diagnostics.";
+  }
+
+  return diagnostics;
+}
+
 async function assertAdminUser(accessToken: string) {
   if (!supabaseAdminConfigured()) {
     throw new Error("Supabase admin environment variables are not configured.");
@@ -139,13 +183,16 @@ async function supabaseRequest<T>(
     headers: {
       apikey: key,
       Authorization: `Bearer ${key}`,
+      "Accept-Profile": "public",
       "Content-Type": "application/json",
+      "Content-Profile": "public",
       ...(options.headers ?? {})
     }
   });
 
   if (!response.ok) {
-    throw new Error(`Supabase request failed with ${response.status}`);
+    const body = await response.text();
+    throw new Error(`Supabase request failed with ${response.status}${body ? `: ${body}` : ""}`);
   }
 
   return (await response.json()) as T;

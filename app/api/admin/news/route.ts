@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchAdminNewsPosts, upsertAdminNewsPost, type NewsPostInput } from "../../../lib/supabase-news";
+import { fetchAdminNewsPosts, fetchNewsAdminDiagnostics, upsertAdminNewsPost, type NewsPostInput } from "../../../lib/supabase-news";
 
 function bearerToken(request: Request) {
   const header = request.headers.get("authorization") || "";
@@ -14,7 +14,8 @@ export async function GET(request: Request) {
     const posts = await fetchAdminNewsPosts(token);
     return NextResponse.json({
       data: posts,
-      count: posts.length
+      count: posts.length,
+      diagnostics: await fetchNewsAdminDiagnostics(token)
     });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to load news posts." }, { status: 403 });

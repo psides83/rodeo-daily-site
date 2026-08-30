@@ -5,7 +5,7 @@ import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RodeoDailyLogoMark } from "../../components/rodeo-views";
 import { supabasePublicUrl, supabasePublishableKey } from "../../lib/supabase-config";
-import type { AdminNewsPost, NewsPostInput } from "../../lib/supabase-news";
+import type { AdminNewsPost, NewsAdminDiagnostics, NewsPostInput } from "../../lib/supabase-news";
 
 const emptyPost: NewsPostInput = {
   slug: "",
@@ -32,6 +32,7 @@ export function NewsAdminEditor() {
   const [draft, setDraft] = useState<NewsPostInput>(emptyPost);
   const [message, setMessage] = useState("");
   const [postListMessage, setPostListMessage] = useState("");
+  const [diagnostics, setDiagnostics] = useState<NewsAdminDiagnostics | null>(null);
   const [loading, setLoading] = useState(false);
 
   const canSave = useMemo(() => draft.title.trim() && draft.slug.trim() && draft.excerpt.trim() && draft.content.trim(), [draft]);
@@ -47,9 +48,10 @@ export function NewsAdminEditor() {
           Authorization: `Bearer ${activeToken}`
         }
       });
-      const payload = (await response.json()) as { data?: AdminNewsPost[]; count?: number; error?: string };
+      const payload = (await response.json()) as { data?: AdminNewsPost[]; count?: number; diagnostics?: NewsAdminDiagnostics; error?: string };
       if (!response.ok) throw new Error(payload.error || "Unable to load posts.");
       setPosts(payload.data ?? []);
+      setDiagnostics(payload.diagnostics ?? null);
       const count = payload.count ?? payload.data?.length ?? 0;
       setPostListMessage(`${count} post${count === 1 ? "" : "s"} loaded.`);
     } catch (error) {
@@ -134,7 +136,6 @@ export function NewsAdminEditor() {
       }
       setMessage(input.status === "published" ? "Post saved and published. It should now appear on /news." : "Draft saved. It will not appear on /news until Published is checked.");
       setDraft(emptyPost);
-      void loadPosts(token);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to save post.");
     } finally {
@@ -148,6 +149,7 @@ export function NewsAdminEditor() {
     setPosts([]);
     setDraft(emptyPost);
     setPostListMessage("");
+    setDiagnostics(null);
   }
 
   return (
@@ -264,6 +266,14 @@ export function NewsAdminEditor() {
                 </button>
               </div>
               {postListMessage && <p>{postListMessage}</p>}
+              {diagnostics && (
+                <p>
+                  Supabase: {diagnostics.projectHost || "not set"} / table count:{" "}
+                  {typeof diagnostics.directCount === "number" ? diagnostics.directCount : "unknown"} / status:{" "}
+                  {diagnostics.directStatus ?? "unknown"}
+                </p>
+              )}
+              {diagnostics?.directError && <p>{diagnostics.directError}</p>}
               {posts.length === 0 && <p>No posts found.</p>}
               {posts.map((post) => (
                 <button type="button" key={post.slug} onClick={() => setDraft(post)}>
