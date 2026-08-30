@@ -7,6 +7,23 @@ import { RodeoDailyLogoMark } from "../../components/rodeo-views";
 import { supabasePublicUrl, supabasePublishableKey } from "../../lib/supabase-config";
 import type { AdminNewsPost, NewsAdminDiagnostics, NewsPostInput } from "../../lib/supabase-news";
 
+type PublicNewsPost = {
+  slug: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  author: string;
+  publishedAt: string;
+  updatedAt?: string;
+  status: "draft" | "published";
+  featured: boolean;
+  heroImage?: string;
+  sourceUrls: string[];
+  storyScore?: number;
+  tags: string[];
+  paragraphs: string[];
+};
+
 const emptyPost: NewsPostInput = {
   slug: "",
   title: "",
@@ -51,10 +68,20 @@ export function NewsAdminEditor() {
       });
       const payload = (await response.json()) as { data?: AdminNewsPost[]; count?: number; diagnostics?: NewsAdminDiagnostics; error?: string };
       if (!response.ok) throw new Error(payload.error || "Unable to load posts.");
-      setPosts(payload.data ?? []);
+      let loadedPosts = payload.data ?? [];
+      let loadedFromPublicFallback = false;
+      if (loadedPosts.length === 0) {
+        loadedPosts = await loadPublishedPostsFallback();
+        loadedFromPublicFallback = loadedPosts.length > 0;
+      }
+      setPosts(loadedPosts);
       setDiagnostics(payload.diagnostics ?? null);
-      const count = payload.count ?? payload.data?.length ?? 0;
-      setPostListMessage(`${count} post${count === 1 ? "" : "s"} loaded.`);
+      const count = loadedPosts.length || payload.count || 0;
+      setPostListMessage(
+        loadedFromPublicFallback
+          ? `${count} published post${count === 1 ? "" : "s"} loaded from /news. Drafts are unavailable until the admin list query returns rows.`
+          : `${count} post${count === 1 ? "" : "s"} loaded.`
+      );
     } catch (error) {
       setPostListMessage(error instanceof Error ? error.message : "Unable to load posts.");
     } finally {
@@ -298,6 +325,32 @@ export function NewsAdminEditor() {
 
   function updateDraft(next: Partial<NewsPostInput>) {
     setDraft((current) => ({ ...current, ...next }));
+  }
+}
+
+async function loadPublishedPostsFallback(): Promise<AdminNewsPost[]> {
+  try {
+    const response = await fetch("/api/news", { cache: "no-store" });
+    const payload = (await response.json()) as { data?: PublicNewsPost[] };
+    if (!response.ok) return [];
+    return (payload.data ?? []).map((post) => ({
+      slug: post.slug,
+      title: post.title,
+      excerpt: post.excerpt,
+      content: post.paragraphs.join("\n\n"),
+      status: "published",
+      category: post.category,
+      author: post.author,
+      tags: post.tags,
+      heroImage: post.heroImage,
+      sourceUrls: post.sourceUrls,
+      featured: post.featured,
+      storyScore: post.storyScore,
+      publishedAt: post.publishedAt,
+      updatedAt: post.updatedAt
+    }));
+  } catch {
+    return [];
   }
 }
 
