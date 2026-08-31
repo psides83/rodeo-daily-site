@@ -70,6 +70,7 @@ import type {
 const tabs: Array<{ label: Tab; icon: LucideIcon }> = [
   { label: "Standings", icon: ListOrdered },
   { label: "Results", icon: CircleDollarSign },
+  { label: "Schedule", icon: Calendar },
   { label: "More", icon: Settings }
 ];
 
