@@ -91,6 +91,11 @@ export type GeneratedNewsDraft = {
   usedAi: boolean;
 };
 
+export type NewsAdminLogin = {
+  accessToken: string;
+  email: string;
+};
+
 export type NewsAdminDiagnostics = {
   configured: boolean;
   projectHost: string;
@@ -184,6 +189,38 @@ export async function fetchAdminStoryCandidates(accessToken: string) {
     }
   );
   return rows.map(mapStoryCandidateRow);
+}
+
+export async function loginAdminUser(email: string, password: string): Promise<NewsAdminLogin> {
+  if (!supabaseNewsConfigured()) {
+    throw new Error("Supabase environment variables are not configured.");
+  }
+
+  const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+    method: "POST",
+    headers: {
+      apikey: supabaseAnonKey,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ email, password }),
+    cache: "no-store"
+  });
+  const payload = (await response.json()) as {
+    access_token?: string;
+    error?: string;
+    error_description?: string;
+    msg?: string;
+    user?: { email?: string };
+  };
+  if (!response.ok || !payload.access_token) {
+    throw new Error(payload.error_description || payload.msg || payload.error || "Unable to login.");
+  }
+
+  await assertAdminUser(payload.access_token);
+  return {
+    accessToken: payload.access_token,
+    email: payload.user?.email ?? email
+  };
 }
 
 export async function refreshAdminStoryCandidates(accessToken: string) {
@@ -307,7 +344,8 @@ async function assertAdminUser(accessToken: string) {
   });
 
   if (!response.ok) {
-    throw new Error("Invalid Supabase login.");
+    const body = await response.text();
+    throw new Error(`Invalid Supabase login${body ? `: ${body}` : "."}`);
   }
 
   const user = (await response.json()) as { email?: string };

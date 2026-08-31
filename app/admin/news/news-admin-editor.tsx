@@ -4,8 +4,7 @@ import Link from "next/link";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RodeoDailyLogoMark } from "../../components/rodeo-views";
-import { supabasePublicUrl, supabasePublishableKey } from "../../lib/supabase-config";
-import type { AdminNewsPost, GeneratedNewsDraft, NewsAdminDiagnostics, NewsPostInput, NewsStoryCandidate } from "../../lib/supabase-news";
+import type { AdminNewsPost, GeneratedNewsDraft, NewsAdminDiagnostics, NewsAdminLogin, NewsPostInput, NewsStoryCandidate } from "../../lib/supabase-news";
 
 type PublicNewsPost = {
   slug: string;
@@ -86,6 +85,7 @@ export function NewsAdminEditor() {
       );
     } catch (error) {
       setPostListMessage(error instanceof Error ? error.message : "Unable to load posts.");
+      if (isInvalidSupabaseTokenError(error)) clearAdminSession();
     } finally {
       setLoading(false);
     }
@@ -109,6 +109,7 @@ export function NewsAdminEditor() {
       setCandidateMessage(`${loadedCandidates.length || payload.count || 0} article lead${loadedCandidates.length === 1 ? "" : "s"} ready.`);
     } catch (error) {
       setCandidateMessage(error instanceof Error ? error.message : "Unable to load article leads.");
+      if (isInvalidSupabaseTokenError(error)) clearAdminSession();
     }
   }, [token]);
 
@@ -127,23 +128,22 @@ export function NewsAdminEditor() {
     setMessage("");
 
     try {
-      const response = await fetch(`${supabasePublicUrl}/auth/v1/token?grant_type=password`, {
+      const response = await fetch("/api/admin/news/login", {
         method: "POST",
         headers: {
-          apikey: supabasePublishableKey,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({ email, password })
       });
-      const payload = (await response.json()) as { access_token?: string; error_description?: string; msg?: string };
-      if (!response.ok || !payload.access_token) {
-        throw new Error(payload.error_description || payload.msg || "Unable to login.");
+      const payload = (await response.json()) as NewsAdminLogin & { error?: string };
+      if (!response.ok || !payload.accessToken) {
+        throw new Error(payload.error || "Unable to login.");
       }
 
-      window.localStorage.setItem(tokenStorageKey, payload.access_token);
-      setToken(payload.access_token);
-      await loadPosts(payload.access_token);
-      await loadCandidates(payload.access_token);
+      window.localStorage.setItem(tokenStorageKey, payload.accessToken);
+      setToken(payload.accessToken);
+      await loadPosts(payload.accessToken);
+      await loadCandidates(payload.accessToken);
       setPassword("");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to login.");
@@ -202,6 +202,10 @@ export function NewsAdminEditor() {
   }
 
   function logout() {
+    clearAdminSession();
+  }
+
+  function clearAdminSession() {
     window.localStorage.removeItem(tokenStorageKey);
     setToken("");
     setPosts([]);
@@ -462,6 +466,10 @@ export function NewsAdminEditor() {
       heroImage: current.heroImage
     }));
   }
+}
+
+function isInvalidSupabaseTokenError(error: unknown) {
+  return error instanceof Error && error.message.toLowerCase().includes("invalid supabase login");
 }
 
 async function loadPublishedPostsFallback(): Promise<AdminNewsPost[]> {
