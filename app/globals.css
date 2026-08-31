@@ -549,7 +549,9 @@ html[data-theme="dark"] .app-window {
 
 .news-article-body h3 {
   color: var(--app-tertiary);
-  font-size: clamp(1.05rem, 2.4vw, 1.28rem);
+  font-size: clamp(1rem, 1.8vw, 1.16rem);
+  font-weight: 800;
+  line-height: 1.38;
 }
 
 .news-article-body ul,

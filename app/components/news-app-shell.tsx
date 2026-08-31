@@ -10,6 +10,7 @@ const primaryTabs = [
   { label: "News", href: "/news", icon: Newspaper },
   { label: "More", href: "/?tab=more", icon: Settings }
 ];
+const desktopTabs = primaryTabs.filter((item) => item.label !== "More");
 const bottomTabs = primaryTabs.filter((item) => item.label !== "Schedule");
 
 const moreLinks = [
@@ -38,7 +39,7 @@ export function NewsAppShell({ title, subtitle, children }: { title: string; sub
             <div className="sidebar-title">
               <span>Tabs</span>
             </div>
-            {primaryTabs.map((item) => {
+            {desktopTabs.map((item) => {
               const Icon = item.icon;
               return (
                 <Link className={item.label === "News" ? "sidebar-tab active" : "sidebar-tab"} href={item.href} key={item.label}>

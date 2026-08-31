@@ -827,10 +827,21 @@ export function mapRodeo(rodeo: ApiRodeo): RodeoRow {
     endDateRaw: rodeo.EndDate,
     payout: formatCurrency(rodeo.Payout ?? 0),
     hasDaysheets: Boolean(rodeo.HasDaysheets),
-    inProgress: Boolean(rodeo.InProgress),
+    inProgress: rodeoIsCurrentlyActive(rodeo),
     winners: [],
     resultRounds: []
   };
+}
+
+function rodeoIsCurrentlyActive(rodeo: ApiRodeo) {
+  if (!rodeo.InProgress) return false;
+  const endDate = parseDate(rodeo.EndDate);
+  if (!endDate) return true;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  endDate.setHours(0, 0, 0, 0);
+  return endDate.getTime() >= today.getTime();
 }
 
 export function rodeoHasEvent(rodeo: ApiRodeo, event: EventName) {

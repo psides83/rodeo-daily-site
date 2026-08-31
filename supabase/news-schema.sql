@@ -35,6 +35,7 @@ create table if not exists public.news_story_candidates (
   relevance_score integer,
   selected boolean not null default false,
   article_id uuid references public.news_posts(id) on delete set null,
+  dismissed_at timestamptz,
   discovered_at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
@@ -43,6 +44,7 @@ alter table public.news_story_candidates add column if not exists detected_athle
 alter table public.news_story_candidates add column if not exists detected_event text;
 alter table public.news_story_candidates add column if not exists keywords text[] not null default '{}';
 alter table public.news_story_candidates add column if not exists published_at timestamptz;
+alter table public.news_story_candidates add column if not exists dismissed_at timestamptz;
 
 create table if not exists public.news_sources (
   id uuid primary key default gen_random_uuid(),
@@ -192,6 +194,7 @@ create index if not exists news_posts_status_published_at_idx on public.news_pos
 create index if not exists news_posts_featured_idx on public.news_posts(featured) where featured = true;
 create index if not exists news_story_candidates_discovered_at_idx on public.news_story_candidates(discovered_at desc);
 create index if not exists news_story_candidates_detected_event_idx on public.news_story_candidates(detected_event);
+create index if not exists news_story_candidates_active_idx on public.news_story_candidates(dismissed_at, discovered_at desc);
 create index if not exists news_standings_snapshots_lookup_idx on public.news_standings_snapshots(season_year, standing_type, event, generated_at desc);
 create index if not exists news_standings_snapshot_rows_snapshot_rank_idx on public.news_standings_snapshot_rows(snapshot_id, rank);
 create index if not exists news_story_signals_week_idx on public.news_story_signals(week_start desc, week_end desc);

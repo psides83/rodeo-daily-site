@@ -44,6 +44,7 @@ type SupabaseStoryCandidateRow = {
   relevance_score: number | null;
   selected: boolean;
   article_id: string | null;
+  dismissed_at: string | null;
   discovered_at: string;
   created_at: string;
 };
@@ -157,7 +158,7 @@ export async function fetchPublishedNewsPosts() {
       "/rest/v1/news_posts?select=*&status=eq.published&order=published_at.desc.nullslast,created_at.desc",
       { cache: "no-store", serviceRole: Boolean(supabaseServiceRoleKey) }
     );
-    return rows.map(mapNewsPostRow);
+    return mergePublishedNewsPosts(rows.map(mapNewsPostRow), fallbackPublishedPosts());
   } catch {
     return fallbackPublishedPosts();
   }
@@ -171,7 +172,7 @@ export async function fetchNewsPostBySlug(slug: string) {
       `/rest/v1/news_posts?select=*&slug=eq.${encodeURIComponent(slug)}&status=eq.published&limit=1`,
       { cache: "no-store", serviceRole: Boolean(supabaseServiceRoleKey) }
     );
-    return rows[0] ? mapNewsPostRow(rows[0]) : undefined;
+    return rows[0] ? mapNewsPostRow(rows[0]) : fallbackPublishedPosts().find((post) => post.slug === slug);
   } catch {
     return fallbackPublishedPosts().find((post) => post.slug === slug);
   }
@@ -190,13 +191,7 @@ export async function fetchAdminNewsPosts(accessToken: string) {
 
 export async function fetchAdminStoryCandidates(accessToken: string) {
   await assertAdminUser(accessToken);
-  const rows = await supabaseRequest<SupabaseStoryCandidateRow[]>(
-    "/rest/v1/news_story_candidates?select=*&selected=eq.false&order=discovered_at.desc,created_at.desc&limit=50",
-    {
-      serviceRole: true,
-      cache: "no-store"
-    }
-  );
+  const rows = await fetchActiveStoryCandidateRows();
   return rows.map(mapStoryCandidateRow);
 }
 
@@ -216,14 +211,7 @@ export async function deleteAdminDraftNewsPost(slug: string, accessToken: string
 
 export async function deleteAdminStoryCandidate(id: string, accessToken: string) {
   await assertAdminUser(accessToken);
-  const deletedRows = await supabaseRequest<SupabaseStoryCandidateRow[]>(`/rest/v1/news_story_candidates?id=eq.${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    serviceRole: true,
-    headers: {
-      Prefer: "return=representation"
-    },
-    body: JSON.stringify({ selected: true })
-  });
+  const deletedRows = await dismissStoryCandidateRow(id);
   if (!deletedRows?.length) {
     throw new Error("Article lead was not found.");
   }
@@ -278,14 +266,12 @@ export async function refreshAdminStoryCandidates(accessToken: string) {
   const newRows = discovered.filter((candidate) => !existingKeys.has(candidateDeduplicationKey(candidate)));
 
   if (newRows.length > 0) {
-    await supabaseRequest<SupabaseStoryCandidateRow[]>("/rest/v1/news_story_candidates", {
-      method: "POST",
-      serviceRole: true,
-      headers: {
-        Prefer: "return=representation"
-      },
-      body: JSON.stringify(newRows)
-    });
+    try {
+      await insertStoryCandidateRows(newRows);
+    } catch (error) {
+      if (!isMissingDismissedAtColumnError(error)) throw error;
+      await insertStoryCandidateRows(newRows.map(({ dismissed_at: _dismissedAt, ...row }) => row));
+    }
   }
 
   return fetchAdminStoryCandidates(accessToken);
@@ -429,11 +415,81 @@ async function supabaseRequest<T>(
   return JSON.parse(body) as T;
 }
 
+async function fetchActiveStoryCandidateRows() {
+  try {
+    return await supabaseRequest<SupabaseStoryCandidateRow[]>(
+      "/rest/v1/news_story_candidates?select=*&dismissed_at=is.null&selected=eq.false&order=discovered_at.desc,created_at.desc&limit=50",
+      {
+        serviceRole: true,
+        cache: "no-store"
+      }
+    );
+  } catch (error) {
+    if (!isMissingDismissedAtColumnError(error)) throw error;
+    return supabaseRequest<SupabaseStoryCandidateRow[]>(
+      "/rest/v1/news_story_candidates?select=*&selected=eq.false&order=discovered_at.desc,created_at.desc&limit=50",
+      {
+        serviceRole: true,
+        cache: "no-store"
+      }
+    );
+  }
+}
+
+async function dismissStoryCandidateRow(id: string) {
+  try {
+    return await supabaseRequest<SupabaseStoryCandidateRow[]>(`/rest/v1/news_story_candidates?id=eq.${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      serviceRole: true,
+      headers: {
+        Prefer: "return=representation"
+      },
+      body: JSON.stringify({ selected: true, dismissed_at: new Date().toISOString() })
+    });
+  } catch (error) {
+    if (!isMissingDismissedAtColumnError(error)) throw error;
+    return supabaseRequest<SupabaseStoryCandidateRow[]>(`/rest/v1/news_story_candidates?id=eq.${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      serviceRole: true,
+      headers: {
+        Prefer: "return=representation"
+      },
+      body: JSON.stringify({ selected: true })
+    });
+  }
+}
+
+async function insertStoryCandidateRows(rows: Array<Partial<SupabaseStoryCandidateRow>>) {
+  return supabaseRequest<SupabaseStoryCandidateRow[]>("/rest/v1/news_story_candidates", {
+    method: "POST",
+    serviceRole: true,
+    headers: {
+      Prefer: "return=representation"
+    },
+    body: JSON.stringify(rows)
+  });
+}
+
+function isMissingDismissedAtColumnError(error: unknown) {
+  return error instanceof Error && error.message.includes("dismissed_at");
+}
+
 function fallbackPublishedPosts() {
   return newsPosts
     .filter((post) => post.status === "published")
     .slice()
     .sort((left, right) => right.publishedAt.localeCompare(left.publishedAt));
+}
+
+function mergePublishedNewsPosts(primaryPosts: RodeoNewsPost[], fallbackPosts: RodeoNewsPost[]) {
+  const postsBySlug = new Map<string, RodeoNewsPost>();
+  for (const post of fallbackPosts) {
+    postsBySlug.set(post.slug, post);
+  }
+  for (const post of primaryPosts) {
+    postsBySlug.set(post.slug, post);
+  }
+  return Array.from(postsBySlug.values()).sort((left, right) => right.publishedAt.localeCompare(left.publishedAt));
 }
 
 function mapNewsPostRow(row: SupabaseNewsPostRow): RodeoNewsPost {
@@ -543,6 +599,7 @@ async function discoverRecentStoryCandidates(): Promise<Array<Omit<SupabaseStory
         keywords: ["results", eventName, athlete, cleanText(rodeo.Name)].filter(Boolean),
         published_at: rodeo.EndDate ?? null,
         relevance_score: candidateScore(rodeo, winner, event),
+        dismissed_at: null,
         discovered_at: new Date().toISOString()
       });
     }

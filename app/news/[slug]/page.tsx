@@ -124,6 +124,9 @@ export default async function NewsArticlePage({ params }: NewsArticlePageProps) 
       }
     ]
   };
+  const articleBlocks = post.paragraphs
+    .map((paragraph) => renderArticleBlock(paragraph, post.title))
+    .filter((block): block is ReactNode => block !== null);
 
   return (
     <NewsAppShell title="News" subtitle={post.title}>
@@ -154,10 +157,10 @@ export default async function NewsArticlePage({ params }: NewsArticlePageProps) 
         <GoogleAdSlot placement="generalMediumRectangle" className="news-ad-slot" />
 
         <section className="news-article-body">
-          {post.paragraphs.map((paragraph, index) => (
-            <div key={`${paragraph}-${index}`}>
-              {renderArticleBlock(paragraph)}
-              {index === 1 && <GoogleAdSlot placement="generalMediumRectangle" className="news-inline-ad-slot" />}
+          {articleBlocks.map((block, index) => (
+            <div key={index}>
+              {block}
+              {index === 2 && <GoogleAdSlot placement="generalMediumRectangle" className="news-inline-ad-slot" />}
             </div>
           ))}
         </section>
@@ -191,7 +194,7 @@ function formatNewsDate(value: string) {
   return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(date);
 }
 
-function renderArticleBlock(value: string) {
+function renderArticleBlock(value: string, articleTitle: string): ReactNode | null {
   const trimmed = value.trim();
 
   const image = markdownImage(trimmed);
@@ -229,15 +232,21 @@ function renderArticleBlock(value: string) {
     );
   }
 
-  if (value.startsWith("### ")) {
-    return <h3>{renderInlineMarkdown(value.replace(/^###\s+/, ""))}</h3>;
+  if (trimmed.startsWith("# ")) {
+    const heading = trimmed.replace(/^#\s+/, "");
+    if (normalizeArticleText(heading) === normalizeArticleText(articleTitle)) return null;
+    return <h2>{renderInlineMarkdown(heading)}</h2>;
   }
 
-  if (value.startsWith("## ")) {
-    return <h2>{renderInlineMarkdown(value.replace(/^##\s+/, ""))}</h2>;
+  if (trimmed.startsWith("### ")) {
+    return <h3>{renderInlineMarkdown(trimmed.replace(/^###\s+/, ""))}</h3>;
   }
 
-  return <p>{renderInlineMarkdown(value)}</p>;
+  if (trimmed.startsWith("## ")) {
+    return <h2>{renderInlineMarkdown(trimmed.replace(/^##\s+/, ""))}</h2>;
+  }
+
+  return <p>{renderInlineMarkdown(trimmed)}</p>;
 }
 
 function isBulletList(value: string) {
@@ -320,4 +329,8 @@ function safeMarkdownUrl(value: string) {
 
 function isExternalUrl(value: string) {
   return value.startsWith("http://") || value.startsWith("https://");
+}
+
+function normalizeArticleText(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
 }

@@ -190,7 +190,7 @@ async function proxy(url: URL) {
       "Cache-Control": "no-cache",
       Pragma: "no-cache"
     },
-    next: { revalidate: 300 }
+    next: { revalidate: 60 }
   });
 
   if (!response.ok) {
@@ -198,7 +198,11 @@ async function proxy(url: URL) {
   }
 
   const data = await response.json();
-  return NextResponse.json(data);
+  return NextResponse.json(data, {
+    headers: {
+      "Cache-Control": "no-store, max-age=0"
+    }
+  });
 }
 
 function safeEvent(value: string) {

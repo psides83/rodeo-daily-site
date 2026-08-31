@@ -532,7 +532,9 @@ export default function Home() {
       try {
         const params = dateRangeParams("results-rodeos", resultsDateRange, resultsSearchText, resultsPage);
         const payload = await fetchJson<{ data?: ApiRodeo[] }>(`/api/rodeo?${params}`);
-        const rows = (payload.data ?? []).filter((rodeo) => rodeoHasEvent(rodeo, resultEvent)).map(mapRodeo);
+        const rows = (payload.data ?? [])
+          .filter((rodeo) => rodeoHasEvent(rodeo, resultEvent))
+          .map((rodeo) => ({ ...mapRodeo(rodeo), inProgress: false }));
         if (!cancelled) {
           setResultsRows((current) => (resultsPage === 1 ? rows : appendUniqueRodeos(current, rows)));
           setResultsState("loaded");
