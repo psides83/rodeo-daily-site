@@ -5,7 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PwaRegister } from "./pwa-register";
 import { GoogleAdsController } from "./components/google-ads";
 import {
@@ -878,10 +878,6 @@ export default function Home() {
                 </button>
               );
             })}
-            <Link className="sidebar-tab" href="/news">
-              <Newspaper size={19} />
-              <span>News</span>
-            </Link>
             <div className="sidebar-title sidebar-title-spaced">
               <span>More</span>
             </div>
@@ -1021,28 +1017,20 @@ export default function Home() {
                   .map((tab) => {
                     const Icon = tab.icon;
                     return (
-                      <Fragment key={tab.label}>
-                        {tab.label === "More" && !searchExpanded && (
-                          <Link className="tab-button" href="/news">
-                            <Newspaper size={21} />
-                            <span>News</span>
-                          </Link>
-                        )}
-                        <button
-                          className={activeTab === tab.label ? "tab-button active" : "tab-button"}
-                          key={tab.label}
-                          onClick={() => {
-                            if (searchExpanded && tab.label === activeTab) {
-                              closeSearch();
-                              return;
-                            }
-                            selectTab(tab.label);
-                          }}
-                        >
-                          <Icon size={21} />
-                          <span>{tab.label}</span>
-                        </button>
-                      </Fragment>
+                      <button
+                        className={activeTab === tab.label ? "tab-button active" : "tab-button"}
+                        key={tab.label}
+                        onClick={() => {
+                          if (searchExpanded && tab.label === activeTab) {
+                            closeSearch();
+                            return;
+                          }
+                          selectTab(tab.label);
+                        }}
+                      >
+                        <Icon size={21} />
+                        <span>{tab.label}</span>
+                      </button>
                     );
                   })}
               </div>
