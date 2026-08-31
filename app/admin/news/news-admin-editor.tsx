@@ -5,7 +5,7 @@ import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RodeoDailyLogoMark } from "../../components/rodeo-views";
 import { supabasePublicUrl, supabasePublishableKey } from "../../lib/supabase-config";
-import type { AdminNewsPost, NewsAdminDiagnostics, NewsPostInput } from "../../lib/supabase-news";
+import type { AdminNewsPost, GeneratedNewsDraft, NewsAdminDiagnostics, NewsPostInput, NewsStoryCandidate } from "../../lib/supabase-news";
 
 type PublicNewsPost = {
   slug: string;
@@ -46,9 +46,11 @@ export function NewsAdminEditor() {
   const [password, setPassword] = useState("");
   const [token, setToken] = useState("");
   const [posts, setPosts] = useState<AdminNewsPost[]>([]);
+  const [candidates, setCandidates] = useState<NewsStoryCandidate[]>([]);
   const [draft, setDraft] = useState<NewsPostInput>(emptyPost);
   const [message, setMessage] = useState("");
   const [postListMessage, setPostListMessage] = useState("");
+  const [candidateMessage, setCandidateMessage] = useState("");
   const [diagnostics, setDiagnostics] = useState<NewsAdminDiagnostics | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -89,13 +91,35 @@ export function NewsAdminEditor() {
     }
   }, [token]);
 
+  const loadCandidates = useCallback(async (activeToken = token) => {
+    if (!activeToken) return;
+    setCandidateMessage("Loading article leads...");
+
+    try {
+      const response = await fetch("/api/admin/news/candidates", {
+        cache: "no-store",
+        headers: {
+          Authorization: `Bearer ${activeToken}`
+        }
+      });
+      const payload = (await response.json()) as { data?: NewsStoryCandidate[]; count?: number; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Unable to load article leads.");
+      const loadedCandidates = payload.data ?? [];
+      setCandidates(loadedCandidates);
+      setCandidateMessage(`${loadedCandidates.length || payload.count || 0} article lead${loadedCandidates.length === 1 ? "" : "s"} ready.`);
+    } catch (error) {
+      setCandidateMessage(error instanceof Error ? error.message : "Unable to load article leads.");
+    }
+  }, [token]);
+
   useEffect(() => {
     const storedToken = window.localStorage.getItem(tokenStorageKey);
     if (storedToken) {
       setToken(storedToken);
       void loadPosts(storedToken);
+      void loadCandidates(storedToken);
     }
-  }, [loadPosts]);
+  }, [loadCandidates, loadPosts]);
 
   async function login(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -119,6 +143,7 @@ export function NewsAdminEditor() {
       window.localStorage.setItem(tokenStorageKey, payload.access_token);
       setToken(payload.access_token);
       await loadPosts(payload.access_token);
+      await loadCandidates(payload.access_token);
       setPassword("");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to login.");
@@ -180,9 +205,75 @@ export function NewsAdminEditor() {
     window.localStorage.removeItem(tokenStorageKey);
     setToken("");
     setPosts([]);
+    setCandidates([]);
     setDraft(emptyPost);
     setPostListMessage("");
+    setCandidateMessage("");
     setDiagnostics(null);
+  }
+
+  async function refreshCandidates() {
+    if (!token) return;
+    setLoading(true);
+    setMessage("");
+    setCandidateMessage("Finding article leads from recent rodeo results...");
+
+    try {
+      const response = await fetch("/api/admin/news/candidates", {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const payload = (await response.json()) as { data?: NewsStoryCandidate[]; count?: number; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Unable to find article leads.");
+      const loadedCandidates = payload.data ?? [];
+      setCandidates(loadedCandidates);
+      setCandidateMessage(`${loadedCandidates.length || payload.count || 0} article lead${loadedCandidates.length === 1 ? "" : "s"} ready.`);
+    } catch (error) {
+      setCandidateMessage(error instanceof Error ? error.message : "Unable to find article leads.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function generateArticle() {
+    if (!token) return;
+    setLoading(true);
+    setMessage("");
+    setCandidateMessage("Generating an article from recent rodeo results...");
+
+    try {
+      const response = await fetch("/api/admin/news/generate", {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const payload = (await response.json()) as GeneratedNewsDraft & { error?: string };
+      if (!response.ok) throw new Error(payload.error || "Unable to generate an article.");
+      setCandidates(payload.candidates ?? []);
+      setDraft((current) => ({
+        ...current,
+        ...payload.post,
+        status: current.status,
+        featured: current.featured,
+        publishedAt: current.publishedAt,
+        heroImage: current.heroImage
+      }));
+      setCandidateMessage(`${payload.candidates?.length ?? 0} article lead${payload.candidates?.length === 1 ? "" : "s"} ready.`);
+      setMessage(
+        payload.usedAi
+          ? "Researched article draft generated. Review names, numbers, sources, and standings impact before publishing."
+          : "Article draft generated without AI because the site is missing an OpenAI key or the AI request failed. Review and expand before publishing."
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to generate an article.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -228,6 +319,19 @@ export function NewsAdminEditor() {
         ) : (
           <section className="news-admin-layout">
             <form className="news-admin-card news-admin-form" onSubmit={savePost}>
+              <section className="news-generator-panel" aria-label="Article generator">
+                <div className="news-generator-header">
+                  <div>
+                    <span>Generator</span>
+                    <h2>Generate Article</h2>
+                  </div>
+                  <button type="button" onClick={() => void generateArticle()} disabled={loading}>
+                    {loading ? "Generating..." : "Generate Article"}
+                  </button>
+                </div>
+                <p>{candidateMessage || "Creates an editable draft from the strongest recent result lead."}</p>
+              </section>
+
               <div className="news-admin-form-grid">
                 <label>
                   <span>Title</span>
@@ -293,6 +397,21 @@ export function NewsAdminEditor() {
 
             <aside className="news-admin-card news-admin-post-list">
               <div>
+                <h2>Article Leads</h2>
+                <button type="button" onClick={() => void refreshCandidates()} disabled={loading}>
+                  Find Leads
+                </button>
+              </div>
+              {candidateMessage && <p>{candidateMessage}</p>}
+              {candidates.length === 0 && <p>No leads found yet.</p>}
+              {candidates.slice(0, 8).map((candidate) => (
+                <button type="button" key={candidate.id} onClick={() => generateDraftFromCandidate(candidate)}>
+                  <strong>{candidate.headline}</strong>
+                  <span>{candidate.sourceName} - score {candidate.relevanceScore}</span>
+                </button>
+              ))}
+
+              <div>
                 <h2>Posts</h2>
                 <button type="button" onClick={() => void loadPosts()} disabled={loading}>
                   Refresh
@@ -325,6 +444,23 @@ export function NewsAdminEditor() {
 
   function updateDraft(next: Partial<NewsPostInput>) {
     setDraft((current) => ({ ...current, ...next }));
+  }
+
+  function generateDraftFromCandidate(candidate: NewsStoryCandidate) {
+    applyCandidateDraft(candidate);
+    setMessage("Article draft generated from the selected lead. Review the source and confirm standings impact before publishing.");
+  }
+
+  function applyCandidateDraft(candidate: NewsStoryCandidate) {
+    const generatedPost = buildGeneratedPostFromCandidate(candidate);
+    setDraft((current) => ({
+      ...current,
+      ...generatedPost,
+      status: current.status,
+      featured: current.featured,
+      publishedAt: current.publishedAt,
+      heroImage: current.heroImage
+    }));
   }
 }
 
@@ -371,4 +507,37 @@ function slugify(value: string) {
     .replace(/&/g, "and")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function buildGeneratedPostFromCandidate(candidate: NewsStoryCandidate): NewsPostInput {
+  const headline = candidate.headline.trim();
+  const summary = candidate.summary.trim();
+  const cleanHeadline = headline || "Recent Pro Rodeo Result Creates Standings Story";
+  const title = headlineCase(cleanHeadline);
+  const sourceUrls = candidate.sourceUrl ? [candidate.sourceUrl] : [];
+  const paragraphs = [
+    `${summary || cleanHeadline} The result gives Rodeo Daily a story lead to review from the latest pro rodeo results.`,
+    "The first editorial pass should verify the official placing, score or time, payout, and event context before the story is published. Once those details are confirmed, the article can connect the result to PRCA standings, WPRA standings, and the broader NFR picture.",
+    "This story is strongest when it explains why the result matters beyond the leaderboard. That can include a standings jump, a season-best performance, a breakthrough win, a comeback, or a result that changes the pressure around the next rodeo.",
+    "Rodeo Daily will continue tracking the follow-up as more PRCA results, WPRA results, and standings updates become available."
+  ];
+
+  return {
+    slug: slugify(`${cleanHeadline}-article`),
+    title,
+    excerpt: `${title} is a rodeo news lead pulled from recent results for review, verification, and standings impact analysis.`,
+    content: paragraphs.join("\n\n"),
+    status: "draft",
+    category: "Pro Rodeo Roundup",
+    author: "Rodeo Daily",
+    tags: ["PRCA results", "WPRA results", "pro rodeo results", "PRCA standings", "WPRA standings"],
+    sourceUrls,
+    featured: false,
+    storyScore: candidate.relevanceScore,
+    publishedAt: ""
+  };
+}
+
+function headlineCase(value: string) {
+  return value.replace(/\b\w/g, (letter) => letter.toUpperCase());
 }

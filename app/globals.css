@@ -519,6 +519,42 @@ html[data-theme="dark"] .app-window {
   padding: 18px;
 }
 
+.news-generator-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(160, 138, 89, 0.22);
+  border-radius: 8px;
+  background: rgba(160, 138, 89, 0.08);
+}
+
+.news-generator-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.news-generator-header div {
+  display: grid;
+  gap: 3px;
+}
+
+.news-generator-header span {
+  color: var(--app-secondary);
+  font-size: 0.74rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.news-generator-header h2 {
+  margin: 0;
+  color: var(--app-primary);
+  font-size: 1.18rem;
+  line-height: 1.12;
+}
+
 .news-admin-login {
   width: min(460px, 100%);
 }
