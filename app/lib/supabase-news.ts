@@ -49,6 +49,13 @@ type SupabaseStoryCandidateRow = {
   created_at: string;
 };
 
+type SupabaseStoryCandidateDismissalRow = {
+  candidate_key: string;
+  headline: string | null;
+  source_url: string | null;
+  dismissed_at: string;
+};
+
 export type NewsPostInput = {
   slug: string;
   title: string;
@@ -184,8 +191,7 @@ export async function fetchAdminNewsPosts(accessToken: string) {
     serviceRole: true,
     cache: "no-store"
   });
-  return rows
-    .map(mapAdminNewsPostRow)
+  return mergeAdminNewsPosts(rows.map(mapAdminNewsPostRow), fallbackPublishedPosts().map(mapFallbackPostToAdminPost))
     .sort((left, right) => (right.updatedAt ?? right.publishedAt ?? "").localeCompare(left.updatedAt ?? left.publishedAt ?? ""));
 }
 
@@ -211,7 +217,11 @@ export async function deleteAdminDraftNewsPost(slug: string, accessToken: string
 
 export async function deleteAdminStoryCandidate(id: string, accessToken: string) {
   await assertAdminUser(accessToken);
-  const deletedRows = await dismissStoryCandidateRow(id);
+  const [candidate] = await supabaseRequest<SupabaseStoryCandidateRow[]>(`/rest/v1/news_story_candidates?select=*&id=eq.${encodeURIComponent(id)}&limit=1`, {
+    serviceRole: true,
+    cache: "no-store"
+  });
+  const deletedRows = await dismissStoryCandidateRow(id, candidate);
   if (!deletedRows?.length) {
     throw new Error("Article lead was not found.");
   }
@@ -263,14 +273,16 @@ export async function refreshAdminStoryCandidates(accessToken: string) {
     }
   );
   const existingKeys = new Set(existingRows.map(candidateDeduplicationKey));
+  const dismissedKeys = await fetchDismissedStoryCandidateKeys();
   const newRows = discovered.filter((candidate) => !existingKeys.has(candidateDeduplicationKey(candidate)));
+  const activeNewRows = newRows.filter((candidate) => !dismissedKeys.has(candidateDeduplicationKey(candidate)));
 
-  if (newRows.length > 0) {
+  if (activeNewRows.length > 0) {
     try {
-      await insertStoryCandidateRows(newRows);
+      await insertStoryCandidateRows(activeNewRows);
     } catch (error) {
       if (!isMissingDismissedAtColumnError(error)) throw error;
-      await insertStoryCandidateRows(newRows.map(({ dismissed_at: _dismissedAt, ...row }) => row));
+      await insertStoryCandidateRows(activeNewRows.map(({ dismissed_at: _dismissedAt, ...row }) => row));
     }
   }
 
@@ -416,8 +428,10 @@ async function supabaseRequest<T>(
 }
 
 async function fetchActiveStoryCandidateRows() {
+  const dismissedKeys = await fetchDismissedStoryCandidateKeys();
+  let rows: SupabaseStoryCandidateRow[];
   try {
-    return await supabaseRequest<SupabaseStoryCandidateRow[]>(
+    rows = await supabaseRequest<SupabaseStoryCandidateRow[]>(
       "/rest/v1/news_story_candidates?select=*&dismissed_at=is.null&selected=eq.false&order=discovered_at.desc,created_at.desc&limit=50",
       {
         serviceRole: true,
@@ -426,7 +440,7 @@ async function fetchActiveStoryCandidateRows() {
     );
   } catch (error) {
     if (!isMissingDismissedAtColumnError(error)) throw error;
-    return supabaseRequest<SupabaseStoryCandidateRow[]>(
+    rows = await supabaseRequest<SupabaseStoryCandidateRow[]>(
       "/rest/v1/news_story_candidates?select=*&selected=eq.false&order=discovered_at.desc,created_at.desc&limit=50",
       {
         serviceRole: true,
@@ -434,9 +448,14 @@ async function fetchActiveStoryCandidateRows() {
       }
     );
   }
+  return rows.filter((row) => !dismissedKeys.has(candidateDeduplicationKey(row)));
 }
 
-async function dismissStoryCandidateRow(id: string) {
+async function dismissStoryCandidateRow(id: string, candidate?: SupabaseStoryCandidateRow) {
+  if (candidate) {
+    await recordStoryCandidateDismissal(candidate);
+  }
+
   try {
     return await supabaseRequest<SupabaseStoryCandidateRow[]>(`/rest/v1/news_story_candidates?id=eq.${encodeURIComponent(id)}`, {
       method: "PATCH",
@@ -459,6 +478,42 @@ async function dismissStoryCandidateRow(id: string) {
   }
 }
 
+async function fetchDismissedStoryCandidateKeys() {
+  try {
+    const rows = await supabaseRequest<SupabaseStoryCandidateDismissalRow[]>(
+      "/rest/v1/news_story_candidate_dismissals?select=candidate_key&limit=1000",
+      {
+        serviceRole: true,
+        cache: "no-store"
+      }
+    );
+    return new Set(rows.map((row) => row.candidate_key));
+  } catch (error) {
+    if (isMissingDismissalsTableError(error)) return new Set<string>();
+    throw error;
+  }
+}
+
+async function recordStoryCandidateDismissal(candidate: SupabaseStoryCandidateRow) {
+  try {
+    await supabaseRequest<SupabaseStoryCandidateDismissalRow[]>("/rest/v1/news_story_candidate_dismissals?on_conflict=candidate_key", {
+      method: "POST",
+      serviceRole: true,
+      headers: {
+        Prefer: "resolution=merge-duplicates,return=minimal"
+      },
+      body: JSON.stringify({
+        candidate_key: candidateDeduplicationKey(candidate),
+        headline: candidate.headline,
+        source_url: candidate.source_url,
+        dismissed_at: new Date().toISOString()
+      })
+    });
+  } catch (error) {
+    if (!isMissingDismissalsTableError(error)) throw error;
+  }
+}
+
 async function insertStoryCandidateRows(rows: Array<Partial<SupabaseStoryCandidateRow>>) {
   return supabaseRequest<SupabaseStoryCandidateRow[]>("/rest/v1/news_story_candidates", {
     method: "POST",
@@ -472,6 +527,10 @@ async function insertStoryCandidateRows(rows: Array<Partial<SupabaseStoryCandida
 
 function isMissingDismissedAtColumnError(error: unknown) {
   return error instanceof Error && error.message.includes("dismissed_at");
+}
+
+function isMissingDismissalsTableError(error: unknown) {
+  return error instanceof Error && error.message.includes("news_story_candidate_dismissals");
 }
 
 function fallbackPublishedPosts() {
@@ -490,6 +549,36 @@ function mergePublishedNewsPosts(primaryPosts: RodeoNewsPost[], fallbackPosts: R
     postsBySlug.set(post.slug, post);
   }
   return Array.from(postsBySlug.values()).sort((left, right) => right.publishedAt.localeCompare(left.publishedAt));
+}
+
+function mergeAdminNewsPosts(primaryPosts: AdminNewsPost[], fallbackPosts: AdminNewsPost[]) {
+  const postsBySlug = new Map<string, AdminNewsPost>();
+  for (const post of fallbackPosts) {
+    postsBySlug.set(post.slug, post);
+  }
+  for (const post of primaryPosts) {
+    postsBySlug.set(post.slug, post);
+  }
+  return Array.from(postsBySlug.values());
+}
+
+function mapFallbackPostToAdminPost(post: RodeoNewsPost): AdminNewsPost {
+  return {
+    slug: post.slug,
+    title: post.title,
+    excerpt: post.excerpt,
+    content: post.paragraphs.join("\n\n"),
+    status: post.status,
+    category: post.category,
+    author: post.author,
+    tags: post.tags,
+    heroImage: post.heroImage,
+    sourceUrls: post.sourceUrls,
+    featured: post.featured,
+    storyScore: post.storyScore,
+    publishedAt: post.publishedAt,
+    updatedAt: post.updatedAt
+  };
 }
 
 function mapNewsPostRow(row: SupabaseNewsPostRow): RodeoNewsPost {

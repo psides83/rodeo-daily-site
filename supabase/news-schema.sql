@@ -40,6 +40,13 @@ create table if not exists public.news_story_candidates (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.news_story_candidate_dismissals (
+  candidate_key text primary key,
+  headline text,
+  source_url text,
+  dismissed_at timestamptz not null default now()
+);
+
 alter table public.news_story_candidates add column if not exists detected_athlete_name text;
 alter table public.news_story_candidates add column if not exists detected_event text;
 alter table public.news_story_candidates add column if not exists keywords text[] not null default '{}';
@@ -127,6 +134,7 @@ for each row execute function public.set_updated_at();
 
 alter table public.news_posts enable row level security;
 alter table public.news_story_candidates enable row level security;
+alter table public.news_story_candidate_dismissals enable row level security;
 alter table public.news_sources enable row level security;
 alter table public.news_standings_snapshots enable row level security;
 alter table public.news_standings_snapshot_rows enable row level security;
@@ -151,6 +159,13 @@ with check ((auth.jwt() ->> 'email') in ('replace-with-your-admin-email@example.
 drop policy if exists "Admins can manage story candidates" on public.news_story_candidates;
 create policy "Admins can manage story candidates"
 on public.news_story_candidates
+for all
+using ((auth.jwt() ->> 'email') in ('replace-with-your-admin-email@example.com'))
+with check ((auth.jwt() ->> 'email') in ('replace-with-your-admin-email@example.com'));
+
+drop policy if exists "Admins can manage story candidate dismissals" on public.news_story_candidate_dismissals;
+create policy "Admins can manage story candidate dismissals"
+on public.news_story_candidate_dismissals
 for all
 using ((auth.jwt() ->> 'email') in ('replace-with-your-admin-email@example.com'))
 with check ((auth.jwt() ->> 'email') in ('replace-with-your-admin-email@example.com'));
