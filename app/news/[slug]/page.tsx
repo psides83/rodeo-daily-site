@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
 import { GoogleAdSlot } from "../../components/google-ads";
 import { RodeoDailyLogoMark } from "../../components/rodeo-views";
 import { newsPostImage, newsPostUrl } from "../../lib/news";
@@ -154,13 +155,132 @@ function formatNewsDate(value: string) {
 }
 
 function renderArticleBlock(value: string) {
+  const trimmed = value.trim();
+
+  const image = markdownImage(trimmed);
+  if (image) {
+    return (
+      <figure className="news-article-body-image">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={image.src} alt={image.alt} />
+        {image.alt && <figcaption>{image.alt}</figcaption>}
+      </figure>
+    );
+  }
+
+  if (isBlockquote(trimmed)) {
+    return <blockquote>{trimmed.split("\n").map((line) => line.replace(/^>\s?/, "")).join(" ")}</blockquote>;
+  }
+
+  if (isBulletList(trimmed)) {
+    return (
+      <ul>
+        {trimmed.split("\n").map((line) => (
+          <li key={line}>{renderInlineMarkdown(line.replace(/^[-*]\s+/, ""))}</li>
+        ))}
+      </ul>
+    );
+  }
+
+  if (isNumberedList(trimmed)) {
+    return (
+      <ol>
+        {trimmed.split("\n").map((line) => (
+          <li key={line}>{renderInlineMarkdown(line.replace(/^\d+\.\s+/, ""))}</li>
+        ))}
+      </ol>
+    );
+  }
+
   if (value.startsWith("### ")) {
-    return <h3>{value.replace(/^###\s+/, "")}</h3>;
+    return <h3>{renderInlineMarkdown(value.replace(/^###\s+/, ""))}</h3>;
   }
 
   if (value.startsWith("## ")) {
-    return <h2>{value.replace(/^##\s+/, "")}</h2>;
+    return <h2>{renderInlineMarkdown(value.replace(/^##\s+/, ""))}</h2>;
   }
 
-  return <p>{value}</p>;
+  return <p>{renderInlineMarkdown(value)}</p>;
+}
+
+function isBulletList(value: string) {
+  const lines = value.split("\n").filter(Boolean);
+  return lines.length > 0 && lines.every((line) => /^[-*]\s+/.test(line));
+}
+
+function isNumberedList(value: string) {
+  const lines = value.split("\n").filter(Boolean);
+  return lines.length > 0 && lines.every((line) => /^\d+\.\s+/.test(line));
+}
+
+function isBlockquote(value: string) {
+  const lines = value.split("\n").filter(Boolean);
+  return lines.length > 0 && lines.every((line) => /^>\s?/.test(line));
+}
+
+function markdownImage(value: string) {
+  const match = value.match(/^!\[([^\]]*)\]\(([^)\s]+)\)$/);
+  if (!match) return null;
+  const src = safeMarkdownUrl(match[2]);
+  if (!src) return null;
+  return {
+    alt: match[1].trim(),
+    src
+  };
+}
+
+function renderInlineMarkdown(value: string): ReactNode[] {
+  const parts: ReactNode[] = [];
+  const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]+\]\([^)]+\))/g;
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(value))) {
+    if (match.index > cursor) {
+      parts.push(value.slice(cursor, match.index));
+    }
+
+    const token = match[0];
+    const link = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (link) {
+      const href = safeMarkdownUrl(link[2]);
+      parts.push(
+        href ? (
+          <a href={href} key={`${token}-${match.index}`} rel={isExternalUrl(href) ? "noopener noreferrer" : undefined} target={isExternalUrl(href) ? "_blank" : undefined}>
+            {link[1]}
+          </a>
+        ) : (
+          link[1]
+        )
+      );
+    } else if (token.startsWith("**")) {
+      parts.push(<strong key={`${token}-${match.index}`}>{token.slice(2, -2)}</strong>);
+    } else {
+      parts.push(<em key={`${token}-${match.index}`}>{token.slice(1, -1)}</em>);
+    }
+
+    cursor = match.index + token.length;
+  }
+
+  if (cursor < value.length) {
+    parts.push(value.slice(cursor));
+  }
+
+  return parts;
+}
+
+function safeMarkdownUrl(value: string) {
+  const trimmed = value.trim();
+  if (trimmed.startsWith("/")) return trimmed;
+
+  try {
+    const url = new URL(trimmed);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
+function isExternalUrl(value: string) {
+  return value.startsWith("http://") || value.startsWith("https://");
 }
