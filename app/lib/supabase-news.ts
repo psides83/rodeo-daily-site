@@ -89,6 +89,15 @@ export type GeneratedNewsDraft = {
   candidates: NewsStoryCandidate[];
   researchNotes: string[];
   usedAi: boolean;
+  storyPacket: NewsStoryPacket;
+};
+
+export type NewsStoryPacket = {
+  primaryLead: NewsStoryCandidate;
+  standingsContext: StandingContext;
+  weeklySignals: WeeklySignal[];
+  sourceContext: SourceContext[];
+  imageSearchQueries: string[];
 };
 
 export type NewsAdminLogin = {
@@ -191,6 +200,28 @@ export async function fetchAdminStoryCandidates(accessToken: string) {
   return rows.map(mapStoryCandidateRow);
 }
 
+export async function deleteAdminDraftNewsPost(slug: string, accessToken: string) {
+  await assertAdminUser(accessToken);
+  const deletedRows = await supabaseRequest<SupabaseNewsPostRow[]>(`/rest/v1/news_posts?slug=eq.${encodeURIComponent(slug)}&status=eq.draft`, {
+    method: "DELETE",
+    serviceRole: true,
+    headers: {
+      Prefer: "return=representation"
+    }
+  });
+  if (deletedRows.length === 0) {
+    throw new Error("Only saved draft posts can be deleted here.");
+  }
+}
+
+export async function deleteAdminStoryCandidate(id: string, accessToken: string) {
+  await assertAdminUser(accessToken);
+  await supabaseRequest<unknown>(`/rest/v1/news_story_candidates?id=eq.${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    serviceRole: true
+  });
+}
+
 export async function loginAdminUser(email: string, password: string): Promise<NewsAdminLogin> {
   if (!supabaseNewsConfigured()) {
     throw new Error("Supabase environment variables are not configured.");
@@ -262,13 +293,21 @@ export async function generateAdminNewsDraft(accessToken: string): Promise<Gener
     throw new Error("No recent result leads were found.");
   }
 
-  const [standingsContext, sourceContext] = await Promise.all([
+  const [standingsContext, weeklySignals, sourceContext] = await Promise.all([
     fetchStandingContext(primaryCandidate),
+    fetchWeeklySignals(primaryCandidate, candidates),
     fetchSourceContext(primaryCandidate)
   ]);
-  const fallbackPost = buildFallbackGeneratedPost(primaryCandidate, standingsContext, sourceContext);
+  const storyPacket: NewsStoryPacket = {
+    primaryLead: primaryCandidate,
+    standingsContext,
+    weeklySignals,
+    sourceContext,
+    imageSearchQueries: imageQueriesForLead(primaryCandidate)
+  };
+  const fallbackPost = buildFallbackGeneratedPost(storyPacket);
   const aiPost = openAiApiKey
-    ? await generatePostWithOpenAi(primaryCandidate, standingsContext, sourceContext, fallbackPost)
+    ? await generatePostWithOpenAi(storyPacket, fallbackPost)
     : null;
 
   return {
@@ -277,9 +316,11 @@ export async function generateAdminNewsDraft(accessToken: string): Promise<Gener
     researchNotes: [
       `Primary lead: ${primaryCandidate.headline}`,
       ...standingsContext.notes,
+      ...weeklySignals.map((signal) => signal.headlineFact),
       ...sourceContext.map((source) => `${source.sourceName}: ${source.title}`)
     ],
-    usedAi: Boolean(aiPost)
+    usedAi: Boolean(aiPost),
+    storyPacket
   };
 }
 
@@ -646,6 +687,18 @@ type StandingContext = {
     hometown: string;
     metric: string;
   }>;
+  priorRows: Array<{
+    rank: number;
+    name: string;
+    metric: string;
+  }>;
+  movements: Array<{
+    name: string;
+    currentRank: number;
+    priorRank: number;
+    rankChange: number;
+    metric: string;
+  }>;
   notes: string[];
 };
 
@@ -656,10 +709,26 @@ type SourceContext = {
   excerpt: string;
 };
 
-function buildFallbackGeneratedPost(candidate: NewsStoryCandidate, standingsContext: StandingContext, sourceContext: SourceContext[]): NewsPostInput {
+type WeeklySignal = {
+  signalType: "primary_result" | "same_athlete_lead" | "same_event_lead" | "big_score";
+  headlineFact: string;
+  sourceUrls: string[];
+};
+
+function buildFallbackGeneratedPost(storyPacket: NewsStoryPacket): NewsPostInput {
+  const { primaryLead: candidate, standingsContext, sourceContext, weeklySignals } = storyPacket;
   const title = headlineCase(candidate.headline);
   const athlete = candidate.detectedAthleteName || "the highlighted competitor";
   const event = candidate.detectedEvent || "pro rodeo";
+  const movementNote = standingsContext.movements.length
+    ? `Standings movement to verify: ${standingsContext.movements
+        .slice(0, 3)
+        .map((movement) => `${movement.name} moved ${Math.abs(movement.rankChange)} spot${Math.abs(movement.rankChange) === 1 ? "" : "s"} to #${movement.currentRank}`)
+        .join("; ")}.`
+    : "No stored prior standings snapshot is available yet, so week-over-week movement should be added after the next snapshot.";
+  const weeklyNote = weeklySignals.length
+    ? `This week's related signals: ${weeklySignals.map((signal) => signal.headlineFact).join(" ")}`
+    : "This pass did not find additional related result signals beyond the primary lead.";
   const standingsNote = standingsContext.rows.length
     ? `${standingsContext.event} standings context: ${standingsContext.rows
         .slice(0, 5)
@@ -678,6 +747,8 @@ function buildFallbackGeneratedPost(candidate: NewsStoryCandidate, standingsCont
     content: [
       `${candidate.summary} The result stands out as a Rodeo Daily story lead because it combines a recent arena result with a broader standings question.`,
       standingsNote,
+      movementNote,
+      weeklyNote,
       `${sourceNote} These sources are being used as context signals only; this draft should remain original Rodeo Daily reporting and analysis rather than a rewrite of another outlet's article.`,
       `The useful angle for readers is what this result changes next. Before publishing, confirm the official result, payout, current standings position, and whether ${athlete} gained ground in the NFR race or strengthened a lead in ${event.toLowerCase()}.`
     ].join("\n\n"),
@@ -693,9 +764,7 @@ function buildFallbackGeneratedPost(candidate: NewsStoryCandidate, standingsCont
 }
 
 async function generatePostWithOpenAi(
-  candidate: NewsStoryCandidate,
-  standingsContext: StandingContext,
-  sourceContext: SourceContext[],
+  storyPacket: NewsStoryPacket,
   fallbackPost: NewsPostInput
 ) {
   const response = await fetch("https://api.openai.com/v1/responses", {
@@ -710,7 +779,7 @@ async function generatePostWithOpenAi(
         {
           role: "system",
           content:
-            "You write original Rodeo Daily news drafts. Do not copy, rewrite, or closely paraphrase third-party articles. Use third-party source titles only as context signals. Use structured rodeo results and standings as the factual backbone. Return strict JSON only."
+            "You write original Rodeo Daily news drafts with a clear reported angle. Do not copy, rewrite, or closely paraphrase third-party articles. Use third-party source titles only as context signals. Use structured rodeo results, weekly signals, and standings as the factual backbone. Prefer stories about standings movement, NFR bubble pressure, repeated wins, biggest weekly result, or event-wide patterns over a simple one-contestant result recap. Return strict JSON only."
         },
         {
           role: "user",
@@ -721,9 +790,7 @@ async function generatePostWithOpenAi(
               content: "4-7 paragraphs separated by blank lines",
               tags: ["string"]
             },
-            primaryLead: candidate,
-            standingsContext,
-            storylineSourceSignals: sourceContext,
+            storyPacket,
             fallbackDraft: fallbackPost
           })
         }
@@ -753,7 +820,15 @@ async function generatePostWithOpenAi(
 
 async function fetchStandingContext(candidate: NewsStoryCandidate): Promise<StandingContext> {
   const event = eventCodeForName(candidate.detectedEvent);
-  if (!event) return { event: candidate.detectedEvent, rows: [], notes: ["No standings event could be matched for the primary lead."] };
+  if (!event) {
+    return {
+      event: candidate.detectedEvent,
+      rows: [],
+      priorRows: [],
+      movements: [],
+      notes: ["No standings event could be matched for the primary lead."]
+    };
+  }
 
   try {
     const year = new Date().getFullYear();
@@ -769,20 +844,121 @@ async function fetchStandingContext(candidate: NewsStoryCandidate): Promise<Stan
       hometown: cleanText(row.Hometown ?? row.hometown),
       metric: row.Earnings ? formatCurrency(Number(row.Earnings)) : row.earnings ? formatCurrency(Number(row.earnings)) : row.Points ? `${row.Points} points` : ""
     }));
+    const priorRows = await fetchStoredPriorStandingRows(candidate.detectedEvent);
+    const movements = compareStandingRows(rows, priorRows);
+
     return {
       event: candidate.detectedEvent,
       rows,
+      priorRows,
+      movements,
       notes: rows.length
-        ? [`Pulled current top-${rows.length} ${candidate.detectedEvent} world standings for context.`]
+        ? [
+            `Pulled current top-${rows.length} ${candidate.detectedEvent} world standings for context.`,
+            priorRows.length
+              ? `Compared against the latest stored Supabase snapshot for ${candidate.detectedEvent}.`
+              : `No prior Supabase standings snapshot exists yet for ${candidate.detectedEvent}.`
+          ]
         : [`No ${candidate.detectedEvent} standings rows were returned.`]
     };
   } catch (error) {
     return {
       event: candidate.detectedEvent,
       rows: [],
+      priorRows: [],
+      movements: [],
       notes: [error instanceof Error ? `Unable to load standings context: ${error.message}` : "Unable to load standings context."]
     };
   }
+}
+
+async function fetchStoredPriorStandingRows(event: string): Promise<StandingContext["priorRows"]> {
+  try {
+    const snapshots = await supabaseRequest<Array<{ id: string }>>(
+      `/rest/v1/news_standings_snapshots?select=id&standing_type=eq.world&event=eq.${encodeURIComponent(event)}&order=generated_at.desc&limit=1`,
+      {
+        serviceRole: true,
+        cache: "no-store"
+      }
+    );
+    const snapshotId = snapshots[0]?.id;
+    if (!snapshotId) return [];
+    const rows = await supabaseRequest<Array<{ rank: number; name: string; earnings: number | null; points: number | null }>>(
+      `/rest/v1/news_standings_snapshot_rows?select=rank,name,earnings,points&snapshot_id=eq.${snapshotId}&order=rank.asc&limit=15`,
+      {
+        serviceRole: true,
+        cache: "no-store"
+      }
+    );
+    return rows.map((row) => ({
+      rank: row.rank,
+      name: row.name,
+      metric: row.earnings ? formatCurrency(row.earnings) : row.points ? `${formatNumber(row.points)} points` : ""
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function compareStandingRows(currentRows: StandingContext["rows"], priorRows: StandingContext["priorRows"]) {
+  const priorByName = new Map(priorRows.map((row) => [row.name.toLowerCase(), row]));
+  return currentRows
+    .map((current) => {
+      const prior = priorByName.get(current.name.toLowerCase());
+      if (!prior) return null;
+      return {
+        name: current.name,
+        currentRank: current.rank,
+        priorRank: prior.rank,
+        rankChange: prior.rank - current.rank,
+        metric: current.metric
+      };
+    })
+    .filter((movement): movement is NonNullable<typeof movement> => Boolean(movement && movement.rankChange !== 0))
+    .sort((left, right) => Math.abs(right.rankChange) - Math.abs(left.rankChange));
+}
+
+async function fetchWeeklySignals(primaryCandidate: NewsStoryCandidate, candidates: NewsStoryCandidate[]): Promise<WeeklySignal[]> {
+  const sameAthlete = primaryCandidate.detectedAthleteName
+    ? candidates.filter((candidate) => candidate.id !== primaryCandidate.id && candidate.detectedAthleteName === primaryCandidate.detectedAthleteName)
+    : [];
+  const sameEvent = primaryCandidate.detectedEvent
+    ? candidates.filter((candidate) => candidate.id !== primaryCandidate.id && candidate.detectedEvent === primaryCandidate.detectedEvent)
+    : [];
+  const highScoreSignals = candidates.filter((candidate) => /\b(8\d|9\d)(\.\d+)? points\b/i.test(candidate.summary)).slice(0, 3);
+
+  const signals: WeeklySignal[] = [
+    {
+      signalType: "primary_result",
+      headlineFact: primaryCandidate.summary,
+      sourceUrls: cleanList([primaryCandidate.sourceUrl])
+    },
+    ...sameAthlete.slice(0, 2).map((candidate) => ({
+      signalType: "same_athlete_lead" as const,
+      headlineFact: `${candidate.detectedAthleteName} also appeared in another recent lead: ${candidate.headline}.`,
+      sourceUrls: cleanList([candidate.sourceUrl])
+    })),
+    ...sameEvent.slice(0, 3).map((candidate) => ({
+      signalType: "same_event_lead" as const,
+      headlineFact: `Another ${candidate.detectedEvent} lead this week: ${candidate.headline}.`,
+      sourceUrls: cleanList([candidate.sourceUrl])
+    })),
+    ...highScoreSignals.map((candidate) => ({
+      signalType: "big_score" as const,
+      headlineFact: `High-mark signal: ${candidate.summary}`,
+      sourceUrls: cleanList([candidate.sourceUrl])
+    }))
+  ];
+
+  return signals.slice(0, 8);
+}
+
+function imageQueriesForLead(candidate: NewsStoryCandidate) {
+  return cleanList([
+    candidate.detectedAthleteName ? `${candidate.detectedAthleteName} rodeo` : "",
+    candidate.detectedEvent ? `${candidate.detectedEvent} rodeo` : "",
+    candidate.keywords.filter((keyword) => keyword.toLowerCase() !== "results").join(" ")
+  ]);
 }
 
 async function fetchSourceContext(candidate: NewsStoryCandidate): Promise<SourceContext[]> {

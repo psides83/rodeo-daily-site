@@ -388,6 +388,22 @@ html[data-theme="dark"] .app-window {
   margin: 22px 0;
 }
 
+.news-article-image {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: var(--shadow);
+}
+
+.news-article-image img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
 .news-article-body {
   display: grid;
   gap: 16px;
@@ -404,6 +420,22 @@ html[data-theme="dark"] .app-window {
   font-size: 1.02rem;
   font-weight: 650;
   line-height: 1.66;
+}
+
+.news-article-body h2,
+.news-article-body h3 {
+  margin: 10px 0 0;
+  color: var(--app-primary);
+  line-height: 1.15;
+}
+
+.news-article-body h2 {
+  font-size: clamp(1.35rem, 3vw, 1.9rem);
+}
+
+.news-article-body h3 {
+  color: var(--app-tertiary);
+  font-size: clamp(1.05rem, 2.4vw, 1.28rem);
 }
 
 .news-source-list {
@@ -555,6 +587,21 @@ html[data-theme="dark"] .app-window {
   line-height: 1.12;
 }
 
+.news-generator-panel p,
+.news-generator-panel ul {
+  margin: 0;
+  color: var(--app-tertiary);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.news-generator-panel ul {
+  display: grid;
+  gap: 6px;
+  padding-left: 20px;
+}
+
 .news-admin-login {
   width: min(460px, 100%);
 }
@@ -633,7 +680,14 @@ html[data-theme="dark"] .app-window {
   font-weight: 700;
 }
 
-.news-admin-post-list > button {
+.news-admin-list-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.news-admin-list-row button:first-child {
   display: grid;
   justify-items: start;
   gap: 4px;
@@ -642,11 +696,17 @@ html[data-theme="dark"] .app-window {
   text-align: left;
 }
 
-.news-admin-post-list strong {
+.news-admin-list-row .news-admin-delete-button {
+  min-height: 0;
+  padding: 0 10px;
+  color: #8a3324;
+}
+
+.news-admin-list-row strong {
   color: var(--app-primary);
 }
 
-.news-admin-post-list span {
+.news-admin-list-row span {
   color: var(--app-tertiary);
   font-size: 0.78rem;
   text-transform: capitalize;

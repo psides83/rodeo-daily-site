@@ -50,6 +50,7 @@ export function NewsAdminEditor() {
   const [message, setMessage] = useState("");
   const [postListMessage, setPostListMessage] = useState("");
   const [candidateMessage, setCandidateMessage] = useState("");
+  const [researchNotes, setResearchNotes] = useState<string[]>([]);
   const [diagnostics, setDiagnostics] = useState<NewsAdminDiagnostics | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -213,6 +214,7 @@ export function NewsAdminEditor() {
     setDraft(emptyPost);
     setPostListMessage("");
     setCandidateMessage("");
+    setResearchNotes([]);
     setDiagnostics(null);
   }
 
@@ -259,6 +261,7 @@ export function NewsAdminEditor() {
       const payload = (await response.json()) as GeneratedNewsDraft & { error?: string };
       if (!response.ok) throw new Error(payload.error || "Unable to generate an article.");
       setCandidates(payload.candidates ?? []);
+      setResearchNotes(payload.researchNotes ?? []);
       setDraft((current) => ({
         ...current,
         ...payload.post,
@@ -275,6 +278,61 @@ export function NewsAdminEditor() {
       );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to generate an article.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function deleteCandidate(candidate: NewsStoryCandidate) {
+    if (!token) return;
+    if (!window.confirm("Delete this article lead?")) return;
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const response = await fetch(`/api/admin/news/candidates?id=${encodeURIComponent(candidate.id)}`, {
+        method: "DELETE",
+        cache: "no-store",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(payload.error || "Unable to delete article lead.");
+      setCandidates((current) => current.filter((item) => item.id !== candidate.id));
+      setCandidateMessage("Article lead deleted.");
+    } catch (error) {
+      setCandidateMessage(error instanceof Error ? error.message : "Unable to delete article lead.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function deletePost(post: AdminNewsPost) {
+    if (!token) return;
+    if (post.status !== "draft") {
+      setPostListMessage("Only saved draft posts can be deleted here.");
+      return;
+    }
+    if (!window.confirm("Delete this saved draft?")) return;
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const response = await fetch(`/api/admin/news?slug=${encodeURIComponent(post.slug)}`, {
+        method: "DELETE",
+        cache: "no-store",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(payload.error || "Unable to delete post.");
+      setPosts((current) => current.filter((item) => item.slug !== post.slug));
+      if (draft.slug === post.slug) setDraft(emptyPost);
+      setPostListMessage("Draft deleted.");
+    } catch (error) {
+      setPostListMessage(error instanceof Error ? error.message : "Unable to delete post.");
     } finally {
       setLoading(false);
     }
@@ -334,6 +392,13 @@ export function NewsAdminEditor() {
                   </button>
                 </div>
                 <p>{candidateMessage || "Creates an editable draft from the strongest recent result lead."}</p>
+                {researchNotes.length > 0 && (
+                  <ul>
+                    {researchNotes.slice(0, 6).map((note) => (
+                      <li key={note}>{note}</li>
+                    ))}
+                  </ul>
+                )}
               </section>
 
               <div className="news-admin-form-grid">
@@ -409,10 +474,15 @@ export function NewsAdminEditor() {
               {candidateMessage && <p>{candidateMessage}</p>}
               {candidates.length === 0 && <p>No leads found yet.</p>}
               {candidates.slice(0, 8).map((candidate) => (
-                <button type="button" key={candidate.id} onClick={() => generateDraftFromCandidate(candidate)}>
-                  <strong>{candidate.headline}</strong>
-                  <span>{candidate.sourceName} - score {candidate.relevanceScore}</span>
-                </button>
+                <div className="news-admin-list-row" key={candidate.id}>
+                  <button type="button" onClick={() => generateDraftFromCandidate(candidate)}>
+                    <strong>{candidate.headline}</strong>
+                    <span>{candidate.sourceName} - score {candidate.relevanceScore}</span>
+                  </button>
+                  <button className="news-admin-delete-button" type="button" onClick={() => void deleteCandidate(candidate)} disabled={loading}>
+                    Delete
+                  </button>
+                </div>
               ))}
 
               <div>
@@ -432,10 +502,17 @@ export function NewsAdminEditor() {
               {diagnostics?.directError && <p>{diagnostics.directError}</p>}
               {posts.length === 0 && <p>No posts found.</p>}
               {posts.map((post) => (
-                <button type="button" key={post.slug} onClick={() => setDraft(post)}>
-                  <strong>{post.title}</strong>
-                  <span>{post.status === "published" ? "Published on /news" : "Draft - hidden from /news"}</span>
-                </button>
+                <div className="news-admin-list-row" key={post.slug}>
+                  <button type="button" onClick={() => setDraft(post)}>
+                    <strong>{post.title}</strong>
+                    <span>{post.status === "published" ? "Published on /news" : "Draft - hidden from /news"}</span>
+                  </button>
+                  {post.status === "draft" && (
+                    <button className="news-admin-delete-button" type="button" onClick={() => void deletePost(post)} disabled={loading}>
+                      Delete
+                    </button>
+                  )}
+                </div>
               ))}
             </aside>
           </section>

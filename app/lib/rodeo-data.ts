@@ -398,7 +398,7 @@ function formatAthleteResultValue(eventType?: string, time?: number, score?: num
   const isRoughStock = ["BB", "SB", "BR"].includes((eventType ?? "").toUpperCase());
   const value = isRoughStock ? score : time;
   if (!value || value === -99) return isRoughStock ? "NS" : "NT";
-  return formatNumber(value);
+  return isRoughStock ? formatNumber(value) : formatTimedResult(value);
 }
 
 function athleteResultSeason(result: { RodeoName?: string; EndDate?: string; SeasonYear?: number }) {
@@ -946,7 +946,7 @@ export function resultValue(row: ApiRound, event: EventCode) {
     return row.Score ? formatNumber(row.Score) : "-";
   }
 
-  return row.Time ? formatNumber(row.Time) : "-";
+  return row.Time ? formatTimedResult(row.Time) : "-";
 }
 
 export function mapDaysheets(payload: ApiDaysheetResponse): DaysheetRow[] {
@@ -1014,6 +1014,13 @@ export function formatCurrency(value: number) {
 
 export function formatNumber(value: number) {
   return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 2
+  }).format(value);
+}
+
+export function formatTimedResult(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 1,
     maximumFractionDigits: 2
   }).format(value);
 }

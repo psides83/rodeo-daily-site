@@ -106,12 +106,19 @@ export default async function NewsArticlePage({ params }: NewsArticlePageProps) 
           </div>
         </section>
 
+        {post.heroImage && (
+          <figure className="news-article-image">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={newsPostImage(post)} alt={post.title} />
+          </figure>
+        )}
+
         <GoogleAdSlot placement="generalMediumRectangle" className="news-ad-slot" />
 
         <section className="news-article-body">
           {post.paragraphs.map((paragraph, index) => (
-            <div key={paragraph}>
-              <p>{paragraph}</p>
+            <div key={`${paragraph}-${index}`}>
+              {renderArticleBlock(paragraph)}
               {index === 1 && <GoogleAdSlot placement="generalMediumRectangle" className="news-inline-ad-slot" />}
             </div>
           ))}
@@ -144,4 +151,16 @@ function formatNewsDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Recently Published";
   return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(date);
+}
+
+function renderArticleBlock(value: string) {
+  if (value.startsWith("### ")) {
+    return <h3>{value.replace(/^###\s+/, "")}</h3>;
+  }
+
+  if (value.startsWith("## ")) {
+    return <h2>{value.replace(/^##\s+/, "")}</h2>;
+  }
+
+  return <p>{value}</p>;
 }
