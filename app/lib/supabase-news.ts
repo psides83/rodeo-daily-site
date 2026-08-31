@@ -209,17 +209,23 @@ export async function deleteAdminDraftNewsPost(slug: string, accessToken: string
       Prefer: "return=representation"
     }
   });
-  if (deletedRows.length === 0) {
+  if (!deletedRows?.length) {
     throw new Error("Only saved draft posts can be deleted here.");
   }
 }
 
 export async function deleteAdminStoryCandidate(id: string, accessToken: string) {
   await assertAdminUser(accessToken);
-  await supabaseRequest<unknown>(`/rest/v1/news_story_candidates?id=eq.${encodeURIComponent(id)}`, {
+  const deletedRows = await supabaseRequest<SupabaseStoryCandidateRow[]>(`/rest/v1/news_story_candidates?id=eq.${encodeURIComponent(id)}`, {
     method: "DELETE",
-    serviceRole: true
+    serviceRole: true,
+    headers: {
+      Prefer: "return=representation"
+    }
   });
+  if (!deletedRows?.length) {
+    throw new Error("Article lead was not found.");
+  }
 }
 
 export async function loginAdminUser(email: string, password: string): Promise<NewsAdminLogin> {
@@ -417,7 +423,9 @@ async function supabaseRequest<T>(
     throw new Error(`Supabase request failed with ${response.status}${body ? `: ${body}` : ""}`);
   }
 
-  return (await response.json()) as T;
+  const body = await response.text();
+  if (!body) return undefined as T;
+  return JSON.parse(body) as T;
 }
 
 function fallbackPublishedPosts() {

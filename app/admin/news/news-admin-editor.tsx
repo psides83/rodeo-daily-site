@@ -148,6 +148,7 @@ export function NewsAdminEditor() {
       setPassword("");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to login.");
+      if (isInvalidSupabaseTokenError(error)) clearAdminSession();
     } finally {
       setLoading(false);
     }
@@ -197,6 +198,7 @@ export function NewsAdminEditor() {
       setDraft(emptyPost);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to save post.");
+      if (isInvalidSupabaseTokenError(error)) clearAdminSession();
     } finally {
       setLoading(false);
     }
@@ -239,6 +241,7 @@ export function NewsAdminEditor() {
       setCandidateMessage(`${loadedCandidates.length || payload.count || 0} article lead${loadedCandidates.length === 1 ? "" : "s"} ready.`);
     } catch (error) {
       setCandidateMessage(error instanceof Error ? error.message : "Unable to find article leads.");
+      if (isInvalidSupabaseTokenError(error)) clearAdminSession();
     } finally {
       setLoading(false);
     }
@@ -278,6 +281,7 @@ export function NewsAdminEditor() {
       );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to generate an article.");
+      if (isInvalidSupabaseTokenError(error)) clearAdminSession();
     } finally {
       setLoading(false);
     }
@@ -303,6 +307,7 @@ export function NewsAdminEditor() {
       setCandidateMessage("Article lead deleted.");
     } catch (error) {
       setCandidateMessage(error instanceof Error ? error.message : "Unable to delete article lead.");
+      if (isInvalidSupabaseTokenError(error)) clearAdminSession();
     } finally {
       setLoading(false);
     }
@@ -333,6 +338,7 @@ export function NewsAdminEditor() {
       setPostListMessage("Draft deleted.");
     } catch (error) {
       setPostListMessage(error instanceof Error ? error.message : "Unable to delete post.");
+      if (isInvalidSupabaseTokenError(error)) clearAdminSession();
     } finally {
       setLoading(false);
     }
@@ -546,7 +552,9 @@ export function NewsAdminEditor() {
 }
 
 function isInvalidSupabaseTokenError(error: unknown) {
-  return error instanceof Error && error.message.toLowerCase().includes("invalid supabase login");
+  if (!(error instanceof Error)) return false;
+  const message = error.message.toLowerCase();
+  return message.includes("invalid supabase login") || message.includes("bad_jwt") || message.includes("token is expired");
 }
 
 async function loadPublishedPostsFallback(): Promise<AdminNewsPost[]> {
