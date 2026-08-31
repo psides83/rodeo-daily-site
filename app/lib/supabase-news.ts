@@ -191,7 +191,7 @@ export async function fetchAdminNewsPosts(accessToken: string) {
 export async function fetchAdminStoryCandidates(accessToken: string) {
   await assertAdminUser(accessToken);
   const rows = await supabaseRequest<SupabaseStoryCandidateRow[]>(
-    "/rest/v1/news_story_candidates?select=*&order=discovered_at.desc,created_at.desc&limit=50",
+    "/rest/v1/news_story_candidates?select=*&selected=eq.false&order=discovered_at.desc,created_at.desc&limit=50",
     {
       serviceRole: true,
       cache: "no-store"
@@ -217,11 +217,12 @@ export async function deleteAdminDraftNewsPost(slug: string, accessToken: string
 export async function deleteAdminStoryCandidate(id: string, accessToken: string) {
   await assertAdminUser(accessToken);
   const deletedRows = await supabaseRequest<SupabaseStoryCandidateRow[]>(`/rest/v1/news_story_candidates?id=eq.${encodeURIComponent(id)}`, {
-    method: "DELETE",
+    method: "PATCH",
     serviceRole: true,
     headers: {
       Prefer: "return=representation"
-    }
+    },
+    body: JSON.stringify({ selected: true })
   });
   if (!deletedRows?.length) {
     throw new Error("Article lead was not found.");

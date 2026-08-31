@@ -67,10 +67,13 @@ import type {
 } from "./lib/types";
 
 
-const tabs: Array<{ label: Tab; icon: LucideIcon }> = [
+type AppTabItem = { label: Tab; icon: LucideIcon } | { label: "News"; icon: LucideIcon; href: string };
+
+const tabs: AppTabItem[] = [
   { label: "Standings", icon: ListOrdered },
   { label: "Results", icon: CircleDollarSign },
   { label: "Schedule", icon: Calendar },
+  { label: "News", icon: Newspaper, href: "/news" },
   { label: "More", icon: Settings }
 ];
 
@@ -868,6 +871,14 @@ export default function Home() {
             </div>
             {primaryDesktopTabs.map((tab) => {
               const Icon = tab.icon;
+              if ("href" in tab) {
+                return (
+                  <Link className="sidebar-tab" href={tab.href} key={tab.label}>
+                    <Icon size={19} />
+                    <span>{tab.label}</span>
+                  </Link>
+                );
+              }
               return (
                 <button
                   className={activeTab === tab.label ? "sidebar-tab active" : "sidebar-tab"}
@@ -1014,9 +1025,17 @@ export default function Home() {
             >
               <div className={searchExpanded ? "tab-items search-active-tab" : "tab-items"}>
                 {tabs
-                  .filter((tab) => !searchExpanded || tab.label === activeTab)
+                  .filter((tab) => !searchExpanded || (!("href" in tab) && tab.label === activeTab))
                   .map((tab) => {
                     const Icon = tab.icon;
+                    if ("href" in tab) {
+                      return (
+                        <Link className="tab-button" href={tab.href} key={tab.label}>
+                          <Icon size={21} />
+                          <span>{tab.label}</span>
+                        </Link>
+                      );
+                    }
                     return (
                       <button
                         className={activeTab === tab.label ? "tab-button active" : "tab-button"}

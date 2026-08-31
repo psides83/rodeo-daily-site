@@ -1,17 +1,33 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { GoogleAdSlot } from "../components/google-ads";
-import { RodeoDailyLogoMark } from "../components/rodeo-views";
+import { NewsAppShell } from "../components/news-app-shell";
 import { newsPostImage, newsPostUrl } from "../lib/news";
 import { absoluteUrl, pageMetadata } from "../lib/seo";
 import { fetchPublishedNewsPosts } from "../lib/supabase-news";
 
-export const metadata: Metadata = pageMetadata({
-  title: "Pro Rodeo News",
-  description:
-    "Read Rodeo Daily news, Monday pro rodeo roundups, PRCA results analysis, WPRA results stories, standings updates, and NFR implications.",
-  path: "/news"
-});
+export const metadata: Metadata = {
+  ...pageMetadata({
+    title: "PRCA News, WPRA News, Pro Rodeo Results & Standings Stories",
+    description:
+      "Read Rodeo Daily PRCA news, WPRA news, ProRodeo results analysis, standings movement, NFR bubble stories, rodeo athlete features, and weekly pro rodeo news.",
+    path: "/news"
+  }),
+  keywords: [
+    "PRCA news",
+    "WPRA news",
+    "ProRodeo news",
+    "pro rodeo news",
+    "PRCA results",
+    "WPRA results",
+    "PRCA standings",
+    "WPRA standings",
+    "NFR standings",
+    "rodeo results",
+    "rodeo standings",
+    "Rodeo Daily"
+  ]
+};
 
 export default async function NewsPage() {
   const posts = await fetchPublishedNewsPosts();
@@ -19,45 +35,103 @@ export default async function NewsPage() {
   const latestPosts = featured ? posts.slice(1) : posts;
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    name: "Pro Rodeo News",
-    url: absoluteUrl("/news"),
-    description:
-      "Rodeo Daily news covers PRCA results, WPRA results, pro rodeo results, standings movement, and weekly rodeo stories.",
-    hasPart: posts.map((post) => ({
-      "@type": "Article",
-      headline: post.title,
-      url: newsPostUrl(post),
-      datePublished: post.publishedAt,
-      author: {
-        "@type": "Organization",
-        name: post.author
-      }
-    }))
+    "@graph": [
+      {
+        "@type": "CollectionPage",
+        "@id": absoluteUrl("/news#collection"),
+        name: "PRCA News, WPRA News, Pro Rodeo Results and Standings Stories",
+        url: absoluteUrl("/news"),
+        description:
+          "Rodeo Daily news covers PRCA news, WPRA news, ProRodeo results, standings movement, NFR implications, athlete storylines, and weekly pro rodeo analysis.",
+        isPartOf: {
+          "@type": "WebSite",
+          name: "Rodeo Daily",
+          url: absoluteUrl("/")
+        },
+        about: [
+          "PRCA news",
+          "WPRA news",
+          "ProRodeo news",
+          "PRCA results",
+          "WPRA results",
+          "PRCA standings",
+          "WPRA standings",
+          "NFR standings",
+          "pro rodeo results",
+          "pro rodeo standings"
+        ],
+        mainEntity: {
+          "@type": "ItemList",
+          itemListElement: posts.map((post, index) => ({
+            "@type": "ListItem",
+            position: index + 1,
+            url: newsPostUrl(post),
+            name: post.title
+          }))
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Rodeo Daily",
+            item: absoluteUrl("/")
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "News",
+            item: absoluteUrl("/news")
+          }
+        ]
+      },
+      {
+        "@type": "NewsMediaOrganization",
+        name: "Rodeo Daily",
+        url: absoluteUrl("/"),
+        logo: absoluteUrl("/rodeo-daily-icon.png"),
+        publishingPrinciples: absoluteUrl("/privacy"),
+        sameAs: []
+      },
+      ...posts.map((post) => ({
+        "@type": "NewsArticle",
+        headline: post.title,
+        url: newsPostUrl(post),
+        image: newsPostImage(post),
+        datePublished: post.publishedAt,
+        dateModified: post.updatedAt ?? post.publishedAt,
+        articleSection: post.category,
+        keywords: [...post.tags, "PRCA news", "WPRA news", "pro rodeo results", "rodeo standings"].join(", "),
+        author: {
+          "@type": "Organization",
+          name: post.author
+        },
+        publisher: {
+          "@type": "Organization",
+          name: "Rodeo Daily",
+          logo: {
+            "@type": "ImageObject",
+            url: absoluteUrl("/rodeo-daily-icon.png")
+          }
+        }
+      }))
+    ]
   };
 
   return (
-    <main className="news-page">
+    <NewsAppShell title="News" subtitle="PRCA, WPRA, results, standings, and NFR storylines">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c")
         }}
       />
-      <section className="news-shell">
-        <header className="seo-page-header">
-          <Link className="seo-page-brand" href="/">
-            <RodeoDailyLogoMark />
-            <span>Rodeo Daily</span>
-          </Link>
-          <Link className="seo-page-open-app" href="/results">
-            PRCA Results
-          </Link>
-        </header>
-
+      <section className="news-shell news-app-content">
         <section className="news-index-header">
           <span>Pro Rodeo News</span>
-          <h1>Stories from the standings, results, and the road to the NFR.</h1>
+          <h1>PRCA and WPRA news from the standings, results, and the road to the NFR.</h1>
           <p>
             Rodeo Daily follows PRCA and WPRA results, standings movement, playoff implications, and the weekly
             stories shaping pro rodeo.
@@ -131,7 +205,7 @@ export default async function NewsPage() {
           <Link href="/wpra-standings">WPRA Standings</Link>
         </section>
       </section>
-    </main>
+    </NewsAppShell>
   );
 }
 

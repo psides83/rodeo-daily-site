@@ -105,6 +105,7 @@ export default function IosAppMarketingPage() {
             <span>Rodeo Daily</span>
           </Link>
           <nav className="marketing-header-links" aria-label="Rodeo Daily links">
+            <Link href="/news">News</Link>
             <Link href="/support">Support</Link>
             <Link href="/privacy">Privacy</Link>
             <Link href="/">Web App</Link>

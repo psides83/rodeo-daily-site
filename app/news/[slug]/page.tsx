@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { GoogleAdSlot } from "../../components/google-ads";
-import { RodeoDailyLogoMark } from "../../components/rodeo-views";
+import { NewsAppShell } from "../../components/news-app-shell";
 import { newsPostImage, newsPostUrl } from "../../lib/news";
 import { absoluteUrl } from "../../lib/seo";
 import { fetchNewsPostBySlug, fetchPublishedNewsPosts } from "../../lib/supabase-news";
@@ -25,6 +25,7 @@ export async function generateMetadata({ params }: NewsArticlePageProps): Promis
   return {
     title: post.title,
     description: post.excerpt,
+    keywords: [...post.tags, "PRCA news", "WPRA news", "ProRodeo news", "PRCA results", "WPRA results", "PRCA standings", "WPRA standings"],
     alternates: {
       canonical: url
     },
@@ -55,48 +56,84 @@ export default async function NewsArticlePage({ params }: NewsArticlePageProps) 
 
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "NewsArticle",
-    headline: post.title,
-    description: post.excerpt,
-    image: newsPostImage(post),
-    datePublished: post.publishedAt,
-    dateModified: post.updatedAt ?? post.publishedAt,
-    author: {
-      "@type": "Organization",
-      name: post.author
-    },
-    publisher: {
-      "@type": "Organization",
-      name: "Rodeo Daily",
-      logo: {
-        "@type": "ImageObject",
-        url: absoluteUrl("/rodeo-daily-icon.png")
+    "@graph": [
+      {
+        "@type": "NewsArticle",
+        "@id": `${newsPostUrl(post)}#article`,
+        headline: post.title,
+        description: post.excerpt,
+        image: newsPostImage(post),
+        datePublished: post.publishedAt,
+        dateModified: post.updatedAt ?? post.publishedAt,
+        articleSection: post.category,
+        isPartOf: {
+          "@type": "CollectionPage",
+          name: "Rodeo Daily News",
+          url: absoluteUrl("/news")
+        },
+        about: [
+          "PRCA news",
+          "WPRA news",
+          "ProRodeo news",
+          "PRCA results",
+          "WPRA results",
+          "PRCA standings",
+          "WPRA standings",
+          "NFR standings",
+          "pro rodeo results",
+          "pro rodeo standings"
+        ],
+        author: {
+          "@type": "Organization",
+          name: post.author
+        },
+        publisher: {
+          "@type": "Organization",
+          name: "Rodeo Daily",
+          logo: {
+            "@type": "ImageObject",
+            url: absoluteUrl("/rodeo-daily-icon.png")
+          }
+        },
+        mainEntityOfPage: newsPostUrl(post),
+        keywords: [...post.tags, "PRCA news", "WPRA news", "ProRodeo news", "PRCA results", "WPRA results", "rodeo standings"].join(", "),
+        citation: post.sourceUrls
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Rodeo Daily",
+            item: absoluteUrl("/")
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "News",
+            item: absoluteUrl("/news")
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: post.title,
+            item: newsPostUrl(post)
+          }
+        ]
       }
-    },
-    mainEntityOfPage: newsPostUrl(post),
-    keywords: post.tags.join(", "),
-    citation: post.sourceUrls
+    ]
   };
 
   return (
-    <main className="news-page">
+    <NewsAppShell title="News" subtitle={post.title}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c")
         }}
       />
-      <article className="news-article-shell">
-        <header className="seo-page-header">
-          <Link className="seo-page-brand" href="/">
-            <RodeoDailyLogoMark />
-            <span>Rodeo Daily</span>
-          </Link>
-          <Link className="seo-page-open-app" href="/news">
-            News
-          </Link>
-        </header>
-
+      <article className="news-article-shell news-app-content">
         <section className="news-article-hero">
           <span>{post.category}</span>
           <h1>{post.title}</h1>
@@ -144,7 +181,7 @@ export default async function NewsArticlePage({ params }: NewsArticlePageProps) 
           <Link href="/wpra-standings">WPRA Standings</Link>
         </section>
       </article>
-    </main>
+    </NewsAppShell>
   );
 }
 

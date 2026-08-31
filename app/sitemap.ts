@@ -121,8 +121,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     {
       url: absoluteUrl("/news"),
       lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.86
+      changeFrequency: "daily",
+      priority: 0.96
     }
   ];
 
@@ -191,8 +191,8 @@ async function newsSitemapRoutes(): Promise<MetadataRoute.Sitemap> {
   return posts.map((post) => ({
     url: absoluteUrl(`/news/${post.slug}`),
     lastModified: post.updatedAt ? new Date(post.updatedAt) : new Date(post.publishedAt),
-    changeFrequency: "weekly" as const,
-    priority: post.featured ? 0.84 : 0.78
+    changeFrequency: "daily" as const,
+    priority: post.featured ? 0.9 : 0.84
   }));
 }
 

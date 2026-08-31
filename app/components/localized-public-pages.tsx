@@ -541,6 +541,7 @@ export function LocalizedMarketingPage({ locale }: { locale: CountryLocale }) {
             <span>Rodeo Daily</span>
           </Link>
           <nav className="marketing-header-links" aria-label="Rodeo Daily">
+            <Link href="/news">News</Link>
             <Link href={routes.support}>{content.common.support}</Link>
             <Link href={routes.privacy}>{content.common.privacy}</Link>
             <Link href="/">{content.common.webApp}</Link>

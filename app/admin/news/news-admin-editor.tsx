@@ -303,8 +303,11 @@ export function NewsAdminEditor() {
       });
       const payload = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(payload.error || "Unable to delete article lead.");
-      setCandidates((current) => current.filter((item) => item.id !== candidate.id));
-      setCandidateMessage("Article lead deleted.");
+      setCandidates((current) => {
+        const nextCandidates = current.filter((item) => item.id !== candidate.id);
+        setCandidateMessage(`${nextCandidates.length} article lead${nextCandidates.length === 1 ? "" : "s"} ready.`);
+        return nextCandidates;
+      });
     } catch (error) {
       setCandidateMessage(error instanceof Error ? error.message : "Unable to delete article lead.");
       if (isInvalidSupabaseTokenError(error)) clearAdminSession();
