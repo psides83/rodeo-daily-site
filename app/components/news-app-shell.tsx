@@ -10,6 +10,7 @@ const primaryTabs = [
   { label: "News", href: "/news", icon: Newspaper },
   { label: "More", href: "/?tab=more", icon: Settings }
 ];
+const bottomTabs = primaryTabs.filter((item) => item.label !== "Schedule");
 
 const moreLinks = [
   { label: "Favorite Athletes", href: "/?tab=more&section=favorites", icon: Users },
@@ -78,7 +79,7 @@ export function NewsAppShell({ title, subtitle, children }: { title: string; sub
 
             <nav className="tab-bar news-tab-bar" aria-label="Bottom tabs">
               <div className="tab-items">
-                {primaryTabs.map((item) => {
+                {bottomTabs.map((item) => {
                   const Icon = item.icon;
                   return (
                     <Link className={item.label === "News" ? "tab-button active" : "tab-button"} href={item.href} key={item.label}>

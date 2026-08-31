@@ -78,6 +78,7 @@ const tabs: AppTabItem[] = [
 ];
 
 const primaryDesktopTabs = tabs.filter((tab) => tab.label !== "More");
+const bottomTabs = tabs.filter((tab) => tab.label !== "Schedule");
 
 const desktopMoreItems: Array<{ section: Exclude<MoreSection, "menu">; icon: LucideIcon; label: string }> = [
   { section: "schedule", icon: Calendar, label: "Schedule" },
@@ -1024,7 +1025,7 @@ export default function Home() {
               aria-label="Bottom tabs"
             >
               <div className={searchExpanded ? "tab-items search-active-tab" : "tab-items"}>
-                {tabs
+                {bottomTabs
                   .filter((tab) => !searchExpanded || (!("href" in tab) && tab.label === activeTab))
                   .map((tab) => {
                     const Icon = tab.icon;
