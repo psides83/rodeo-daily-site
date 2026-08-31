@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { GoogleAdSlot } from "../components/google-ads";
 import { RodeoDailyLogoMark } from "../components/rodeo-views";
-import { newsPostUrl } from "../lib/news";
+import { newsPostImage, newsPostUrl } from "../lib/news";
 import { absoluteUrl, pageMetadata } from "../lib/seo";
 import { fetchPublishedNewsPosts } from "../lib/supabase-news";
 
@@ -16,6 +16,7 @@ export const metadata: Metadata = pageMetadata({
 export default async function NewsPage() {
   const posts = await fetchPublishedNewsPosts();
   const featured = posts[0];
+  const latestPosts = featured ? posts.slice(1) : posts;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -54,42 +55,73 @@ export default async function NewsPage() {
           </Link>
         </header>
 
-        <section className="news-hero">
-          <div>
-            <span>Pro Rodeo News</span>
-            <h1>Monday rodeo stories built from PRCA results, WPRA results, and standings impact.</h1>
-            <p>
-              Follow weekly rodeo news, weekend results analysis, PRCA standings movement, WPRA standings updates,
-              and NFR storylines from Rodeo Daily.
-            </p>
-          </div>
-          {featured && (
-            <Link className="news-featured-card" href={`/news/${featured.slug}`}>
-              <span>{featured.category}</span>
-              <h2>{featured.title}</h2>
-              <p>{featured.excerpt}</p>
-              <strong>Read Story</strong>
-            </Link>
-          )}
+        <section className="news-index-header">
+          <span>Pro Rodeo News</span>
+          <h1>Stories from the standings, results, and the road to the NFR.</h1>
+          <p>
+            Rodeo Daily follows PRCA and WPRA results, standings movement, playoff implications, and the weekly
+            stories shaping pro rodeo.
+          </p>
         </section>
+
+        {featured && (
+          <section className="news-featured-story" aria-labelledby="featured-news-heading">
+            <Link className="news-featured-image" href={`/news/${featured.slug}`} aria-label={featured.title}>
+              {featured.heroImage ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={newsPostImage(featured)} alt={featured.title} />
+                </>
+              ) : (
+                <span>{featured.category}</span>
+              )}
+            </Link>
+            <div>
+              <span>Featured</span>
+              <h2 id="featured-news-heading">
+                <Link href={`/news/${featured.slug}`}>{featured.title}</Link>
+              </h2>
+              <p>{featured.excerpt}</p>
+              <div>
+                <time dateTime={featured.publishedAt}>{formatNewsDate(featured.publishedAt)}</time>
+                <Link href={`/news/${featured.slug}`}>Read Story</Link>
+              </div>
+            </div>
+          </section>
+        )}
 
         <GoogleAdSlot placement="generalMediumRectangle" className="news-ad-slot" />
 
-        <section className="news-grid" aria-label="Latest rodeo news">
-          {posts.map((post) => (
-            <article className="news-card" key={post.slug}>
-              <span>{post.category}</span>
-              <h2>
-                <Link href={`/news/${post.slug}`}>{post.title}</Link>
-              </h2>
-              <p>{post.excerpt}</p>
-              <div>
-                <time dateTime={post.publishedAt}>{formatNewsDate(post.publishedAt)}</time>
-                <Link href={`/news/${post.slug}`}>Read</Link>
-              </div>
-            </article>
-          ))}
-        </section>
+        {latestPosts.length > 0 && (
+          <>
+            <div className="news-section-heading">
+              <span>Latest</span>
+              <h2>Recent Rodeo Daily stories</h2>
+            </div>
+
+            <section className="news-grid" aria-label="Latest rodeo news">
+              {latestPosts.map((post) => (
+                <article className="news-card" key={post.slug}>
+                  {post.heroImage && (
+                    <Link className="news-card-image" href={`/news/${post.slug}`} aria-label={post.title}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={newsPostImage(post)} alt={post.title} loading="lazy" />
+                    </Link>
+                  )}
+                  <span>{post.category}</span>
+                  <h2>
+                    <Link href={`/news/${post.slug}`}>{post.title}</Link>
+                  </h2>
+                  <p>{post.excerpt}</p>
+                  <div>
+                    <time dateTime={post.publishedAt}>{formatNewsDate(post.publishedAt)}</time>
+                    <Link href={`/news/${post.slug}`}>Read</Link>
+                  </div>
+                </article>
+              ))}
+            </section>
+          </>
+        )}
 
         <section className="news-seo-links" aria-label="Related rodeo pages">
           <Link href="/prca-results">PRCA Results</Link>
