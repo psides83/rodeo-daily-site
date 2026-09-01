@@ -2522,8 +2522,8 @@ function AthleteResultsTab({ bio, selectedEvent }: { bio: AthleteBio; selectedEv
   const sortOptions: Array<{ value: AthleteResultSort; label: string }> = [
     { value: "Rodeo Date", label: "Date" },
     { value: "Rodeo Earnings", label: "Earnings by Rodeo" },
-    { value: "Result", label: resultMetricLabel },
-    { value: "Earnings", label: roughstockEventTypes.has(selectedEvent.toUpperCase()) ? "Earnings by Ride" : "Earnings by Run" }
+    { value: "Earnings", label: roughstockEventTypes.has(selectedEvent.toUpperCase()) ? "Earnings by Ride" : "Earnings by Run" },
+    { value: "Result", label: resultMetricLabel }
   ];
   const sortLabel = sortOptions.find((option) => option.value === sortBy)?.label ?? "Date";
 

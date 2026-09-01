@@ -836,6 +836,31 @@ html[data-theme="dark"] .app-window {
   font-weight: 700;
 }
 
+.news-admin-diagnostics {
+  display: grid;
+  gap: 5px;
+  padding: 10px 12px;
+  border: 1px solid rgba(107, 111, 118, 0.18);
+  border-radius: 8px;
+  background: rgba(107, 111, 118, 0.08);
+  color: var(--app-tertiary);
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.news-admin-diagnostics strong {
+  color: var(--app-primary);
+  font-size: 0.76rem;
+}
+
+.news-admin-diagnostics small {
+  overflow-wrap: anywhere;
+  color: var(--app-tertiary);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
 .news-admin-list-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

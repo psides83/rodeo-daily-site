@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RodeoDailyLogoMark } from "../../components/rodeo-views";
-import type { AdminNewsPost, NewsAdminLogin, NewsPostInput } from "../../lib/supabase-news";
+import type { AdminNewsPost, NewsAdminDiagnostics, NewsAdminLogin, NewsPostInput } from "../../lib/supabase-news";
 
 const emptyPost: NewsPostInput = {
   slug: "",
@@ -31,6 +31,7 @@ export function NewsAdminEditor() {
   const [draft, setDraft] = useState<NewsPostInput>(emptyPost);
   const [message, setMessage] = useState("");
   const [postListMessage, setPostListMessage] = useState("");
+  const [diagnostics, setDiagnostics] = useState<NewsAdminDiagnostics | null>(null);
   const [loading, setLoading] = useState(false);
 
   const canSave = useMemo(() => draft.title.trim() && draft.slug.trim() && draft.excerpt.trim() && draft.content.trim(), [draft]);
@@ -47,10 +48,16 @@ export function NewsAdminEditor() {
           Authorization: `Bearer ${activeToken}`
         }
       });
-      const payload = (await response.json()) as { data?: AdminNewsPost[]; count?: number; error?: string };
+      const payload = (await response.json()) as {
+        data?: AdminNewsPost[];
+        count?: number;
+        diagnostics?: NewsAdminDiagnostics;
+        error?: string;
+      };
       if (!response.ok) throw new Error(payload.error || "Unable to load posts.");
       const loadedPosts = payload.data ?? [];
       setPosts(loadedPosts);
+      setDiagnostics(payload.diagnostics ?? null);
       const count = loadedPosts.length || payload.count || 0;
       setPostListMessage(`${count} post${count === 1 ? "" : "s"} loaded from Supabase.`);
     } catch (error) {
@@ -157,6 +164,7 @@ export function NewsAdminEditor() {
     window.localStorage.removeItem(tokenStorageKey);
     setToken("");
     setPosts([]);
+    setDiagnostics(null);
     setDraft(emptyPost);
     setPostListMessage("");
   }
@@ -316,6 +324,19 @@ export function NewsAdminEditor() {
                 </button>
               </div>
               {postListMessage && <p>{postListMessage}</p>}
+              {diagnostics && (
+                <div className="news-admin-diagnostics">
+                  <strong>Supabase: {diagnostics.projectHost || "not configured"}</strong>
+                  <span>
+                    Admin rows: {diagnostics.adminRowCount ?? "?"} / published rows: {diagnostics.publishedRowCount ?? "?"} / shown:{" "}
+                    {diagnostics.mergedRowCount ?? posts.length}
+                  </span>
+                  {diagnostics.adminStatuses?.length ? <span>Admin statuses: {diagnostics.adminStatuses.join(", ")}</span> : null}
+                  {diagnostics.mergedSlugs?.length ? <small>Shown slugs: {diagnostics.mergedSlugs.join(", ")}</small> : null}
+                  {diagnostics.publishedSlugs?.length ? <small>Published slugs: {diagnostics.publishedSlugs.join(", ")}</small> : null}
+                  {diagnostics.directError ? <small>Error: {diagnostics.directError}</small> : null}
+                </div>
+              )}
               {posts.length === 0 && <p>No posts found.</p>}
               {posts.map((post) => (
                 <div className="news-admin-list-row" key={post.slug}>

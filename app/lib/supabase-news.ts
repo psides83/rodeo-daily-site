@@ -118,6 +118,13 @@ export type NewsAdminDiagnostics = {
   projectHost: string;
   adminEmailCount: number;
   serviceRolePresent: boolean;
+  adminRowCount?: number;
+  publishedRowCount?: number;
+  mergedRowCount?: number;
+  adminSlugs?: string[];
+  publishedSlugs?: string[];
+  mergedSlugs?: string[];
+  adminStatuses?: string[];
   directCount?: number;
   directStatus?: number;
   directError?: string;
@@ -184,7 +191,7 @@ export async function fetchNewsPostBySlug(slug: string) {
 
 export async function fetchAdminNewsPosts(accessToken: string) {
   await assertAdminUser(accessToken);
-  const rows = await supabaseRequest<SupabaseNewsPostRow[]>("/rest/v1/news_posts?select=*&limit=100", {
+  const rows = await supabaseRequest<SupabaseNewsPostRow[]>("/rest/v1/news_posts?select=*&order=updated_at.desc.nullslast,published_at.desc.nullslast,created_at.desc&limit=100", {
     serviceRole: true,
     cache: "no-store"
   });
@@ -350,6 +357,26 @@ export async function fetchNewsAdminDiagnostics(accessToken: string): Promise<Ne
     adminEmailCount: adminEmails.length,
     serviceRolePresent: Boolean(supabaseServiceRoleKey)
   };
+
+  try {
+    const [adminRows, publishedRows] = await Promise.all([
+      supabaseRequest<SupabaseNewsPostRow[]>("/rest/v1/news_posts?select=slug,status,published_at,created_at,updated_at&order=updated_at.desc.nullslast,published_at.desc.nullslast,created_at.desc&limit=100", {
+        serviceRole: true,
+        cache: "no-store"
+      }),
+      fetchPublishedNewsPostRows()
+    ]);
+    const mergedRows = mergeNewsPostRows(adminRows, publishedRows);
+    diagnostics.adminRowCount = adminRows.length;
+    diagnostics.publishedRowCount = publishedRows.length;
+    diagnostics.mergedRowCount = mergedRows.length;
+    diagnostics.adminSlugs = adminRows.map((row) => row.slug);
+    diagnostics.publishedSlugs = publishedRows.map((row) => row.slug);
+    diagnostics.mergedSlugs = mergedRows.map((row) => row.slug);
+    diagnostics.adminStatuses = Array.from(new Set(adminRows.map((row) => row.status)));
+  } catch (error) {
+    diagnostics.directError = error instanceof Error ? error.message : "Unable to compare admin and published rows.";
+  }
 
   try {
     const response = await fetch(`${supabaseUrl}/rest/v1/news_posts?select=slug`, {
@@ -548,13 +575,27 @@ function fetchPublishedNewsPostRows() {
 
 function mergeNewsPostRows(primaryRows: SupabaseNewsPostRow[], fallbackRows: SupabaseNewsPostRow[]) {
   const rowsBySlug = new Map<string, SupabaseNewsPostRow>();
-  for (const row of fallbackRows) {
-    rowsBySlug.set(row.slug, row);
-  }
-  for (const row of primaryRows) {
-    rowsBySlug.set(row.slug, row);
+  for (const row of [...fallbackRows, ...primaryRows]) {
+    const existing = rowsBySlug.get(row.slug);
+    rowsBySlug.set(row.slug, existing ? preferredNewsPostRow(existing, row) : row);
   }
   return Array.from(rowsBySlug.values());
+}
+
+function preferredNewsPostRow(left: SupabaseNewsPostRow, right: SupabaseNewsPostRow) {
+  if (left.status !== right.status) {
+    return left.status === "published" ? left : right.status === "published" ? right : latestNewsPostRow(left, right);
+  }
+  return latestNewsPostRow(left, right);
+}
+
+function latestNewsPostRow(left: SupabaseNewsPostRow, right: SupabaseNewsPostRow) {
+  return newsPostRowDateNumber(right) > newsPostRowDateNumber(left) ? right : left;
+}
+
+function newsPostRowDateNumber(row: SupabaseNewsPostRow) {
+  const parsed = Date.parse(row.updated_at ?? row.published_at ?? row.created_at ?? "");
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function mapNewsPostRow(row: SupabaseNewsPostRow): RodeoNewsPost {
