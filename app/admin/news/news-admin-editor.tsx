@@ -4,24 +4,7 @@ import Link from "next/link";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RodeoDailyLogoMark } from "../../components/rodeo-views";
-import type { AdminNewsPost, GeneratedNewsDraft, NewsAdminDiagnostics, NewsAdminLogin, NewsPostInput, NewsStoryCandidate } from "../../lib/supabase-news";
-
-type PublicNewsPost = {
-  slug: string;
-  title: string;
-  excerpt: string;
-  category: string;
-  author: string;
-  publishedAt: string;
-  updatedAt?: string;
-  status: "draft" | "published";
-  featured: boolean;
-  heroImage?: string;
-  sourceUrls: string[];
-  storyScore?: number;
-  tags: string[];
-  paragraphs: string[];
-};
+import type { AdminNewsPost, NewsAdminLogin, NewsPostInput } from "../../lib/supabase-news";
 
 const emptyPost: NewsPostInput = {
   slug: "",
@@ -45,13 +28,9 @@ export function NewsAdminEditor() {
   const [password, setPassword] = useState("");
   const [token, setToken] = useState("");
   const [posts, setPosts] = useState<AdminNewsPost[]>([]);
-  const [candidates, setCandidates] = useState<NewsStoryCandidate[]>([]);
   const [draft, setDraft] = useState<NewsPostInput>(emptyPost);
   const [message, setMessage] = useState("");
   const [postListMessage, setPostListMessage] = useState("");
-  const [candidateMessage, setCandidateMessage] = useState("");
-  const [researchNotes, setResearchNotes] = useState<string[]>([]);
-  const [diagnostics, setDiagnostics] = useState<NewsAdminDiagnostics | null>(null);
   const [loading, setLoading] = useState(false);
 
   const canSave = useMemo(() => draft.title.trim() && draft.slug.trim() && draft.excerpt.trim() && draft.content.trim(), [draft]);
@@ -68,22 +47,12 @@ export function NewsAdminEditor() {
           Authorization: `Bearer ${activeToken}`
         }
       });
-      const payload = (await response.json()) as { data?: AdminNewsPost[]; count?: number; diagnostics?: NewsAdminDiagnostics; error?: string };
+      const payload = (await response.json()) as { data?: AdminNewsPost[]; count?: number; error?: string };
       if (!response.ok) throw new Error(payload.error || "Unable to load posts.");
-      let loadedPosts = payload.data ?? [];
-      let loadedFromPublicFallback = false;
-      if (loadedPosts.length === 0) {
-        loadedPosts = await loadPublishedPostsFallback();
-        loadedFromPublicFallback = loadedPosts.length > 0;
-      }
+      const loadedPosts = payload.data ?? [];
       setPosts(loadedPosts);
-      setDiagnostics(payload.diagnostics ?? null);
       const count = loadedPosts.length || payload.count || 0;
-      setPostListMessage(
-        loadedFromPublicFallback
-          ? `${count} published post${count === 1 ? "" : "s"} loaded from /news. Drafts are unavailable until the admin list query returns rows.`
-          : `${count} post${count === 1 ? "" : "s"} loaded.`
-      );
+      setPostListMessage(`${count} post${count === 1 ? "" : "s"} loaded from Supabase.`);
     } catch (error) {
       setPostListMessage(error instanceof Error ? error.message : "Unable to load posts.");
       if (isInvalidSupabaseTokenError(error)) clearAdminSession();
@@ -92,36 +61,13 @@ export function NewsAdminEditor() {
     }
   }, [token]);
 
-  const loadCandidates = useCallback(async (activeToken = token) => {
-    if (!activeToken) return;
-    setCandidateMessage("Loading article leads...");
-
-    try {
-      const response = await fetch("/api/admin/news/candidates", {
-        cache: "no-store",
-        headers: {
-          Authorization: `Bearer ${activeToken}`
-        }
-      });
-      const payload = (await response.json()) as { data?: NewsStoryCandidate[]; count?: number; error?: string };
-      if (!response.ok) throw new Error(payload.error || "Unable to load article leads.");
-      const loadedCandidates = payload.data ?? [];
-      setCandidates(loadedCandidates);
-      setCandidateMessage(`${loadedCandidates.length || payload.count || 0} article lead${loadedCandidates.length === 1 ? "" : "s"} ready.`);
-    } catch (error) {
-      setCandidateMessage(error instanceof Error ? error.message : "Unable to load article leads.");
-      if (isInvalidSupabaseTokenError(error)) clearAdminSession();
-    }
-  }, [token]);
-
   useEffect(() => {
     const storedToken = window.localStorage.getItem(tokenStorageKey);
     if (storedToken) {
       setToken(storedToken);
       void loadPosts(storedToken);
-      void loadCandidates(storedToken);
     }
-  }, [loadCandidates, loadPosts]);
+  }, [loadPosts]);
 
   async function login(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -144,7 +90,6 @@ export function NewsAdminEditor() {
       window.localStorage.setItem(tokenStorageKey, payload.accessToken);
       setToken(payload.accessToken);
       await loadPosts(payload.accessToken);
-      await loadCandidates(payload.accessToken);
       setPassword("");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to login.");
@@ -212,108 +157,8 @@ export function NewsAdminEditor() {
     window.localStorage.removeItem(tokenStorageKey);
     setToken("");
     setPosts([]);
-    setCandidates([]);
     setDraft(emptyPost);
     setPostListMessage("");
-    setCandidateMessage("");
-    setResearchNotes([]);
-    setDiagnostics(null);
-  }
-
-  async function refreshCandidates() {
-    if (!token) return;
-    setLoading(true);
-    setMessage("");
-    setCandidateMessage("Finding article leads from recent rodeo results...");
-
-    try {
-      const response = await fetch("/api/admin/news/candidates", {
-        method: "POST",
-        cache: "no-store",
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      const payload = (await response.json()) as { data?: NewsStoryCandidate[]; count?: number; error?: string };
-      if (!response.ok) throw new Error(payload.error || "Unable to find article leads.");
-      const loadedCandidates = payload.data ?? [];
-      setCandidates(loadedCandidates);
-      setCandidateMessage(`${loadedCandidates.length || payload.count || 0} article lead${loadedCandidates.length === 1 ? "" : "s"} ready.`);
-    } catch (error) {
-      setCandidateMessage(error instanceof Error ? error.message : "Unable to find article leads.");
-      if (isInvalidSupabaseTokenError(error)) clearAdminSession();
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function generateArticle() {
-    if (!token) return;
-    setLoading(true);
-    setMessage("");
-    setCandidateMessage("Generating an article from recent rodeo results...");
-
-    try {
-      const response = await fetch("/api/admin/news/generate", {
-        method: "POST",
-        cache: "no-store",
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      const payload = (await response.json()) as GeneratedNewsDraft & { error?: string };
-      if (!response.ok) throw new Error(payload.error || "Unable to generate an article.");
-      setCandidates(payload.candidates ?? []);
-      setResearchNotes(payload.researchNotes ?? []);
-      setDraft((current) => ({
-        ...current,
-        ...payload.post,
-        status: current.status,
-        featured: current.featured,
-        publishedAt: current.publishedAt,
-        heroImage: current.heroImage
-      }));
-      setCandidateMessage(`${payload.candidates?.length ?? 0} article lead${payload.candidates?.length === 1 ? "" : "s"} ready.`);
-      setMessage(
-        payload.usedAi
-          ? "Researched article draft generated. Review names, numbers, sources, and standings impact before publishing."
-          : "Article draft generated without AI because the site is missing an OpenAI key or the AI request failed. Review and expand before publishing."
-      );
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to generate an article.");
-      if (isInvalidSupabaseTokenError(error)) clearAdminSession();
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function deleteCandidate(candidate: NewsStoryCandidate) {
-    if (!token) return;
-    if (!window.confirm("Delete this article lead?")) return;
-    setLoading(true);
-    setMessage("");
-
-    try {
-      const response = await fetch(`/api/admin/news/candidates?id=${encodeURIComponent(candidate.id)}`, {
-        method: "DELETE",
-        cache: "no-store",
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(payload.error || "Unable to delete article lead.");
-      setCandidates((current) => {
-        const nextCandidates = current.filter((item) => item.id !== candidate.id);
-        setCandidateMessage(`${nextCandidates.length} article lead${nextCandidates.length === 1 ? "" : "s"} ready.`);
-        return nextCandidates;
-      });
-    } catch (error) {
-      setCandidateMessage(error instanceof Error ? error.message : "Unable to delete article lead.");
-      if (isInvalidSupabaseTokenError(error)) clearAdminSession();
-    } finally {
-      setLoading(false);
-    }
   }
 
   async function deletePost(post: AdminNewsPost) {
@@ -390,25 +235,15 @@ export function NewsAdminEditor() {
         ) : (
           <section className="news-admin-layout">
             <form className="news-admin-card news-admin-form" onSubmit={savePost}>
-              <section className="news-generator-panel" aria-label="Article generator">
-                <div className="news-generator-header">
-                  <div>
-                    <span>Generator</span>
-                    <h2>Generate Article</h2>
-                  </div>
-                  <button type="button" onClick={() => void generateArticle()} disabled={loading}>
-                    {loading ? "Generating..." : "Generate Article"}
-                  </button>
+              <div className="news-admin-editor-header">
+                <div>
+                  <span>Article Editor</span>
+                  <h2>{draft.slug ? "Edit Article" : "New Article"}</h2>
                 </div>
-                <p>{candidateMessage || "Creates an editable draft from the strongest recent result lead."}</p>
-                {researchNotes.length > 0 && (
-                  <ul>
-                    {researchNotes.slice(0, 6).map((note) => (
-                      <li key={note}>{note}</li>
-                    ))}
-                  </ul>
-                )}
-              </section>
+                <button type="button" onClick={() => setDraft(emptyPost)} disabled={loading}>
+                  New Post
+                </button>
+              </div>
 
               <div className="news-admin-form-grid">
                 <label>
@@ -475,40 +310,12 @@ export function NewsAdminEditor() {
 
             <aside className="news-admin-card news-admin-post-list">
               <div>
-                <h2>Article Leads</h2>
-                <button type="button" onClick={() => void refreshCandidates()} disabled={loading}>
-                  Find Leads
-                </button>
-              </div>
-              {candidateMessage && <p>{candidateMessage}</p>}
-              {candidates.length === 0 && <p>No leads found yet.</p>}
-              {candidates.slice(0, 8).map((candidate) => (
-                <div className="news-admin-list-row" key={candidate.id}>
-                  <button type="button" onClick={() => generateDraftFromCandidate(candidate)}>
-                    <strong>{candidate.headline}</strong>
-                    <span>{candidate.sourceName} - score {candidate.relevanceScore}</span>
-                  </button>
-                  <button className="news-admin-delete-button" type="button" onClick={() => void deleteCandidate(candidate)} disabled={loading}>
-                    Delete
-                  </button>
-                </div>
-              ))}
-
-              <div>
                 <h2>Posts</h2>
                 <button type="button" onClick={() => void loadPosts()} disabled={loading}>
                   Refresh
                 </button>
               </div>
               {postListMessage && <p>{postListMessage}</p>}
-              {diagnostics && (
-                <p>
-                  Supabase: {diagnostics.projectHost || "not set"} / table count:{" "}
-                  {typeof diagnostics.directCount === "number" ? diagnostics.directCount : "unknown"} / status:{" "}
-                  {diagnostics.directStatus ?? "unknown"}
-                </p>
-              )}
-              {diagnostics?.directError && <p>{diagnostics.directError}</p>}
               {posts.length === 0 && <p>No posts found.</p>}
               {posts.map((post) => (
                 <div className="news-admin-list-row" key={post.slug}>
@@ -535,55 +342,12 @@ export function NewsAdminEditor() {
   function updateDraft(next: Partial<NewsPostInput>) {
     setDraft((current) => ({ ...current, ...next }));
   }
-
-  function generateDraftFromCandidate(candidate: NewsStoryCandidate) {
-    applyCandidateDraft(candidate);
-    setMessage("Article draft generated from the selected lead. Review the source and confirm standings impact before publishing.");
-  }
-
-  function applyCandidateDraft(candidate: NewsStoryCandidate) {
-    const generatedPost = buildGeneratedPostFromCandidate(candidate);
-    setDraft((current) => ({
-      ...current,
-      ...generatedPost,
-      status: current.status,
-      featured: current.featured,
-      publishedAt: current.publishedAt,
-      heroImage: current.heroImage
-    }));
-  }
 }
 
 function isInvalidSupabaseTokenError(error: unknown) {
   if (!(error instanceof Error)) return false;
   const message = error.message.toLowerCase();
   return message.includes("invalid supabase login") || message.includes("bad_jwt") || message.includes("token is expired");
-}
-
-async function loadPublishedPostsFallback(): Promise<AdminNewsPost[]> {
-  try {
-    const response = await fetch("/api/news", { cache: "no-store" });
-    const payload = (await response.json()) as { data?: PublicNewsPost[] };
-    if (!response.ok) return [];
-    return (payload.data ?? []).map((post) => ({
-      slug: post.slug,
-      title: post.title,
-      excerpt: post.excerpt,
-      content: post.paragraphs.join("\n\n"),
-      status: "published",
-      category: post.category,
-      author: post.author,
-      tags: post.tags,
-      heroImage: post.heroImage,
-      sourceUrls: post.sourceUrls,
-      featured: post.featured,
-      storyScore: post.storyScore,
-      publishedAt: post.publishedAt,
-      updatedAt: post.updatedAt
-    }));
-  } catch {
-    return [];
-  }
 }
 
 function splitList(value: string) {
@@ -603,37 +367,4 @@ function slugify(value: string) {
     .replace(/&/g, "and")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-}
-
-function buildGeneratedPostFromCandidate(candidate: NewsStoryCandidate): NewsPostInput {
-  const headline = candidate.headline.trim();
-  const summary = candidate.summary.trim();
-  const cleanHeadline = headline || "Recent Pro Rodeo Result Creates Standings Story";
-  const title = headlineCase(cleanHeadline);
-  const sourceUrls = candidate.sourceUrl ? [candidate.sourceUrl] : [];
-  const paragraphs = [
-    `${summary || cleanHeadline} The result gives Rodeo Daily a story lead to review from the latest pro rodeo results.`,
-    "The first editorial pass should verify the official placing, score or time, payout, and event context before the story is published. Once those details are confirmed, the article can connect the result to PRCA standings, WPRA standings, and the broader NFR picture.",
-    "This story is strongest when it explains why the result matters beyond the leaderboard. That can include a standings jump, a season-best performance, a breakthrough win, a comeback, or a result that changes the pressure around the next rodeo.",
-    "Rodeo Daily will continue tracking the follow-up as more PRCA results, WPRA results, and standings updates become available."
-  ];
-
-  return {
-    slug: slugify(`${cleanHeadline}-article`),
-    title,
-    excerpt: `${title} is a rodeo news lead pulled from recent results for review, verification, and standings impact analysis.`,
-    content: paragraphs.join("\n\n"),
-    status: "draft",
-    category: "Pro Rodeo Roundup",
-    author: "Rodeo Daily",
-    tags: ["PRCA results", "WPRA results", "pro rodeo results", "PRCA standings", "WPRA standings"],
-    sourceUrls,
-    featured: false,
-    storyScore: candidate.relevanceScore,
-    publishedAt: ""
-  };
-}
-
-function headlineCase(value: string) {
-  return value.replace(/\b\w/g, (letter) => letter.toUpperCase());
 }

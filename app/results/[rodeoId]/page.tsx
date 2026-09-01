@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ResultsRodeoClient } from "./results-rodeo-client";
+import { ThemeSync } from "../../components/theme-sync";
 import { eventCodes, events, mapWinners } from "../../lib/rodeo-data";
 import type { ApiRodeoResults, EventName } from "../../lib/types";
 import { absoluteUrl } from "../../lib/seo";
@@ -54,6 +55,7 @@ export default async function ResultsRodeoRoutePage({ params, searchParams }: Re
 
   return (
     <main className="browser-stage routed-stage">
+      <ThemeSync />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

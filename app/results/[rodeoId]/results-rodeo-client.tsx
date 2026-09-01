@@ -3,8 +3,8 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { RodeoDetailView } from "../../components/rodeo-views";
-import { eventCodes, events, fetchJson, mapDaysheets, mapResultRounds, mapWinners } from "../../lib/rodeo-data";
-import type { ApiDaysheetResponse, ApiRodeoResults, DaysheetRow, EventName, LoadState, RodeoRow } from "../../lib/types";
+import { eventCodes, events, fetchJson, mapDaysheets, mapResultRounds, mapTopMoneyEarners, mapWinners } from "../../lib/rodeo-data";
+import type { ApiDaysheetResponse, ApiRodeoResults, DaysheetRow, EventName, LoadState, RodeoRow, TopMoneyEarner } from "../../lib/types";
 
 type ResultsRodeoClientProps = {
   rodeoId: number;
@@ -21,6 +21,7 @@ export function ResultsRodeoClient({ rodeoId }: ResultsRodeoClientProps) {
   const [state, setState] = useState<LoadState>("idle");
   const [daysheetState, setDaysheetState] = useState<LoadState>("idle");
   const [daysheets, setDaysheets] = useState<DaysheetRow[]>([]);
+  const [topMoneyEarners, setTopMoneyEarners] = useState<TopMoneyEarner[]>([]);
   const [rodeo, setRodeo] = useState<RodeoRow>({
     id: rodeoId,
     name: searchParams.get("name") || `Rodeo #${rodeoId || ""}`,
@@ -46,8 +47,10 @@ export function ResultsRodeoClient({ rodeoId }: ResultsRodeoClientProps) {
         const payload = await fetchJson<ApiRodeoResults>(`/api/rodeo?${query}`);
         const winners = mapWinners(payload, eventCodes[event]);
         const resultRounds = mapResultRounds(payload, eventCodes[event]);
+        const moneyEarners = mapTopMoneyEarners(payload, eventCodes[event]);
         if (!cancelled) {
           setRodeo((current) => ({ ...current, winners, resultRounds }));
+          setTopMoneyEarners(moneyEarners);
           setState("loaded");
         }
       } catch {
@@ -91,6 +94,7 @@ export function ResultsRodeoClient({ rodeoId }: ResultsRodeoClientProps) {
       event={event}
       setEvent={setEvent}
       source="results"
+      topMoneyEarners={topMoneyEarners}
       onBack={() => router.back()}
     />
   );

@@ -94,15 +94,16 @@ button:active {
 .browser-stage {
   display: grid;
   min-height: 100vh;
-  place-items: center;
+  justify-items: center;
+  align-items: start;
   padding: clamp(10px, 1.6vw, 22px);
 }
 
 .app-window {
   position: relative;
   width: min(1180px, 100%);
-  min-height: min(880px, calc(100vh - 24px));
-  overflow: hidden;
+  min-height: calc(100vh - 44px);
+  overflow: visible;
   border: 1px solid rgba(107, 111, 118, 0.16);
   border-radius: 18px;
   background: var(--app-bg);
@@ -705,55 +706,32 @@ html[data-theme="dark"] .app-window {
   padding: 18px;
 }
 
-.news-generator-panel {
-  display: grid;
-  gap: 12px;
-  padding: 14px;
-  border: 1px solid rgba(160, 138, 89, 0.22);
-  border-radius: 8px;
-  background: rgba(160, 138, 89, 0.08);
-}
-
-.news-generator-header {
+.news-admin-editor-header {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
   gap: 10px;
+  padding-bottom: 4px;
 }
 
-.news-generator-header div {
+.news-admin-editor-header div {
   display: grid;
   gap: 3px;
 }
 
-.news-generator-header span {
+.news-admin-editor-header span {
   color: var(--app-secondary);
   font-size: 0.74rem;
   font-weight: 950;
   text-transform: uppercase;
 }
 
-.news-generator-header h2 {
+.news-admin-editor-header h2 {
   margin: 0;
   color: var(--app-primary);
   font-size: 1.18rem;
   line-height: 1.12;
-}
-
-.news-generator-panel p,
-.news-generator-panel ul {
-  margin: 0;
-  color: var(--app-tertiary);
-  font-size: 0.92rem;
-  font-weight: 700;
-  line-height: 1.45;
-}
-
-.news-generator-panel ul {
-  display: grid;
-  gap: 6px;
-  padding-left: 20px;
 }
 
 .news-admin-login {
@@ -1649,7 +1627,7 @@ html[data-theme="dark"] .app-window {
 .content-grid {
   display: grid;
   grid-template-columns: 214px minmax(360px, 1fr);
-  min-height: calc(100vh - 88px);
+  min-height: calc(100vh - 134px);
 }
 
 .sidebar {
@@ -1763,12 +1741,9 @@ html[data-theme="dark"] .app-window {
 }
 
 .tab-scroll {
-  height: calc(100vh - 178px);
-  min-height: 590px;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: visible;
   padding: 14px 22px 28px;
 }
 
@@ -3221,6 +3196,29 @@ html[data-theme="dark"] .appearance-choice.active {
   color: #171b18;
 }
 
+html[data-theme="dark"] .athlete-season-chip-row button {
+  border-color: rgba(188, 188, 207, 0.2);
+  background: rgba(31, 35, 32, 0.72);
+  color: var(--app-primary);
+}
+
+html[data-theme="dark"] .athlete-season-chip-row button.active {
+  border-color: var(--app-secondary);
+  background: var(--app-secondary);
+  color: #171b18;
+}
+
+html[data-theme="dark"] .athlete-results-sort-row button.active {
+  background: var(--app-secondary);
+  color: #171b18;
+}
+
+html[data-theme="dark"] .detail-view-picker button.active {
+  border-color: var(--app-secondary);
+  background: var(--app-secondary);
+  color: #171b18;
+}
+
 html[data-theme="dark"] .sidebar-tab.active {
   background: var(--app-secondary);
   color: #171b18;
@@ -3913,6 +3911,13 @@ html[data-compact-lists="true"] .champion-row {
   box-shadow: 0 6px 16px rgba(77, 93, 82, 0.16);
 }
 
+html[data-theme="dark"] .result-event-filter button.active {
+  border-color: var(--app-secondary);
+  background: var(--app-secondary);
+  color: #171b18;
+  box-shadow: 0 10px 24px rgba(255, 212, 120, 0.14);
+}
+
 .detail-screen-metrics div {
   display: grid;
   gap: 3px;
@@ -3940,6 +3945,7 @@ html[data-compact-lists="true"] .champion-row {
 
 .detail-view-picker > div {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 2px 6px 8px;
 }
@@ -3961,6 +3967,13 @@ html[data-compact-lists="true"] .champion-row {
   background: var(--app-primary);
   color: #fff;
   box-shadow: 0 6px 16px rgba(77, 93, 82, 0.16);
+}
+
+html[data-theme="dark"] .detail-view-picker button.active {
+  border-color: var(--app-secondary);
+  background: var(--app-secondary);
+  color: #171b18;
+  box-shadow: 0 10px 24px rgba(255, 212, 120, 0.14);
 }
 
 .detail-section {
@@ -4146,6 +4159,111 @@ html[data-compact-lists="true"] .champion-row {
 .result-round-list {
   display: grid;
   gap: 12px;
+}
+
+.top-money-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.top-money-title {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.top-money-title span {
+  color: var(--app-secondary);
+  font-size: 0.74rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.top-money-title h3 {
+  margin: 2px 0 0;
+  color: var(--app-primary);
+  font-size: 1.1rem;
+  line-height: 1.05;
+}
+
+.top-money-title > strong {
+  min-width: 34px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(160, 138, 89, 0.14);
+  color: var(--app-secondary);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.top-money-list {
+  display: grid;
+}
+
+.top-money-row {
+  display: grid;
+  grid-template-columns: 38px 42px minmax(0, 1fr) 92px;
+  gap: 10px;
+  align-items: center;
+  min-height: 62px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(107, 111, 118, 0.15);
+  color: inherit;
+  text-decoration: none;
+}
+
+.top-money-row:first-child {
+  border-top: 0;
+}
+
+.top-money-row > span {
+  color: var(--app-secondary);
+  font-size: 0.82rem;
+  font-weight: 950;
+}
+
+.top-money-row img {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: rgba(107, 111, 118, 0.12);
+}
+
+.top-money-row div {
+  min-width: 0;
+}
+
+.top-money-row strong {
+  display: block;
+  overflow: hidden;
+  color: var(--app-primary);
+  font-size: 0.92rem;
+  line-height: 1.12;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.top-money-row small {
+  display: block;
+  overflow: hidden;
+  margin-top: 3px;
+  color: var(--app-tertiary);
+  font-size: 0.76rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.top-money-row p {
+  margin: 0;
+  color: var(--app-secondary);
+  font-size: 0.88rem;
+  font-weight: 950;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .result-round-card {
@@ -5008,6 +5126,12 @@ html[data-compact-lists="true"] .champion-row {
     linear-gradient(90deg, rgba(77, 93, 82, 0.5), rgba(77, 93, 82, 0));
 }
 
+html[data-theme="dark"] .athlete-profile-hero-scrim {
+  background:
+    linear-gradient(180deg, rgba(9, 12, 10, 0.74), rgba(9, 12, 10, 0.26) 40%, rgba(9, 12, 10, 0.82)),
+    linear-gradient(90deg, rgba(9, 12, 10, 0.68), rgba(9, 12, 10, 0.18));
+}
+
 .athlete-profile-hero-content {
   position: absolute;
   inset: auto 0 0;
@@ -5035,15 +5159,23 @@ html[data-compact-lists="true"] .champion-row {
   font-weight: 800;
 }
 
-.athlete-profile-action-buttons {
+.athlete-profile-top-actions {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
   display: flex;
   gap: 8px;
+  align-items: flex-start;
+  justify-content: flex-end;
+  max-width: calc(100% - 32px);
 }
 
-.athlete-profile-action-buttons button {
+.athlete-profile-top-actions button {
   display: grid;
   width: 40px;
   height: 40px;
+  flex: 0 0 auto;
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 999px;
@@ -5056,7 +5188,7 @@ html[data-compact-lists="true"] .champion-row {
   display: grid;
   gap: 2px;
   min-width: 112px;
-  max-width: 170px;
+  max-width: min(220px, calc(100vw - 96px));
   padding: 5px 10px;
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 999px;
@@ -5611,6 +5743,32 @@ html[data-compact-lists="true"] .champion-row {
   font-weight: 950;
 }
 
+.athlete-results-sort-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid rgba(107, 111, 118, 0.18);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--app-bg) 82%, rgba(107, 111, 118, 0.08));
+}
+
+.athlete-results-sort-row button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--app-tertiary);
+  font-size: 0.86rem;
+  font-weight: 950;
+}
+
+.athlete-results-sort-row button.active {
+  background: var(--app-primary);
+  color: var(--button-active-text);
+  box-shadow: 0 8px 16px rgba(30, 33, 30, 0.1);
+}
+
 .athlete-result-column-header {
   display: grid;
   grid-template-columns: 68px 54px minmax(74px, 1fr) 96px;
@@ -5653,6 +5811,15 @@ html[data-compact-lists="true"] .champion-row {
   line-height: 1.15;
 }
 
+.athlete-result-group-heading h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.athlete-result-group-heading h3 a:hover {
+  color: var(--app-secondary);
+}
+
 .athlete-result-group-heading p {
   margin: 5px 0 0;
   color: var(--app-tertiary);
@@ -5669,6 +5836,32 @@ html[data-compact-lists="true"] .champion-row {
   font-size: 0.76rem;
   font-weight: 950;
   text-align: center;
+}
+
+.athlete-flat-result-card .athlete-result-group-heading {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.athlete-flat-result-metric {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  min-width: 74px;
+}
+
+.athlete-flat-result-metric span {
+  color: var(--app-tertiary);
+  font-size: 0.66rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.athlete-flat-result-metric strong {
+  color: var(--app-secondary);
+  font-size: 1rem;
+  font-weight: 950;
+  white-space: nowrap;
 }
 
 .athlete-result-table {
@@ -6210,6 +6403,8 @@ html[data-compact-lists="true"] .champion-row {
     min-height: 0;
     width: 100%;
     max-width: 100vw;
+    overflow-x: hidden;
+    overflow-y: auto;
     padding: 10px 0 112px;
   }
 

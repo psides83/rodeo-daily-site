@@ -161,11 +161,8 @@ export async function fetchPublishedNewsPosts() {
   if (!supabaseNewsConfigured()) return fallbackPublishedPosts();
 
   try {
-    const rows = await supabaseRequest<SupabaseNewsPostRow[]>(
-      "/rest/v1/news_posts?select=*&status=eq.published&order=published_at.desc.nullslast,created_at.desc",
-      { cache: "no-store", serviceRole: Boolean(supabaseServiceRoleKey) }
-    );
-    return mergePublishedNewsPosts(rows.map(mapNewsPostRow), fallbackPublishedPosts());
+    const rows = await fetchPublishedNewsPostRows();
+    return rows.map(mapNewsPostRow);
   } catch {
     return fallbackPublishedPosts();
   }
@@ -177,9 +174,9 @@ export async function fetchNewsPostBySlug(slug: string) {
   try {
     const rows = await supabaseRequest<SupabaseNewsPostRow[]>(
       `/rest/v1/news_posts?select=*&slug=eq.${encodeURIComponent(slug)}&status=eq.published&limit=1`,
-      { cache: "no-store", serviceRole: Boolean(supabaseServiceRoleKey) }
+      { cache: "no-store" }
     );
-    return rows[0] ? mapNewsPostRow(rows[0]) : fallbackPublishedPosts().find((post) => post.slug === slug);
+    return rows[0] ? mapNewsPostRow(rows[0]) : undefined;
   } catch {
     return fallbackPublishedPosts().find((post) => post.slug === slug);
   }
@@ -191,7 +188,9 @@ export async function fetchAdminNewsPosts(accessToken: string) {
     serviceRole: true,
     cache: "no-store"
   });
-  return mergeAdminNewsPosts(rows.map(mapAdminNewsPostRow), fallbackPublishedPosts().map(mapFallbackPostToAdminPost))
+  const publishedRows = await fetchPublishedNewsPostRows();
+  return mergeNewsPostRows(rows, publishedRows)
+    .map(mapAdminNewsPostRow)
     .sort((left, right) => (right.updatedAt ?? right.publishedAt ?? "").localeCompare(left.updatedAt ?? left.publishedAt ?? ""));
 }
 
@@ -540,45 +539,22 @@ function fallbackPublishedPosts() {
     .sort((left, right) => right.publishedAt.localeCompare(left.publishedAt));
 }
 
-function mergePublishedNewsPosts(primaryPosts: RodeoNewsPost[], fallbackPosts: RodeoNewsPost[]) {
-  const postsBySlug = new Map<string, RodeoNewsPost>();
-  for (const post of fallbackPosts) {
-    postsBySlug.set(post.slug, post);
-  }
-  for (const post of primaryPosts) {
-    postsBySlug.set(post.slug, post);
-  }
-  return Array.from(postsBySlug.values()).sort((left, right) => right.publishedAt.localeCompare(left.publishedAt));
+function fetchPublishedNewsPostRows() {
+  return supabaseRequest<SupabaseNewsPostRow[]>(
+    "/rest/v1/news_posts?select=*&status=eq.published&order=published_at.desc.nullslast,created_at.desc",
+    { cache: "no-store" }
+  );
 }
 
-function mergeAdminNewsPosts(primaryPosts: AdminNewsPost[], fallbackPosts: AdminNewsPost[]) {
-  const postsBySlug = new Map<string, AdminNewsPost>();
-  for (const post of fallbackPosts) {
-    postsBySlug.set(post.slug, post);
+function mergeNewsPostRows(primaryRows: SupabaseNewsPostRow[], fallbackRows: SupabaseNewsPostRow[]) {
+  const rowsBySlug = new Map<string, SupabaseNewsPostRow>();
+  for (const row of fallbackRows) {
+    rowsBySlug.set(row.slug, row);
   }
-  for (const post of primaryPosts) {
-    postsBySlug.set(post.slug, post);
+  for (const row of primaryRows) {
+    rowsBySlug.set(row.slug, row);
   }
-  return Array.from(postsBySlug.values());
-}
-
-function mapFallbackPostToAdminPost(post: RodeoNewsPost): AdminNewsPost {
-  return {
-    slug: post.slug,
-    title: post.title,
-    excerpt: post.excerpt,
-    content: post.paragraphs.join("\n\n"),
-    status: post.status,
-    category: post.category,
-    author: post.author,
-    tags: post.tags,
-    heroImage: post.heroImage,
-    sourceUrls: post.sourceUrls,
-    featured: post.featured,
-    storyScore: post.storyScore,
-    publishedAt: post.publishedAt,
-    updatedAt: post.updatedAt
-  };
+  return Array.from(rowsBySlug.values());
 }
 
 function mapNewsPostRow(row: SupabaseNewsPostRow): RodeoNewsPost {

@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import type { KeyboardEvent, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GoogleAdSlot } from "./google-ads";
@@ -54,7 +55,8 @@ import type {
   SavedAthlete,
   StandingRow,
   StandingType,
-  Tab
+  Tab,
+  TopMoneyEarner
 } from "../lib/types";
 import {
   businessJournalMatchesDate,
@@ -654,6 +656,7 @@ export function RodeoDetailView({
   event,
   setEvent,
   source,
+  topMoneyEarners = [],
   onBack
 }: {
   rodeo: RodeoRow;
@@ -663,12 +666,17 @@ export function RodeoDetailView({
   event: EventName;
   setEvent: (event: EventName) => void;
   source: RodeoDetailSource;
+  topMoneyEarners?: TopMoneyEarner[];
   onBack: () => void;
 }) {
   const canShowDaysheets = rodeo.hasDaysheets;
-  const [view, setView] = useState<"results" | "daysheets">(() => {
-    if (typeof window === "undefined" || !canShowDaysheets) return "results";
-    return window.localStorage.getItem("rodeodaily.lastRodeoDetailView") === "daysheets" ? "daysheets" : "results";
+  const canShowTopMoney = source === "results";
+  const [view, setView] = useState<"results" | "money" | "daysheets">(() => {
+    if (typeof window === "undefined") return "results";
+    const storedView = window.localStorage.getItem("rodeodaily.lastRodeoDetailView");
+    if (storedView === "daysheets" && canShowDaysheets) return "daysheets";
+    if (storedView === "money" && canShowTopMoney) return "money";
+    return "results";
   });
   const [showResultsHelp, setShowResultsHelp] = useState(false);
   const [selectedDaysheetId, setSelectedDaysheetId] = useState("");
@@ -676,12 +684,16 @@ export function RodeoDetailView({
   const [selectedDaysheetEvent, setSelectedDaysheetEvent] = useState("");
 
   useEffect(() => {
-    if (!canShowDaysheets) {
+    if (view === "daysheets" && !canShowDaysheets) {
+      setView("results");
+      return;
+    }
+    if (view === "money" && !canShowTopMoney) {
       setView("results");
       return;
     }
     window.localStorage.setItem("rodeodaily.lastRodeoDetailView", view);
-  }, [canShowDaysheets, view]);
+  }, [canShowDaysheets, canShowTopMoney, view]);
 
   useEffect(() => {
     if (!selectedDaysheet) return;
@@ -811,16 +823,23 @@ export function RodeoDetailView({
         </div>
       </div>
 
-      {canShowDaysheets && (
-        <div className="detail-view-picker" aria-label="Show results or daysheets">
+      {(canShowTopMoney || canShowDaysheets) && (
+        <div className="detail-view-picker" aria-label="Show results, top money, or daysheets">
           <span>View</span>
           <div>
             <button className={view === "results" ? "active" : undefined} onClick={() => setView("results")}>
               Results
             </button>
-            <button className={view === "daysheets" ? "active" : undefined} onClick={() => setView("daysheets")}>
-              Daysheets
-            </button>
+            {canShowTopMoney && (
+              <button className={view === "money" ? "active" : undefined} onClick={() => setView("money")}>
+                Top $ Earners
+              </button>
+            )}
+            {canShowDaysheets && (
+              <button className={view === "daysheets" ? "active" : undefined} onClick={() => setView("daysheets")}>
+                Daysheets
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -864,6 +883,22 @@ export function RodeoDetailView({
             <EmptyState title="No Leaders Posted" subtitle="No leaders are available for this event yet." icon={CircleDollarSign} />
           )}
         </section>
+      ) : view === "money" ? (
+        <section className="detail-results-section">
+          {state === "loading" ? (
+            <LoadingState title="Loading top money earners" />
+          ) : state === "error" ? (
+            <EmptyState title="Top Money Unavailable" subtitle="This rodeo detail feed could not be loaded." icon={CircleDollarSign} />
+          ) : topMoneyEarners.length > 0 ? (
+            <TopMoneyEarnersList earners={topMoneyEarners} />
+          ) : (
+            <EmptyState
+              title="No Payouts Found"
+              subtitle="Top money earners will appear as soon as this rodeo reports payouts for the selected event."
+              icon={CircleDollarSign}
+            />
+          )}
+        </section>
       ) : (
         <section className="app-card detail-section">
           <div className="section-title-row">
@@ -894,6 +929,40 @@ export function RodeoDetailView({
 
       <GoogleAdSlot placement="resultsDetailSection" />
     </div>
+  );
+}
+
+function TopMoneyEarnersList({ earners }: { earners: TopMoneyEarner[] }) {
+  return (
+    <section className="app-card top-money-card">
+      <div className="top-money-title">
+        <div>
+          <span>Rodeo Results</span>
+          <h3>Top Money Earners</h3>
+        </div>
+        <strong>Earnings</strong>
+      </div>
+      <div className="top-money-list">
+        {earners.map((earner, index) => (
+          <Link className="top-money-row" href={`/athletes/${earner.id}`} key={earner.id}>
+            <span>#{index + 1}</span>
+            <Image
+              alt=""
+              className={earner.imageUrl ? undefined : "athlete-placeholder-image"}
+              src={earner.imageUrl || athletePlaceholderImage}
+              width={42}
+              height={42}
+              sizes="42px"
+            />
+            <div>
+              <strong>{earner.name}</strong>
+              <small>{earner.hometown || "Hometown unavailable"}</small>
+            </div>
+            <p>{earner.totalPayoff}</p>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -2098,28 +2167,28 @@ export function AthleteDetailPane({
       <section className="athlete-profile-hero">
         <Image className={hasDisplayImage ? undefined : "athlete-placeholder-image"} src={displayImageUrl} alt="" fill priority sizes="760px" />
         <div className="athlete-profile-hero-scrim" />
+        <div className="athlete-profile-top-actions">
+          {bio && availableEvents.length > 1 && (
+            <label className="athlete-event-filter">
+              <span>Event</span>
+              <select value={activeEvent} onChange={(event) => setSelectedEvent(event.target.value)}>
+                {availableEvents.map((event) => (
+                  <option key={event} value={event}>
+                    {displayAthleteEvent(event)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <button aria-label={athlete.favorite ? "Remove favorite athlete" : "Favorite athlete"} onClick={() => toggleFavoriteAthlete(athlete)}>
+            <Star size={18} fill={athlete.favorite ? "currentColor" : "none"} />
+          </button>
+        </div>
         <div className="athlete-profile-hero-content">
           <div className="athlete-profile-title-row">
             <div>
               <h1>{bio?.name || athlete.name}</h1>
               <p>{eventLabel}</p>
-            </div>
-            <div className="athlete-profile-action-buttons">
-              {bio && availableEvents.length > 1 && (
-                <label className="athlete-event-filter">
-                  <span>Event</span>
-                  <select value={activeEvent} onChange={(event) => setSelectedEvent(event.target.value)}>
-                    {availableEvents.map((event) => (
-                      <option key={event} value={event}>
-                        {displayAthleteEvent(event)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              <button aria-label={athlete.favorite ? "Remove favorite athlete" : "Favorite athlete"} onClick={() => toggleFavoriteAthlete(athlete)}>
-                <Star size={18} fill={athlete.favorite ? "currentColor" : "none"} />
-              </button>
             </div>
           </div>
 
@@ -2304,6 +2373,7 @@ function currencyNumber(value: string) {
 }
 
 function formatMoneyFromNumber(value: number) {
+  if (value <= 0) return "–";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -2439,7 +2509,12 @@ function AthleteResultsTab({ bio, selectedEvent }: { bio: AthleteBio; selectedEv
   const groupedResults = groupAthleteResults(sortedResults);
   const resultCount = sortedResults.length;
   const resultMetricLabel = roughstockEventTypes.has(selectedEvent.toUpperCase()) ? "Score" : "Time";
-  const summaryText = usesFlatResultList ? `${resultCount} results` : `${groupedResults.length} rodeos • ${resultCount} results`;
+  const summaryText = usesFlatResultList ? `${resultCount} results` : `${groupedResults.length} rodeos`;
+  const sortOptions: Array<{ value: AthleteResultSort; label: string }> = [
+    { value: "Date", label: "Date" },
+    { value: "Result", label: resultMetricLabel },
+    { value: "Earnings", label: "Money" }
+  ];
 
   if (bio.recentResults.length === 0) {
     return <EmptyState title="No Results Found" subtitle="No recent rodeo results are available for this athlete." icon={ListOrdered} />;
@@ -2483,15 +2558,17 @@ function AthleteResultsTab({ bio, selectedEvent }: { bio: AthleteBio; selectedEv
           </label>
         ) : null}
 
-        <div className="athlete-results-filter-row">
-          <label>
-            <span>Sort</span>
-            <select value={sortBy} onChange={(event) => setSortBy(event.target.value as AthleteResultSort)}>
-              <option>Date</option>
-              <option>Result</option>
-              <option>Earnings</option>
-            </select>
-          </label>
+        <div className="athlete-results-sort-row" aria-label="Sort results">
+          {sortOptions.map((option) => (
+            <button
+              className={sortBy === option.value ? "active" : undefined}
+              key={option.value}
+              onClick={() => setSortBy(option.value)}
+              type="button"
+            >
+              {option.label}
+            </button>
+          ))}
         </div>
       </section>
 
@@ -2519,13 +2596,19 @@ function AthleteResultsTab({ bio, selectedEvent }: { bio: AthleteBio; selectedEv
           {usesFlatResultList ? (
             <div className="athlete-flat-result-list">
               {sortedResults.map((result) => (
-                <AthleteFlatResultCard key={result.id} result={result} />
+                <AthleteFlatResultCard
+                  key={result.id}
+                  result={result}
+                  resultMetricLabel={resultMetricLabel}
+                  selectedEvent={selectedEvent}
+                  sortBy={sortBy}
+                />
               ))}
             </div>
           ) : (
             <div className="athlete-result-group-list">
               {groupedResults.map((group) => (
-                <AthleteResultGroupCard key={group.id} group={group} />
+                <AthleteResultGroupCard key={group.id} group={group} selectedEvent={selectedEvent} />
               ))}
             </div>
           )}
@@ -2546,12 +2629,16 @@ type AthleteResultGroup = {
   results: AthleteBioResult[];
 };
 
-function AthleteResultGroupCard({ group }: { group: AthleteResultGroup }) {
+function AthleteResultGroupCard({ group, selectedEvent }: { group: AthleteResultGroup; selectedEvent: string }) {
   return (
     <section className="app-card athlete-result-group-card">
       <div className="athlete-result-group-heading">
         <div>
-          <h3>{group.rodeoName}</h3>
+          <h3>
+            <AthleteResultRodeoLink result={group.results[0]} selectedEvent={selectedEvent}>
+              {group.rodeoName}
+            </AthleteResultRodeoLink>
+          </h3>
           <p>{[group.location, group.endDate].filter(Boolean).join(" • ")}</p>
         </div>
         <span>{group.results.length}</span>
@@ -2565,13 +2652,32 @@ function AthleteResultGroupCard({ group }: { group: AthleteResultGroup }) {
   );
 }
 
-function AthleteFlatResultCard({ result }: { result: AthleteBioResult }) {
+function AthleteFlatResultCard({
+  result,
+  resultMetricLabel,
+  selectedEvent,
+  sortBy
+}: {
+  result: AthleteBioResult;
+  resultMetricLabel: string;
+  selectedEvent: string;
+  sortBy: AthleteResultSort;
+}) {
+  const metric = flatResultMetric(result, sortBy, resultMetricLabel);
   return (
-    <section className="app-card athlete-result-group-card">
+    <section className="app-card athlete-result-group-card athlete-flat-result-card">
       <div className="athlete-result-group-heading">
         <div>
-          <h3>{result.rodeoName}</h3>
-          <p>{[result.location, result.endDate].filter(Boolean).join(" • ")}</p>
+          <h3>
+            <AthleteResultRodeoLink result={result} selectedEvent={selectedEvent}>
+              {result.rodeoName}
+            </AthleteResultRodeoLink>
+          </h3>
+          <p>{[result.location, result.endDate, result.round || "Round"].filter(Boolean).join(" • ")}</p>
+        </div>
+        <div className="athlete-flat-result-metric">
+          <span>{metric.label}</span>
+          <strong>{metric.value}</strong>
         </div>
       </div>
       <div className="athlete-result-table">
@@ -2579,6 +2685,13 @@ function AthleteFlatResultCard({ result }: { result: AthleteBioResult }) {
       </div>
     </section>
   );
+}
+
+function flatResultMetric(result: AthleteBioResult, sortBy: AthleteResultSort, resultMetricLabel: string) {
+  if (sortBy === "Earnings") {
+    return { label: "Money", value: result.payoff || "–" };
+  }
+  return { label: resultMetricLabel, value: result.resultValue || "-" };
 }
 
 function AthleteResultDetailRow({ result }: { result: AthleteBioResult }) {
@@ -2590,6 +2703,27 @@ function AthleteResultDetailRow({ result }: { result: AthleteBioResult }) {
       <p>{result.payoff || "-"}</p>
     </div>
   );
+}
+
+function AthleteResultRodeoLink({
+  result,
+  selectedEvent,
+  children
+}: {
+  result: AthleteBioResult | undefined;
+  selectedEvent: string;
+  children: ReactNode;
+}) {
+  if (!result?.rodeoId) return <>{children}</>;
+  return <Link href={athleteResultRodeoHref(result, selectedEvent)}>{children}</Link>;
+}
+
+function athleteResultRodeoHref(result: AthleteBioResult | undefined, selectedEvent: string) {
+  const rodeoId = result?.rodeoId ?? 0;
+  const event = displayAthleteEvent(teamRopingResultEvent(selectedEvent || result?.eventType || ""));
+  const params = new URLSearchParams();
+  if (event) params.set("event", event);
+  return `/results/${rodeoId}${params.toString() ? `?${params}` : ""}`;
 }
 
 function athleteResultMatches(result: AthleteBioResult, query: string) {
@@ -2604,9 +2738,9 @@ function athleteResultMatches(result: AthleteBioResult, query: string) {
 function sortAthleteResults(left: AthleteBioResult, right: AthleteBioResult, sortBy: AthleteResultSort, eventType = "") {
   switch (sortBy) {
     case "Result":
-      return compareAthleteResultValues(left, right, eventType);
+      return compareAthleteResultValues(left, right, eventType) || compareResultDates(left, right);
     case "Earnings":
-      return currencyNumber(right.payoff) - currencyNumber(left.payoff);
+      return currencyNumber(right.payoff) - currencyNumber(left.payoff) || compareAthleteResultValues(left, right, eventType) || compareResultDates(left, right);
     case "Date":
     default:
       return compareResultDates(left, right);
@@ -2720,7 +2854,7 @@ function AthleteCareerTab({ bio, selectedEvent }: { bio: AthleteBio; selectedEve
   const careerRows = athleteCareerRows(bio, selectedEvent);
   const eventLabel = displayAthleteEvent(selectedEvent || bio.rankings[0]?.eventName || bio.career[0]?.eventType || "");
 
-  if (bio.career.length === 0 && bio.rankings.length === 0) {
+  if (careerRows.length === 0) {
     return <EmptyState title="No Career Data" subtitle="No career rankings are available for this athlete." icon={ListOrdered} />;
   }
 
@@ -2755,6 +2889,7 @@ function athleteCareerRows(bio: AthleteBio, selectedEvent = "") {
   if (bio.career.length > 0) {
     return bio.career
       .filter((season) => !selectedEvent || season.eventType === selectedEvent)
+      .filter((season) => currencyNumber(season.earnings) > 0)
       .slice()
       .sort((left, right) => right.season - left.season)
       .map((season) => {

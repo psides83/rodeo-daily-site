@@ -25,7 +25,8 @@ import type {
   RodeoResultRound,
   RodeoRow,
   StandingRow,
-  StandingType
+  StandingType,
+  TopMoneyEarner
 } from "./types";
 
 export const events: EventName[] = [
@@ -235,7 +236,7 @@ export function mapAthleteBio(payload: ApiAthleteBioResponse): AthleteBio | null
         location: [result.City, result.StateAbbrv].filter(Boolean).join(", "),
         eventType: result.EventType?.trim() ?? "",
         place: result.Place ?? 0,
-        payoff: formatCurrency(result.Payoff ?? 0),
+        payoff: formatOptionalCurrency(result.Payoff),
         resultValue: formatAthleteResultValue(result.EventType, result.Time, result.Score),
         round: result.Round?.trim() ?? "",
         endDate: formatDate(result.EndDate),
@@ -249,7 +250,7 @@ export function mapAthleteBio(payload: ApiAthleteBioResponse): AthleteBio | null
         id: `${season.Season ?? index}-${season.EventType ?? "event"}`,
         season: season.Season ?? 0,
         eventType: season.EventType?.trim() ?? "",
-        earnings: formatCurrency(season.Earnings ?? 0),
+        earnings: formatOptionalCurrency(season.Earnings),
         worldTitles: season.WorldTitles ?? 0,
         nfrQualified: Boolean(season.NFRQualified)
       })),
@@ -333,12 +334,13 @@ export function mapNfrStandings(payload: ApiNfrStandingsResponse): NfrContestant
     .filter((contestant) => contestant.Id && contestant.ContestantId)
     .map((contestant) => {
       const averagePlace = contestant.AveragePlace ?? 0;
-      const averageScore = cleanText(contestant.AverageScore);
       const currentRound = contestant.CurrentGo ?? 0;
       const eventType = cleanText(contestant.EventType);
+      const isRoughStock = isRoughStockCode(eventType);
+      const averageScore = formatNfrResultDisplay(cleanText(contestant.AverageScore), isRoughStock);
       const firstName = cleanText(contestant.FirstName);
       const lastName = cleanText(contestant.LastName);
-      const rounds = makeNfrRounds(contestant, currentRound, isRoughStockCode(eventType));
+      const rounds = makeNfrRounds(contestant, currentRound, isRoughStock);
 
       return {
         id: contestant.Id ?? contestant.ContestantId ?? 0,
@@ -776,13 +778,26 @@ function makeNfrRounds(contestant: ApiNfrContestant, currentRound: number, isRou
         ? "Pending"
         : hasResult
           ? Number.isFinite(place)
-            ? `${ordinal(place)} - ${result}`
-            : result
+            ? `${ordinal(place)} - ${formatNfrResultDisplay(result, isRoughStock)}`
+            : formatNfrResultDisplay(result, isRoughStock)
           : isRoughStock
             ? "NS"
             : "NT"
     };
   });
+}
+
+function formatNfrResultDisplay(value: string, isRoughStock: boolean) {
+  const numericValue = Number.parseFloat(value);
+  if (!Number.isFinite(numericValue)) return value;
+
+  if (!isRoughStock) {
+    return numericValue.toFixed(1);
+  }
+
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 2
+  }).format(numericValue);
 }
 
 function isRoughStockCode(eventType: string) {
@@ -936,7 +951,7 @@ export function mapResultRounds(payload: ApiRodeoResults, event: EventCode): Rod
             name: name || "Unknown Athlete",
             hometown: contestant?.Hometown?.trim() ?? "",
             imageUrl: normalizeAthleteImageUrl(contestant?.SidearmPhotoUrl ?? contestant?.image_315_url ?? contestant?.PhotoUrl),
-            payoff: row.Payoff ? formatCurrency(row.Payoff) : "-",
+            payoff: formatOptionalCurrency(row.Payoff),
             value: resultValue(row, event),
             teamId: row.TeamId ?? null
           };
@@ -952,12 +967,62 @@ export function mapResultRounds(payload: ApiRodeoResults, event: EventCode): Rod
     });
 }
 
+export function mapTopMoneyEarners(payload: ApiRodeoResults, event: EventCode): TopMoneyEarner[] {
+  const roundsByName = payload.data?.[0]?.Events?.[event];
+  if (!roundsByName) return [];
+
+  const earners = new Map<number, TopMoneyEarner>();
+
+  for (const row of Object.values(roundsByName).flat()) {
+    const payoff = row.Payoff ?? 0;
+    if (payoff <= 0) continue;
+
+    for (const contestant of row.Contestant ?? []) {
+      const contestantId = contestant.ContestantId ?? 0;
+      if (!contestantId) continue;
+
+      const first = contestant.FirstName?.trim() ?? "";
+      const last = contestant.LastName?.trim() ?? "";
+      const nick = contestant.NickName?.trim();
+      const name = `${nick || first} ${last}`.trim() || "Unknown Athlete";
+      const current = earners.get(contestantId) ?? {
+        id: contestantId,
+        name,
+        hometown: contestant.Hometown?.trim() ?? "",
+        imageUrl: normalizeAthleteImageUrl(contestant.SidearmPhotoUrl ?? contestant.image_315_url ?? contestant.PhotoUrl),
+        totalPayoff: "",
+        totalPayoffValue: 0,
+        eventNames: [],
+        resultCount: 0
+      };
+      const eventName = eventNameForCode(event);
+
+      current.totalPayoffValue += payoff;
+      current.totalPayoff = formatCurrency(current.totalPayoffValue);
+      current.resultCount += 1;
+      if (eventName && !current.eventNames.includes(eventName)) {
+        current.eventNames.push(eventName);
+      }
+      earners.set(contestantId, current);
+    }
+  }
+
+  return Array.from(earners.values())
+    .sort((left, right) => right.totalPayoffValue - left.totalPayoffValue || left.name.localeCompare(right.name))
+    .slice(0, 10);
+}
+
 export function resultValue(row: ApiRound, event: EventCode) {
   if (event === "BB" || event === "SB" || event === "BR") {
     return row.Score ? formatNumber(row.Score) : "-";
   }
 
   return row.Time ? formatTimedResult(row.Time) : "-";
+}
+
+function eventNameForCode(event: EventCode) {
+  const teamRopingEvent = event === "TRHD" || event === "TRHL" ? "TR" : event;
+  return events.find((name) => eventCodes[name] === teamRopingEvent) ?? event;
 }
 
 export function mapDaysheets(payload: ApiDaysheetResponse): DaysheetRow[] {
@@ -1021,6 +1086,10 @@ export function formatCurrency(value: number) {
     currency: "USD",
     maximumFractionDigits: 0
   }).format(value);
+}
+
+function formatOptionalCurrency(value: number | null | undefined) {
+  return value && value > 0 ? formatCurrency(value) : "–";
 }
 
 export function formatNumber(value: number) {

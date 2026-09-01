@@ -2,6 +2,7 @@ import { Calendar, CircleDollarSign, ListOrdered, MonitorSmartphone, Newspaper, 
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { RodeoDailyLogoMark } from "./rodeo-views";
+import { ThemeSync } from "./theme-sync";
 
 const primaryTabs = [
   { label: "Standings", href: "/?tab=standings", icon: ListOrdered },
@@ -24,6 +25,7 @@ const moreLinks = [
 export function NewsAppShell({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
   return (
     <main className="browser-stage news-browser-stage">
+      <ThemeSync />
       <section className="app-window" aria-label="Rodeo Daily news">
         <header className="top-toolbar">
           <div className="identity">

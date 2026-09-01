@@ -43,6 +43,7 @@ import {
   saveFollowedAthletes,
   toggleSavedAthlete
 } from "./lib/local-preferences";
+import { applyAppTheme, defaultSettings, resolveAppearanceMode } from "./lib/theme";
 import type {
   ApiBusinessJournalResponse,
   ApiAthleteSearchResponse,
@@ -125,55 +126,8 @@ const moreSectionRoutes = Object.entries(moreSectionRouteValues).reduce(
   {} as Record<string, MoreSection>
 );
 
-const defaultSettings: AppSettings = {
-  accentTheme: "classic",
-  appearanceMode: "device",
-  favoriteStandingsEvent: "All Around",
-  favoriteResultsEvent: "Tie-Down Roping",
-  followAlertsEnabled: true,
-  compactLists: false,
-  adConsent: "unset",
-  consentUpdatedAt: ""
-};
-
 const iosAppStoreUrl = "https://apps.apple.com/us/app/rodeo-daily/id1671624492";
 const iosAppBannerDismissedKey = "rodeodaily.iosAppBannerDismissed";
-
-const themeVariables: Record<AppSettings["accentTheme"], Record<string, string>> = {
-  classic: {
-    "--app-primary": "#4d5d52",
-    "--app-secondary": "#a08a59",
-    "--app-tertiary": "#6b6f76"
-  },
-  arena: {
-    "--app-primary": "#31484f",
-    "--app-secondary": "#b57935",
-    "--app-tertiary": "#647071"
-  },
-  river: {
-    "--app-primary": "#29555a",
-    "--app-secondary": "#8f7c3f",
-    "--app-tertiary": "#657175"
-  },
-  rose: {
-    "--app-primary": "#61424a",
-    "--app-secondary": "#b47852",
-    "--app-tertiary": "#756970"
-  }
-};
-
-const darkThemeVariables: Record<string, string> = {
-  "--app-primary": "#f5f5f5",
-  "--app-secondary": "#ffd478",
-  "--app-tertiary": "#bcbccf"
-};
-
-function resolveAppearanceMode(mode: AppSettings["appearanceMode"]) {
-  if (mode === "device") {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  }
-  return mode;
-}
 
 function appendUniqueRodeos(current: RodeoRow[], incoming: RodeoRow[]) {
   const seen = new Set(current.map((rodeo) => rodeo.id));
@@ -423,16 +377,8 @@ export default function Home() {
 
   useEffect(() => {
     const root = document.documentElement;
-    const resolvedAppearance = resolveAppearanceMode(appSettings.appearanceMode);
-    const activeVariables = resolvedAppearance === "dark" ? darkThemeVariables : themeVariables[appSettings.accentTheme];
-    root.dataset.theme = resolvedAppearance;
-    root.dataset.appearanceMode = appSettings.appearanceMode;
-    root.style.colorScheme = resolvedAppearance;
-
-    for (const [key, value] of Object.entries(activeVariables)) {
-      root.style.setProperty(key, value);
-    }
-    root.dataset.compactLists = appSettings.compactLists ? "true" : "false";
+    const resolvedAppearance = resolveAppearanceMode(appSettings.appearanceMode, window.matchMedia("(prefers-color-scheme: dark)").matches);
+    applyAppTheme(root, appSettings, resolvedAppearance === "dark");
 
     if (!preferencesLoaded) return;
 
@@ -464,14 +410,7 @@ export default function Home() {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
     function updateDeviceTheme() {
-      const root = document.documentElement;
-      const resolvedAppearance = mediaQuery.matches ? "dark" : "light";
-      const activeVariables = resolvedAppearance === "dark" ? darkThemeVariables : themeVariables[appSettings.accentTheme];
-      root.dataset.theme = resolvedAppearance;
-      root.style.colorScheme = resolvedAppearance;
-      for (const [key, value] of Object.entries(activeVariables)) {
-        root.style.setProperty(key, value);
-      }
+      applyAppTheme(document.documentElement, appSettings, mediaQuery.matches);
     }
 
     updateDeviceTheme();
@@ -481,7 +420,7 @@ export default function Home() {
     }
     mediaQuery.addListener(updateDeviceTheme);
     return () => mediaQuery.removeListener(updateDeviceTheme);
-  }, [appSettings.accentTheme, appSettings.appearanceMode]);
+  }, [appSettings]);
 
   useEffect(() => {
     let cancelled = false;

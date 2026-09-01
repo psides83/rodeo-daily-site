@@ -96,6 +96,17 @@ export type RodeoResultRow = {
   teamId: number | null;
 };
 
+export type TopMoneyEarner = {
+  id: number;
+  name: string;
+  hometown: string;
+  imageUrl: string | null;
+  totalPayoff: string;
+  totalPayoffValue: number;
+  eventNames: string[];
+  resultCount: number;
+};
+
 export type BusinessJournalRow = {
   id: string;
   title: string;
