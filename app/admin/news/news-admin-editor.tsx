@@ -336,13 +336,18 @@ export function NewsAdminEditor() {
               {diagnostics && (
                 <div className="news-admin-diagnostics">
                   <strong>Supabase: {diagnostics.projectHost || "not configured"}</strong>
-                  <span>
-                    Admin rows: {diagnostics.adminRowCount ?? "?"} / published rows: {diagnostics.publishedRowCount ?? "?"} / shown:{" "}
-                    {diagnostics.mergedRowCount ?? posts.length}
-                  </span>
+                  {diagnostics.adminRowCount === undefined && diagnostics.publishedRowCount === undefined ? (
+                    <span>Admin API counts unavailable. Showing posts from the live news feed.</span>
+                  ) : (
+                    <span>
+                      Admin rows: {diagnostics.adminRowCount ?? 0} / published rows: {diagnostics.publishedRowCount ?? 0} / shown:{" "}
+                      {diagnostics.mergedRowCount ?? posts.length}
+                    </span>
+                  )}
                   {diagnostics.adminStatuses?.length ? <span>Admin statuses: {diagnostics.adminStatuses.join(", ")}</span> : null}
                   {diagnostics.mergedSlugs?.length ? <small>Shown slug/status: {diagnostics.mergedSlugs.join(", ")}</small> : null}
-                  {diagnostics.publishedSlugs?.length ? <small>Published slugs: {diagnostics.publishedSlugs.join(", ")}</small> : null}
+                  {diagnostics.publishedSlugs?.length ? <small>Admin published slugs: {diagnostics.publishedSlugs.join(", ")}</small> : null}
+                  {publicApiPosts.length ? <span>Live news feed rows: {publicApiPosts.length}</span> : null}
                   {publicApiPosts.length ? <small>Public API slugs: {publicApiPosts.map((post) => post.slug).join(", ")}</small> : null}
                   {diagnostics.directError ? <small>Error: {diagnostics.directError}</small> : null}
                 </div>
