@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RodeoDailyLogoMark } from "../../components/rodeo-views";
+import type { RodeoNewsPost } from "../../lib/news";
 import type { AdminNewsPost, NewsAdminDiagnostics, NewsAdminLogin, NewsPostInput } from "../../lib/supabase-news";
 
 const emptyPost: NewsPostInput = {
@@ -32,6 +33,7 @@ export function NewsAdminEditor() {
   const [message, setMessage] = useState("");
   const [postListMessage, setPostListMessage] = useState("");
   const [diagnostics, setDiagnostics] = useState<NewsAdminDiagnostics | null>(null);
+  const [publicApiPosts, setPublicApiPosts] = useState<AdminNewsPost[]>([]);
   const [loading, setLoading] = useState(false);
 
   const canSave = useMemo(() => draft.title.trim() && draft.slug.trim() && draft.excerpt.trim() && draft.content.trim(), [draft]);
@@ -42,21 +44,27 @@ export function NewsAdminEditor() {
     setPostListMessage("Loading posts...");
 
     try {
-      const response = await fetch("/api/admin/news", {
-        cache: "no-store",
-        headers: {
-          Authorization: `Bearer ${activeToken}`
-        }
-      });
-      const payload = (await response.json()) as {
+      const [adminResponse, publicResponse] = await Promise.all([
+        fetch("/api/admin/news", {
+          cache: "no-store",
+          headers: {
+            Authorization: `Bearer ${activeToken}`
+          }
+        }),
+        fetch("/api/news", { cache: "no-store" })
+      ]);
+      const payload = (await adminResponse.json()) as {
         data?: AdminNewsPost[];
         count?: number;
         diagnostics?: NewsAdminDiagnostics;
         error?: string;
       };
-      if (!response.ok) throw new Error(payload.error || "Unable to load posts.");
-      const loadedPosts = payload.data ?? [];
+      if (!adminResponse.ok) throw new Error(payload.error || "Unable to load posts.");
+      const publicPayload = (await publicResponse.json()) as { data?: RodeoNewsPost[]; error?: string };
+      const publicPosts = publicResponse.ok ? (publicPayload.data ?? []).map(publicNewsPostToAdminPost) : [];
+      const loadedPosts = mergeAdminPostLists(payload.data ?? [], publicPosts);
       setPosts(loadedPosts);
+      setPublicApiPosts(publicPosts);
       setDiagnostics(payload.diagnostics ?? null);
       const count = loadedPosts.length || payload.count || 0;
       setPostListMessage(`${count} post${count === 1 ? "" : "s"} loaded from Supabase.`);
@@ -164,6 +172,7 @@ export function NewsAdminEditor() {
     window.localStorage.removeItem(tokenStorageKey);
     setToken("");
     setPosts([]);
+    setPublicApiPosts([]);
     setDiagnostics(null);
     setDraft(emptyPost);
     setPostListMessage("");
@@ -334,6 +343,7 @@ export function NewsAdminEditor() {
                   {diagnostics.adminStatuses?.length ? <span>Admin statuses: {diagnostics.adminStatuses.join(", ")}</span> : null}
                   {diagnostics.mergedSlugs?.length ? <small>Shown slug/status: {diagnostics.mergedSlugs.join(", ")}</small> : null}
                   {diagnostics.publishedSlugs?.length ? <small>Published slugs: {diagnostics.publishedSlugs.join(", ")}</small> : null}
+                  {publicApiPosts.length ? <small>Public API slugs: {publicApiPosts.map((post) => post.slug).join(", ")}</small> : null}
                   {diagnostics.directError ? <small>Error: {diagnostics.directError}</small> : null}
                 </div>
               )}
@@ -380,6 +390,52 @@ function splitList(value: string) {
 
 function cleanList(value: string[]) {
   return value.map((item) => item.trim()).filter(Boolean);
+}
+
+function publicNewsPostToAdminPost(post: RodeoNewsPost): AdminNewsPost {
+  return {
+    slug: post.slug,
+    title: post.title,
+    excerpt: post.excerpt,
+    content: post.paragraphs.join("\n\n"),
+    status: "published",
+    category: post.category,
+    author: post.author,
+    tags: post.tags,
+    heroImage: post.heroImage,
+    sourceUrls: post.sourceUrls,
+    featured: post.featured,
+    storyScore: post.storyScore,
+    publishedAt: post.publishedAt,
+    updatedAt: post.updatedAt
+  };
+}
+
+function mergeAdminPostLists(adminPosts: AdminNewsPost[], publicPosts: AdminNewsPost[]) {
+  const postsBySlug = new Map<string, AdminNewsPost>();
+  for (const post of [...publicPosts, ...adminPosts]) {
+    const existing = postsBySlug.get(post.slug);
+    postsBySlug.set(post.slug, existing ? preferredAdminPost(existing, post) : post);
+  }
+  return Array.from(postsBySlug.values()).sort((left, right) =>
+    (right.updatedAt ?? right.publishedAt ?? "").localeCompare(left.updatedAt ?? left.publishedAt ?? "")
+  );
+}
+
+function preferredAdminPost(left: AdminNewsPost, right: AdminNewsPost) {
+  if (left.status !== right.status) {
+    return left.status === "published" ? left : right.status === "published" ? right : latestAdminPost(left, right);
+  }
+  return latestAdminPost(left, right);
+}
+
+function latestAdminPost(left: AdminNewsPost, right: AdminNewsPost) {
+  return adminPostDate(right) > adminPostDate(left) ? right : left;
+}
+
+function adminPostDate(post: AdminNewsPost) {
+  const parsed = Date.parse(post.updatedAt ?? post.publishedAt ?? "");
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function slugify(value: string) {
