@@ -534,7 +534,7 @@ export default function Home() {
         const payload = await fetchJson<{ data?: ApiRodeo[] }>(`/api/rodeo?${params}`);
         const rows = (payload.data ?? [])
           .filter((rodeo) => rodeoHasEvent(rodeo, resultEvent))
-          .map((rodeo) => ({ ...mapRodeo(rodeo), inProgress: false }));
+          .map(mapRodeo);
         if (!cancelled) {
           setResultsRows((current) => (resultsPage === 1 ? rows : appendUniqueRodeos(current, rows)));
           setResultsState("loaded");
