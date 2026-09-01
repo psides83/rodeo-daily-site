@@ -3,9 +3,9 @@ import { SeoLandingPage } from "../components/seo-landing-page";
 import { pageMetadata, seoResultEvents, wpraResultEvents } from "../lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Results",
+  title: "PRCA Results, WPRA Results & Pro Rodeo Results",
   description:
-    "Open Rodeo Daily results for PRCA results, WPRA results, pro rodeo results, round results, payouts, leaders, schedules, and rodeo detail pages.",
+    "Open Rodeo Daily for PRCA results, WPRA results, pro rodeo results, rodeo standings, PRCA standings, WPRA standings, round results, payouts, leaders, schedules, and rodeo detail pages.",
   path: "/results"
 });
 
@@ -24,7 +24,7 @@ export default function ResultsPage() {
     <SeoLandingPage
       eyebrow="Rodeo Results"
       title="PRCA Results, WPRA Results, and Pro Rodeo Results"
-      description="Use Rodeo Daily to follow rodeo results by event, open rodeo detail pages, check leaders, review payouts, and move between PRCA results, WPRA results, and broader pro rodeo results."
+      description="Use Rodeo Daily to follow PRCA results, WPRA results, pro rodeo results, rodeo standings, PRCA standings, WPRA standings, event leaders, payouts, and rodeo detail pages."
       primaryHref="/?tab=results"
       primaryLabel="Open Results"
       sections={[

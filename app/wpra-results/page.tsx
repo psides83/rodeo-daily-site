@@ -3,9 +3,9 @@ import { SeoLandingPage } from "../components/seo-landing-page";
 import { pageMetadata, wpraResultEvents } from "../lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "WPRA Results",
+  title: "WPRA Results & Pro Rodeo Results",
   description:
-    "Follow WPRA results, barrel racing results, breakaway roping results, pro rodeo results, payouts, leaders, and rodeo detail pages in Rodeo Daily.",
+    "Follow WPRA results, pro rodeo results, PRCA results, WPRA standings, PRCA standings, barrel racing results, breakaway roping results, payouts, leaders, and rodeo detail pages in Rodeo Daily.",
   path: "/wpra-results"
 });
 

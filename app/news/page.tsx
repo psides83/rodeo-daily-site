@@ -13,6 +13,12 @@ export const metadata: Metadata = {
       "Read Rodeo Daily PRCA news, WPRA news, ProRodeo results analysis, standings movement, NFR bubble stories, rodeo athlete features, and weekly pro rodeo news.",
     path: "/news"
   }),
+  alternates: {
+    canonical: absoluteUrl("/news"),
+    types: {
+      "application/rss+xml": absoluteUrl("/news/rss.xml")
+    }
+  },
   keywords: [
     "PRCA news",
     "WPRA news",

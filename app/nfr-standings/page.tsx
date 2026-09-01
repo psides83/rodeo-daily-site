@@ -3,9 +3,9 @@ import { SeoLandingPage } from "../components/seo-landing-page";
 import { pageMetadata } from "../lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "NFR Standings",
+  title: "NFR Standings, PRCA Standings & WPRA Standings",
   description:
-    "Follow NFR standings, PRCA standings, WPRA standings, rodeo rankings, season earnings, athletes, past champions, and pro rodeo results in Rodeo Daily.",
+    "Follow NFR standings, PRCA standings, WPRA standings, pro rodeo standings, PRCA results, WPRA results, rodeo rankings, season earnings, athletes, past champions, and pro rodeo results in Rodeo Daily.",
   path: "/nfr-standings"
 });
 

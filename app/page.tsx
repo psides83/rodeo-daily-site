@@ -129,6 +129,19 @@ const moreSectionRoutes = Object.entries(moreSectionRouteValues).reduce(
 const iosAppStoreUrl = "https://apps.apple.com/us/app/rodeo-daily/id1671624492";
 const iosAppBannerDismissedKey = "rodeodaily.iosAppBannerDismissed";
 
+const homepageSeoLinks = [
+  { href: "/prca-results", label: "PRCA Results" },
+  { href: "/wpra-results", label: "WPRA Results" },
+  { href: "/pro-rodeo-results", label: "Pro Rodeo Results" },
+  { href: "/prca-standings", label: "PRCA Standings" },
+  { href: "/wpra-standings", label: "WPRA Standings" },
+  { href: "/pro-rodeo-standings", label: "Pro Rodeo Standings" },
+  { href: "/schedule", label: "PRCA Schedule" },
+  { href: "/nfr-standings", label: "NFR Standings" },
+  { href: "/news", label: "PRCA and WPRA News" },
+  { href: "/ios-app", label: "iPhone App, Widgets, and Apple Watch" }
+];
+
 function appendUniqueRodeos(current: RodeoRow[], incoming: RodeoRow[]) {
   const seen = new Set(current.map((rodeo) => rodeo.id));
   return [...current, ...incoming.filter((rodeo) => !seen.has(rodeo.id))];
@@ -183,6 +196,53 @@ function IosAppPromoBanner({ onDismiss }: { onDismiss: () => void }) {
       <button type="button" aria-label="Dismiss iOS app banner" onClick={onDismiss}>
         <X size={16} />
       </button>
+    </section>
+  );
+}
+
+function HomeSeoSection() {
+  return (
+    <section className="home-seo-section" aria-labelledby="home-seo-heading">
+      <div className="home-seo-copy">
+        <span>Rodeo Daily</span>
+        <h1 id="home-seo-heading">PRCA Results, WPRA Results, PRCA Standings, and WPRA Standings</h1>
+        <p>
+          Rodeo Daily helps rodeo fans follow PRCA results, WPRA results, pro rodeo results, PRCA standings, WPRA standings,
+          pro rodeo standings, rodeo schedules, daysheets, NFR standings, athlete profiles, and rodeo news from one fast web app.
+        </p>
+      </div>
+
+      <div className="home-seo-grid" aria-label="Rodeo Daily SEO pages">
+        <article>
+          <h2>PRCA and WPRA Results</h2>
+          <p>
+            Check PRCA results, WPRA results, pro rodeo results, round results, average results, event leaders, payouts,
+            rodeo detail pages, and athlete links.
+          </p>
+        </article>
+        <article>
+          <h2>PRCA and WPRA Standings</h2>
+          <p>
+            Track PRCA standings, WPRA standings, world standings, circuit standings, rookie standings, NFR standings,
+            athlete rankings, season earnings, and event standings.
+          </p>
+        </article>
+        <article>
+          <h2>Rodeo Schedule and News</h2>
+          <p>
+            Browse the PRCA schedule, upcoming rodeos, daysheets, rodeo listings, PRCA news, WPRA news, pro rodeo news,
+            standings stories, and results updates.
+          </p>
+        </article>
+      </div>
+
+      <nav className="home-seo-links" aria-label="Popular Rodeo Daily pages">
+        {homepageSeoLinks.map((link) => (
+          <Link href={link.href} key={link.href}>
+            {link.label}
+          </Link>
+        ))}
+      </nav>
     </section>
   );
 }
@@ -858,7 +918,7 @@ export default function Home() {
           <section className="phone-surface">
             <div className="native-header">
               <div>
-                <h1>{activeTab === "More" ? moreSectionLabels[moreSection] : activeTab}</h1>
+                <strong className="native-header-title">{activeTab === "More" ? moreSectionLabels[moreSection] : activeTab}</strong>
                 <p>{headerSubtitle}</p>
               </div>
               {(activeTab !== "More" || moreSection === "schedule") && (
@@ -1043,6 +1103,7 @@ export default function Home() {
 
         </div>
       </section>
+      <HomeSeoSection />
     </main>
   );
 }

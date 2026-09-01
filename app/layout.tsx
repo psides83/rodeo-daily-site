@@ -9,7 +9,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Rodeo Daily | PRCA Results, PRCA Standings & Pro Rodeo Results",
+    default: "Rodeo Daily | PRCA Results, WPRA Results, PRCA Standings & WPRA Standings",
     template: "%s | Rodeo Daily"
   },
   description: siteDescription,
@@ -33,12 +33,12 @@ export const metadata: Metadata = {
     type: "website",
     url: absoluteUrl("/"),
     siteName: "Rodeo Daily",
-    title: "Rodeo Daily | PRCA Results, PRCA Standings & Pro Rodeo Results",
+    title: "Rodeo Daily | PRCA Results, WPRA Results, PRCA Standings & WPRA Standings",
     description: siteDescription
   },
   twitter: {
     card: "summary",
-    title: "Rodeo Daily | PRCA Results, PRCA Standings & Pro Rodeo Results",
+    title: "Rodeo Daily | PRCA Results, WPRA Results, PRCA Standings & WPRA Standings",
     description: siteDescription
   },
   robots: {

@@ -7,12 +7,18 @@ export const seoKeywords = [
   "PRCA standings",
   "PRCA news",
   "PRCA world standings",
+  "PRCA rodeo results",
+  "PRCA rodeo standings",
   "pro rodeo results",
   "ProRodeo news",
   "WPRA results",
   "WPRA standings",
   "WPRA news",
   "WPRA world standings",
+  "WPRA rodeo results",
+  "WPRA rodeo standings",
+  "WPRA barrel racing standings",
+  "WPRA breakaway roping standings",
   "pro rodeo news",
   "rodeo news",
   "rodeo results",
@@ -24,7 +30,7 @@ export const seoKeywords = [
 ];
 
 export const siteDescription =
-  "Rodeo Daily tracks PRCA results, PRCA standings, pro rodeo results, WPRA results, WPRA standings, rodeo schedules, daysheets, NFR standings, and athlete profiles in one fast rodeo app.";
+  "Rodeo Daily tracks PRCA results, WPRA results, PRCA standings, WPRA standings, pro rodeo results, pro rodeo standings, rodeo schedules, daysheets, NFR standings, and athlete profiles in one fast rodeo app.";
 
 export const seoStandingEvents = [
   { name: "All Around", slug: "all-around", code: "AA" },

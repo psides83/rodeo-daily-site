@@ -69,7 +69,7 @@ export function NewsAppShell({ title, subtitle, children }: { title: string; sub
           <section className="phone-surface">
             <div className="native-header">
               <div>
-                <h1>{title}</h1>
+                <strong className="native-header-title">{title}</strong>
                 <p>{subtitle}</p>
               </div>
             </div>

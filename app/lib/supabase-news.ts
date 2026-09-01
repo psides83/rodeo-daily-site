@@ -136,7 +136,6 @@ export type AdminNewsPostsResponse = {
 };
 
 const prorodeoBaseUrl = "https://d1kfpvgfupbmyo.cloudfront.net/services/pro_rodeo.ashx/";
-const rodeoDailyBaseUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://www.rodeodaily.com";
 const candidateEventCodes: EventCode[] = ["BB", "SW", "TR", "SB", "TD", "GB", "BR", "SR", "LB"];
 const eventNames: Record<EventCode, string> = {
   AA: "All Around",

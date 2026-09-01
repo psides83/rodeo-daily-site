@@ -3,9 +3,9 @@ import { SeoLandingPage } from "../components/seo-landing-page";
 import { pageMetadata } from "../lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Rodeo Schedule",
+  title: "PRCA Schedule, Rodeo Results & Standings",
   description:
-    "Find the pro rodeo schedule in Rodeo Daily, including upcoming rodeos, PRCA schedules, dates, venues, daysheets, payouts, and rodeo detail pages.",
+    "Find the PRCA schedule, pro rodeo schedule, upcoming rodeos, PRCA results, WPRA results, PRCA standings, WPRA standings, dates, venues, daysheets, payouts, and rodeo detail pages.",
   path: "/schedule"
 });
 

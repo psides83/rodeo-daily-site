@@ -8,9 +8,9 @@ import { absoluteUrl } from "../lib/seo";
 const appStoreUrl = "https://apps.apple.com/us/app/rodeo-daily/id1671624492";
 
 export const metadata: Metadata = {
-  title: "Rodeo Daily iPhone App",
+  title: "Rodeo Daily iPhone App, Widget & Apple Watch App",
   description:
-    "Download Rodeo Daily for iPhone to follow PRCA standings, WPRA standings, PRCA & WPRA rodeo results, schedules, daysheets, athlete profiles, favorites, and rodeo updates.",
+    "Download Rodeo Daily for iPhone, widgets, and Apple Watch to follow PRCA standings, WPRA standings, PRCA & WPRA rodeo results, schedules, daysheets, athlete profiles, favorites, and rodeo updates.",
   alternates: {
     canonical: absoluteUrl("/ios-app"),
     languages: localeAlternates("ios-app")
@@ -18,15 +18,15 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: absoluteUrl("/ios-app"),
-    title: "Rodeo Daily iPhone App",
+    title: "Rodeo Daily iPhone App, Widget & Apple Watch App",
     description:
-      "Follow PRCA standings, WPRA standings, PRCA & WPRA rodeo results, schedules, daysheets, athlete profiles, favorites, and rodeo updates from your iPhone."
+      "Follow PRCA standings, WPRA standings, PRCA & WPRA rodeo results, schedules, daysheets, athlete profiles, favorites, widgets, and Apple Watch updates from your iPhone."
   },
   twitter: {
     card: "summary",
-    title: "Rodeo Daily iPhone App",
+    title: "Rodeo Daily iPhone App, Widget & Apple Watch App",
     description:
-      "Download Rodeo Daily for iPhone to follow standings, results, schedules, daysheets, athlete profiles, and rodeo updates."
+      "Download Rodeo Daily for iPhone to follow PRCA and WPRA standings, results, schedules, widgets, Apple Watch updates, athlete profiles, and rodeo updates."
   }
 };
 
@@ -52,6 +52,14 @@ const featureCards = [
     body: "Keep followed athletes and rodeo information close without digging through lists."
   },
   {
+    title: "Widgets",
+    body: "Use Rodeo Daily widgets to keep PRCA standings, WPRA standings, results, and favorite rodeo updates visible from your iPhone."
+  },
+  {
+    title: "Apple Watch",
+    body: "Check rodeo standings, results, schedules, favorites, and quick updates from the Rodeo Daily Apple Watch app."
+  },
+  {
     title: "Rodeo Reference",
     body: "Browse NFR information, past champions, rodeo listings, and useful rodeo resources."
   }
@@ -63,6 +71,8 @@ const appHighlights = [
   "PRCA Rodeo results with round and average results",
   "Schedules, daysheets, rodeo details, and listings",
   "Athlete profiles with stats, results, career, highlights, and bio links",
+  "iPhone widgets for faster PRCA, WPRA, results, standings, and favorites access",
+  "Apple Watch app support for quick rodeo standings, results, schedule, and favorite updates",
   "Favorites and quick access to followed rodeo content"
 ];
 
@@ -77,7 +87,7 @@ export default function IosAppMarketingPage() {
     installUrl: appStoreUrl,
     image: absoluteUrl("/rodeo-daily-icon.png"),
     description:
-      "Rodeo Daily is an iPhone app for PRCA standings, WPRA standings, PRCA & WPRA rodeo results, schedules, daysheets, athlete profiles, favorites, and rodeo updates.",
+      "Rodeo Daily is an iPhone app with widgets and Apple Watch support for PRCA standings, WPRA standings, PRCA & WPRA rodeo results, schedules, daysheets, athlete profiles, favorites, and rodeo updates.",
     offers: {
       "@type": "Offer",
       price: "0",
@@ -126,7 +136,7 @@ export default function IosAppMarketingPage() {
             <h2>Follow rodeo standings, results, schedules, and athletes from one app.</h2>
             <p>
               Rodeo Daily brings PRCA standings, WPRA standings, PRCA and WPRA rodeo results, schedules, daysheets, athlete profiles,
-              favorites, and rodeo reference tools into a fast iPhone experience.
+              favorites, iPhone widgets, Apple Watch access, and rodeo reference tools into a fast iPhone experience.
             </p>
             <div className="marketing-cta-row">
               <a href={appStoreUrl} target="_blank" rel="noreferrer" aria-label="Download Rodeo Daily on the App Store">
@@ -197,7 +207,8 @@ export default function IosAppMarketingPage() {
         <section className="marketing-footer-cta">
           <h2>Download Rodeo Daily on the App Store.</h2>
           <p>
-            Use Rodeo Daily on iPhone for the full app experience, or open the web app when you are on another device.
+            Use Rodeo Daily on iPhone for the full app experience, add widgets for quick glances, use the Apple Watch app for fast updates,
+            or open the web app when you are on another device.
           </p>
           <div className="marketing-cta-row">
             <a href={appStoreUrl} target="_blank" rel="noreferrer" aria-label="Download Rodeo Daily on the App Store">

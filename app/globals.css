@@ -138,6 +138,93 @@ html[data-theme="dark"] .app-window {
   box-shadow: 0 18px 60px rgba(0, 0, 0, 0.42);
 }
 
+.home-seo-section {
+  display: grid;
+  gap: 18px;
+  width: min(1180px, 100%);
+  margin-top: clamp(18px, 3vw, 34px);
+  padding: clamp(20px, 4vw, 36px);
+  border: 1px solid rgba(107, 111, 118, 0.14);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--card-bg) 82%, var(--page-bg));
+  box-shadow: 0 14px 40px rgba(30, 33, 30, 0.08);
+}
+
+.home-seo-copy {
+  display: grid;
+  gap: 10px;
+  max-width: 860px;
+}
+
+.home-seo-copy > span {
+  color: var(--app-secondary);
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.home-seo-copy h1 {
+  margin: 0;
+  color: var(--app-primary);
+  font-size: 2.65rem;
+  line-height: 1.02;
+  letter-spacing: 0;
+}
+
+.home-seo-copy p,
+.home-seo-grid p {
+  margin: 0;
+  color: var(--app-tertiary);
+  font-weight: 720;
+  line-height: 1.5;
+}
+
+.home-seo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.home-seo-grid article {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--control-bg);
+}
+
+.home-seo-grid h2 {
+  margin: 0;
+  color: var(--app-primary);
+  font-size: 1.02rem;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.home-seo-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.home-seo-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(160, 138, 89, 0.2);
+  border-radius: 999px;
+  background: rgba(160, 138, 89, 0.1);
+  color: var(--app-secondary);
+  font-size: 0.86rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
 .seo-page {
   min-height: 100vh;
   padding: clamp(18px, 4vw, 48px);
@@ -1739,7 +1826,8 @@ html[data-theme="dark"] .app-window {
   backdrop-filter: blur(14px);
 }
 
-.native-header h1 {
+.native-header-title {
+  display: block;
   margin: 0;
   color: var(--app-primary);
   font-size: clamp(1.7rem, 2.6vw, 2.35rem);
@@ -6255,6 +6343,10 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
     grid-template-columns: 1fr;
   }
 
+  .home-seo-grid {
+    grid-template-columns: 1fr;
+  }
+
   .content-grid {
     grid-template-columns: 168px minmax(0, 1fr);
   }
@@ -6384,6 +6476,20 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
   .marketing-list-section,
   .marketing-footer-cta {
     padding: 20px;
+  }
+
+  .home-seo-section {
+    padding: 18px;
+    border-radius: 16px;
+  }
+
+  .home-seo-copy h1 {
+    font-size: 2rem;
+  }
+
+  .home-seo-links a {
+    min-height: 34px;
+    font-size: 0.8rem;
   }
 
   .seo-page {

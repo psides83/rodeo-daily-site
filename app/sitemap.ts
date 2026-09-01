@@ -167,6 +167,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route.endsWith("/ios-app") ? 0.72 : 0.48
   }));
   const athleteRoutes = await topAthleteSitemapRoutes();
+  const resultRoutes = await recentResultSitemapRoutes();
   const scheduleRoutes = await upcomingScheduleSitemapRoutes();
   const listingRoutes = await businessJournalSitemapRoutes();
   const newsRoutes = await newsSitemapRoutes();
@@ -180,6 +181,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...proRodeoResultRoutes,
     ...wpraResultRoutes,
     ...athleteRoutes,
+    ...resultRoutes,
     ...scheduleRoutes,
     ...listingRoutes,
     ...newsRoutes
@@ -266,6 +268,35 @@ async function upcomingScheduleSitemapRoutes(): Promise<MetadataRoute.Sitemap> {
         lastModified: now,
         changeFrequency: "daily" as const,
         priority: 0.76
+      }));
+  } catch {
+    return [];
+  }
+}
+
+async function recentResultSitemapRoutes(): Promise<MetadataRoute.Sitemap> {
+  try {
+    const url = new URL("schedule", standingsApiBaseUrl);
+    url.searchParams.set("type", "results");
+    url.searchParams.set("page_size", "80");
+    url.searchParams.set("index", "1");
+    url.searchParams.set("search_term", "");
+    url.searchParams.set("search_type", "");
+    url.searchParams.set("tourId", "");
+    url.searchParams.set("circuitId", "");
+    url.searchParams.set("combine_results", "true");
+    url.searchParams.set("active", "true");
+    const response = await fetch(url, { next: { revalidate: 3600 } });
+    if (!response.ok) return [];
+    const payload = (await response.json()) as { data?: ApiRodeo[] };
+    return (payload.data ?? [])
+      .filter((rodeo) => typeof rodeo.RodeoId === "number" && rodeo.RodeoId > 0)
+      .slice(0, 80)
+      .map((rodeo) => ({
+        url: absoluteUrl(`/results/${rodeo.RodeoId}`),
+        lastModified: now,
+        changeFrequency: "daily" as const,
+        priority: 0.78
       }));
   } catch {
     return [];
