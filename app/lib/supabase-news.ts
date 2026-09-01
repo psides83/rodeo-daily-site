@@ -18,7 +18,7 @@ type SupabaseNewsPostRow = {
   title: string;
   excerpt: string;
   content: string;
-  status: "draft" | "published";
+  status: string;
   category: string;
   author: string;
   tags: string[] | null;
@@ -130,6 +130,11 @@ export type NewsAdminDiagnostics = {
   directError?: string;
 };
 
+export type AdminNewsPostsResponse = {
+  posts: AdminNewsPost[];
+  diagnostics: NewsAdminDiagnostics;
+};
+
 const prorodeoBaseUrl = "https://d1kfpvgfupbmyo.cloudfront.net/services/pro_rodeo.ashx/";
 const rodeoDailyBaseUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://www.rodeodaily.com";
 const candidateEventCodes: EventCode[] = ["BB", "SW", "TR", "SB", "TD", "GB", "BR", "SR", "LB"];
@@ -190,15 +195,31 @@ export async function fetchNewsPostBySlug(slug: string) {
 }
 
 export async function fetchAdminNewsPosts(accessToken: string) {
+  return (await fetchAdminNewsPostsWithDiagnostics(accessToken)).posts;
+}
+
+export async function fetchAdminNewsPostsWithDiagnostics(accessToken: string): Promise<AdminNewsPostsResponse> {
   await assertAdminUser(accessToken);
   const rows = await supabaseRequest<SupabaseNewsPostRow[]>("/rest/v1/news_posts?select=*&order=updated_at.desc.nullslast,published_at.desc.nullslast,created_at.desc&limit=100", {
     serviceRole: true,
     cache: "no-store"
   });
   const publishedRows = await fetchPublishedNewsPostRows();
-  return mergeNewsPostRows(rows, publishedRows)
+  const mergedRows = mergeNewsPostRows(rows, publishedRows);
+  const posts = mergedRows
     .map(mapAdminNewsPostRow)
     .sort((left, right) => (right.updatedAt ?? right.publishedAt ?? "").localeCompare(left.updatedAt ?? left.publishedAt ?? ""));
+  const diagnostics = baseNewsAdminDiagnostics();
+
+  diagnostics.adminRowCount = rows.length;
+  diagnostics.publishedRowCount = publishedRows.length;
+  diagnostics.mergedRowCount = mergedRows.length;
+  diagnostics.adminSlugs = rows.map((row) => row.slug);
+  diagnostics.publishedSlugs = publishedRows.map((row) => row.slug);
+  diagnostics.mergedSlugs = mergedRows.map((row) => `${row.slug}:${normalizeNewsPostStatus(row.status)}`);
+  diagnostics.adminStatuses = Array.from(new Set(rows.map((row) => normalizeNewsPostStatus(row.status))));
+
+  return { posts, diagnostics };
 }
 
 export async function fetchAdminStoryCandidates(accessToken: string) {
@@ -351,12 +372,7 @@ export async function upsertAdminNewsPost(input: NewsPostInput, accessToken: str
 export async function fetchNewsAdminDiagnostics(accessToken: string): Promise<NewsAdminDiagnostics> {
   await assertAdminUser(accessToken);
 
-  const diagnostics: NewsAdminDiagnostics = {
-    configured: supabaseAdminConfigured(),
-    projectHost: supabaseUrl ? new URL(supabaseUrl).host : "",
-    adminEmailCount: adminEmails.length,
-    serviceRolePresent: Boolean(supabaseServiceRoleKey)
-  };
+  const diagnostics = baseNewsAdminDiagnostics();
 
   try {
     const [adminRows, publishedRows] = await Promise.all([
@@ -373,7 +389,7 @@ export async function fetchNewsAdminDiagnostics(accessToken: string): Promise<Ne
     diagnostics.adminSlugs = adminRows.map((row) => row.slug);
     diagnostics.publishedSlugs = publishedRows.map((row) => row.slug);
     diagnostics.mergedSlugs = mergedRows.map((row) => row.slug);
-    diagnostics.adminStatuses = Array.from(new Set(adminRows.map((row) => row.status)));
+    diagnostics.adminStatuses = Array.from(new Set(adminRows.map((row) => normalizeNewsPostStatus(row.status))));
   } catch (error) {
     diagnostics.directError = error instanceof Error ? error.message : "Unable to compare admin and published rows.";
   }
@@ -400,6 +416,15 @@ export async function fetchNewsAdminDiagnostics(accessToken: string): Promise<Ne
   }
 
   return diagnostics;
+}
+
+function baseNewsAdminDiagnostics(): NewsAdminDiagnostics {
+  return {
+    configured: supabaseAdminConfigured(),
+    projectHost: supabaseUrl ? new URL(supabaseUrl).host : "",
+    adminEmailCount: adminEmails.length,
+    serviceRolePresent: Boolean(supabaseServiceRoleKey)
+  };
 }
 
 async function assertAdminUser(accessToken: string) {
@@ -583,8 +608,10 @@ function mergeNewsPostRows(primaryRows: SupabaseNewsPostRow[], fallbackRows: Sup
 }
 
 function preferredNewsPostRow(left: SupabaseNewsPostRow, right: SupabaseNewsPostRow) {
-  if (left.status !== right.status) {
-    return left.status === "published" ? left : right.status === "published" ? right : latestNewsPostRow(left, right);
+  const leftStatus = normalizeNewsPostStatus(left.status);
+  const rightStatus = normalizeNewsPostStatus(right.status);
+  if (leftStatus !== rightStatus) {
+    return leftStatus === "published" ? left : rightStatus === "published" ? right : latestNewsPostRow(left, right);
   }
   return latestNewsPostRow(left, right);
 }
@@ -607,7 +634,7 @@ function mapNewsPostRow(row: SupabaseNewsPostRow): RodeoNewsPost {
     author: row.author,
     publishedAt: row.published_at ?? row.created_at ?? new Date().toISOString(),
     updatedAt: row.updated_at ?? undefined,
-    status: row.status,
+    status: normalizeNewsPostStatus(row.status),
     featured: row.featured,
     heroImage: row.hero_image ?? undefined,
     sourceUrls: row.source_urls ?? [],
@@ -626,7 +653,7 @@ function mapAdminNewsPostRow(row: SupabaseNewsPostRow): AdminNewsPost {
     title: row.title,
     excerpt: row.excerpt,
     content: row.content,
-    status: row.status,
+    status: normalizeNewsPostStatus(row.status),
     category: row.category,
     author: row.author,
     tags: row.tags ?? [],
@@ -658,13 +685,14 @@ function mapStoryCandidateRow(row: SupabaseStoryCandidateRow): NewsStoryCandidat
 }
 
 function newsPostInputToRow(input: NewsPostInput): SupabaseNewsPostRow {
-  const publishedAt = input.status === "published" ? input.publishedAt || new Date().toISOString() : input.publishedAt || null;
+  const status = normalizeNewsPostStatus(input.status);
+  const publishedAt = status === "published" ? input.publishedAt || new Date().toISOString() : input.publishedAt || null;
   return {
     slug: input.slug,
     title: input.title,
     excerpt: input.excerpt,
     content: input.content,
-    status: input.status,
+    status,
     category: input.category,
     author: input.author,
     tags: input.tags,
@@ -675,6 +703,10 @@ function newsPostInputToRow(input: NewsPostInput): SupabaseNewsPostRow {
     published_at: publishedAt,
     updated_at: new Date().toISOString()
   };
+}
+
+function normalizeNewsPostStatus(status: string | null | undefined): "draft" | "published" {
+  return status?.trim().toLowerCase() === "published" ? "published" : "draft";
 }
 
 async function discoverRecentStoryCandidates(): Promise<Array<Omit<SupabaseStoryCandidateRow, "id" | "selected" | "article_id" | "created_at">>> {

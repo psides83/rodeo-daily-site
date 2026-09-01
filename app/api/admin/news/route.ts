@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { deleteAdminDraftNewsPost, fetchAdminNewsPosts, fetchNewsAdminDiagnostics, upsertAdminNewsPost, type NewsPostInput } from "../../../lib/supabase-news";
+import { deleteAdminDraftNewsPost, fetchAdminNewsPostsWithDiagnostics, upsertAdminNewsPost, type NewsPostInput } from "../../../lib/supabase-news";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,12 +14,12 @@ export async function GET(request: Request) {
     const token = bearerToken(request);
     if (!token) return NextResponse.json({ error: "Login required." }, { status: 401 });
 
-    const posts = await fetchAdminNewsPosts(token);
+    const { posts, diagnostics } = await fetchAdminNewsPostsWithDiagnostics(token);
     return NextResponse.json(
       {
         data: posts,
         count: posts.length,
-        diagnostics: await fetchNewsAdminDiagnostics(token)
+        diagnostics
       },
       {
         headers: {

@@ -332,7 +332,7 @@ export function NewsAdminEditor() {
                     {diagnostics.mergedRowCount ?? posts.length}
                   </span>
                   {diagnostics.adminStatuses?.length ? <span>Admin statuses: {diagnostics.adminStatuses.join(", ")}</span> : null}
-                  {diagnostics.mergedSlugs?.length ? <small>Shown slugs: {diagnostics.mergedSlugs.join(", ")}</small> : null}
+                  {diagnostics.mergedSlugs?.length ? <small>Shown slug/status: {diagnostics.mergedSlugs.join(", ")}</small> : null}
                   {diagnostics.publishedSlugs?.length ? <small>Published slugs: {diagnostics.publishedSlugs.join(", ")}</small> : null}
                   {diagnostics.directError ? <small>Error: {diagnostics.directError}</small> : null}
                 </div>
