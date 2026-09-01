@@ -4,7 +4,6 @@ import { Newspaper } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BusinessJournalListingDetailView } from "../../components/rodeo-views";
-import { ThemeSync } from "../../components/theme-sync";
 import { fetchJson, mapBusinessJournalRows } from "../../lib/rodeo-data";
 import type { ApiBusinessJournalResponse, BusinessJournalRow, LoadState } from "../../lib/types";
 
@@ -85,7 +84,6 @@ export default function BusinessJournalListingRoutePage() {
 
   return (
     <main className="browser-stage routed-stage">
-      <ThemeSync />
       <section className="routed-window">
         {state === "loading" ? (
           <div className="business-listing-detail">

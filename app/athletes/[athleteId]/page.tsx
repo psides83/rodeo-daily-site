@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { AthleteProfileClient } from "./athlete-profile-client";
-import { ThemeSync } from "../../components/theme-sync";
 import { mapAthleteBio } from "../../lib/rodeo-data";
 import type { ApiAthleteBioResponse, AthleteBio } from "../../lib/types";
 import { absoluteUrl } from "../../lib/seo";
@@ -65,7 +64,6 @@ export default async function AthleteRoutePage({ params, searchParams }: Athlete
 
   return (
     <main className="browser-stage routed-stage">
-      <ThemeSync />
       {jsonLd && (
         <script
           type="application/ld+json"

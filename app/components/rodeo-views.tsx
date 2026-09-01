@@ -126,7 +126,7 @@ const nfrEvents: EventName[] = [
 
 const athleteProfileTabs = ["Stats", "Results", "Career", "Highlights"] as const;
 type AthleteProfileTab = (typeof athleteProfileTabs)[number];
-type AthleteResultSort = "Date" | "Result" | "Earnings";
+type AthleteResultSort = "Rodeo Date" | "Rodeo Earnings" | "Result" | "Earnings";
 const iosAppStoreUrl = "https://apps.apple.com/us/app/rodeo-daily/id1671624492";
 
 export function RodeoDailyLogoMark() {
@@ -934,25 +934,21 @@ export function RodeoDetailView({
 
 function TopMoneyEarnersList({ earners }: { earners: TopMoneyEarner[] }) {
   return (
-    <section className="app-card top-money-card">
+    <section className="app-card result-round-card top-money-card">
       <div className="top-money-title">
-        <div>
-          <span>Rodeo Results</span>
-          <h3>Top Money Earners</h3>
-        </div>
-        <strong>Earnings</strong>
+        <strong>Top Money Earners</strong>
+        <span>Earnings</span>
       </div>
       <div className="top-money-list">
-        {earners.map((earner, index) => (
+        {earners.map((earner) => (
           <Link className="top-money-row" href={`/athletes/${earner.id}`} key={earner.id}>
-            <span>#{index + 1}</span>
             <Image
               alt=""
               className={earner.imageUrl ? undefined : "athlete-placeholder-image"}
               src={earner.imageUrl || athletePlaceholderImage}
-              width={42}
-              height={42}
-              sizes="42px"
+              width={38}
+              height={38}
+              sizes="38px"
             />
             <div>
               <strong>{earner.name}</strong>
@@ -2046,7 +2042,7 @@ export function DetailPane({ rodeo, state }: { rodeo: RodeoRow; state: LoadState
         </div>
       </div>
       <div className="mini-winners">
-        {state === "loading" && <span>Loading winners...</span>}
+        {state === "loading" && <MiniWinnersSkeleton />}
         {state === "error" && <span>Winners unavailable</span>}
         {state === "loaded" && rodeo.winners.length === 0 && <span>No winners posted for the selected event yet.</span>}
         {state !== "loading" &&
@@ -2060,6 +2056,20 @@ export function DetailPane({ rodeo, state }: { rodeo: RodeoRow; state: LoadState
           ))}
       </div>
     </div>
+  );
+}
+
+function MiniWinnersSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 3 }, (_, index) => (
+        <div className="mini-winner-skeleton" key={index}>
+          <span className="skeleton-line rank" />
+          <span className="skeleton-line medium" />
+          <span className="skeleton-line short" />
+        </div>
+      ))}
+    </>
   );
 }
 
@@ -2498,7 +2508,7 @@ function teamRopingResultEvent(eventType: string) {
 
 function AthleteResultsTab({ bio, selectedEvent }: { bio: AthleteBio; selectedEvent: string }) {
   const [query, setQuery] = useState("");
-  const [sortBy, setSortBy] = useState<AthleteResultSort>("Date");
+  const [sortBy, setSortBy] = useState<AthleteResultSort>("Rodeo Date");
   const seasons = athleteProfileSeasons(bio);
   const [selectedSeason, setSelectedSeason] = useState(seasons[0] ?? currentRodeoSeason().toString());
   const activeSeason = seasons.includes(selectedSeason) ? selectedSeason : seasons[0] ?? selectedSeason;
@@ -2506,15 +2516,16 @@ function AthleteResultsTab({ bio, selectedEvent }: { bio: AthleteBio; selectedEv
   const results = athleteResultsForSeason(bio, activeSeason, selectedEvent).filter((result) => athleteResultMatches(result, query));
   const sortedResults = results.slice().sort((left, right) => sortAthleteResults(left, right, sortBy, selectedEvent));
   const usesFlatResultList = sortBy === "Result" || sortBy === "Earnings";
-  const groupedResults = groupAthleteResults(sortedResults);
-  const resultCount = sortedResults.length;
+  const groupedResults = sortAthleteResultGroups(groupAthleteResults(sortedResults), sortBy);
   const resultMetricLabel = roughstockEventTypes.has(selectedEvent.toUpperCase()) ? "Score" : "Time";
-  const summaryText = usesFlatResultList ? `${resultCount} results` : `${groupedResults.length} rodeos`;
+  const summaryText = `${groupedResults.length} rodeo${groupedResults.length === 1 ? "" : "s"}`;
   const sortOptions: Array<{ value: AthleteResultSort; label: string }> = [
-    { value: "Date", label: "Date" },
+    { value: "Rodeo Date", label: "Date" },
+    { value: "Rodeo Earnings", label: "Earnings by Rodeo" },
     { value: "Result", label: resultMetricLabel },
-    { value: "Earnings", label: "Money" }
+    { value: "Earnings", label: roughstockEventTypes.has(selectedEvent.toUpperCase()) ? "Earnings by Ride" : "Earnings by Run" }
   ];
+  const sortLabel = sortOptions.find((option) => option.value === sortBy)?.label ?? "Date";
 
   if (bio.recentResults.length === 0) {
     return <EmptyState title="No Results Found" subtitle="No recent rodeo results are available for this athlete." icon={ListOrdered} />;
@@ -2558,31 +2569,38 @@ function AthleteResultsTab({ bio, selectedEvent }: { bio: AthleteBio; selectedEv
           </label>
         ) : null}
 
-        <div className="athlete-results-sort-row" aria-label="Sort results">
-          {sortOptions.map((option) => (
-            <button
-              className={sortBy === option.value ? "active" : undefined}
-              key={option.value}
-              onClick={() => setSortBy(option.value)}
-              type="button"
-            >
-              {option.label}
-            </button>
-          ))}
+        <div className="athlete-results-filter-row">
+          <label className="athlete-results-menu-chip">
+            <span>Sort</span>
+            <select value={sortBy} onChange={(event) => setSortBy(event.target.value as AthleteResultSort)} aria-label="Sort results">
+              {sortOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={15} />
+          </label>
+
+          <label className="athlete-results-menu-chip">
+            <span>Season</span>
+            <select value={activeSeason} onChange={(event) => setSelectedSeason(event.target.value)} aria-label="Results season">
+              {seasons.map((season) => (
+                <option key={season} value={season}>
+                  {season}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={15} />
+          </label>
         </div>
+
+        <strong className="athlete-results-context-line">
+          {[displayAthleteEvent(selectedEvent), activeSeason, sortLabel].filter(Boolean).join(" • ")}
+        </strong>
       </section>
 
-      {seasons.length > 0 && (
-        <div className="athlete-season-chip-row" aria-label="Results season">
-          {seasons.map((season) => (
-            <button className={activeSeason === season ? "active" : undefined} key={season} onClick={() => setSelectedSeason(season)}>
-              {season}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {resultCount === 0 ? (
+      {sortedResults.length === 0 ? (
         <EmptyState title="No Results Found" subtitle="Try a different sort option or search term." icon={ListOrdered} />
       ) : (
         <>
@@ -2622,14 +2640,18 @@ const roughstockEventTypes = new Set(["BB", "SB", "BR"]);
 
 type AthleteResultGroup = {
   id: string;
+  rodeoId: number;
   rodeoName: string;
   location: string;
   endDate: string;
+  endDateRaw: string;
   eventType: string;
   results: AthleteBioResult[];
 };
 
 function AthleteResultGroupCard({ group, selectedEvent }: { group: AthleteResultGroup; selectedEvent: string }) {
+  const displayResults = displayAthleteGroupResults(group.results);
+
   return (
     <section className="app-card athlete-result-group-card">
       <div className="athlete-result-group-heading">
@@ -2641,10 +2663,10 @@ function AthleteResultGroupCard({ group, selectedEvent }: { group: AthleteResult
           </h3>
           <p>{[group.location, group.endDate].filter(Boolean).join(" • ")}</p>
         </div>
-        <span>{group.results.length}</span>
+        <span>{formatMoneyFromNumber(athleteResultGroupPayoff(group))}</span>
       </div>
       <div className="athlete-result-table">
-        {group.results.map((result) => (
+        {displayResults.map((result) => (
           <AthleteResultDetailRow key={result.id} result={result} />
         ))}
       </div>
@@ -2729,7 +2751,7 @@ function athleteResultRodeoHref(result: AthleteBioResult | undefined, selectedEv
 function athleteResultMatches(result: AthleteBioResult, query: string) {
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) return true;
-  return [result.rodeoName, result.location, result.endDate, result.round, result.resultValue, result.payoff, result.eventType]
+  return [result.rodeoName, result.resultValue, result.location]
     .join(" ")
     .toLowerCase()
     .includes(normalizedQuery);
@@ -2741,7 +2763,8 @@ function sortAthleteResults(left: AthleteBioResult, right: AthleteBioResult, sor
       return compareAthleteResultValues(left, right, eventType) || compareResultDates(left, right);
     case "Earnings":
       return currencyNumber(right.payoff) - currencyNumber(left.payoff) || compareAthleteResultValues(left, right, eventType) || compareResultDates(left, right);
-    case "Date":
+    case "Rodeo Earnings":
+    case "Rodeo Date":
     default:
       return compareResultDates(left, right);
   }
@@ -2780,14 +2803,47 @@ function compareAthleteResultValues(left: AthleteBioResult, right: AthleteBioRes
 }
 
 function isNonQualifierResult(value: string) {
-  return value === "NT" || value === "NS";
+  const normalized = value.trim().toUpperCase();
+  return normalized === "NT" || normalized === "NS";
 }
 
 function roundSortValue(round: string) {
-  if (round === "Avg") return 0;
-  if (round === "Finals") return 1;
-  const parsed = Number.parseInt(round, 10);
+  const normalized = round.trim().toLowerCase();
+  if (normalized === "avg" || normalized === "ave" || normalized === "average") return 0;
+  if (normalized === "finals" || normalized === "final") return 1;
+  const parsed = Number.parseInt(normalized, 10);
   return Number.isFinite(parsed) ? 100 - parsed : 100;
+}
+
+function displayAthleteGroupResults(results: AthleteBioResult[]) {
+  return results.slice().sort((left, right) => displayRoundSortRank(left.round) - displayRoundSortRank(right.round) || left.id.localeCompare(right.id));
+}
+
+function displayRoundSortRank(round: string) {
+  const normalized = round.trim().toLowerCase();
+  const parsed = Number.parseInt(normalized, 10);
+  if (Number.isFinite(parsed)) return parsed;
+  if (normalized === "finals" || normalized === "final") return 9998;
+  if (normalized === "avg" || normalized === "ave" || normalized === "average") return 9999;
+  return 9000;
+}
+
+function sortAthleteResultGroups(groups: AthleteResultGroup[], sortBy: AthleteResultSort) {
+  if (sortBy !== "Rodeo Earnings") return groups;
+
+  return groups.slice().sort((left, right) => {
+    const payoffDifference = athleteResultGroupPayoff(right) - athleteResultGroupPayoff(left);
+    if (payoffDifference !== 0) return payoffDifference;
+
+    const dateDifference = resultDateNumber(right.endDateRaw || right.endDate) - resultDateNumber(left.endDateRaw || left.endDate);
+    if (dateDifference !== 0) return dateDifference;
+
+    return right.rodeoName.localeCompare(left.rodeoName);
+  });
+}
+
+function athleteResultGroupPayoff(group: AthleteResultGroup) {
+  return group.results.reduce((total, result) => total + currencyNumber(result.payoff), 0);
 }
 
 function athleteProfileSeasons(bio: AthleteBio) {
@@ -2828,16 +2884,18 @@ function groupAthleteResults(results: AthleteBioResult[]) {
   const indexByKey = new Map<string, number>();
 
   results.forEach((result) => {
-    const key = `${result.rodeoName}-${result.endDate}-${result.eventType}`;
+    const key = `${result.rodeoId}-${result.endDateRaw || result.endDate}-${result.eventType}`;
     const existingIndex = indexByKey.get(key);
 
     if (existingIndex === undefined) {
       indexByKey.set(key, groups.length);
       groups.push({
         id: key,
+        rodeoId: result.rodeoId,
         rodeoName: result.rodeoName,
         location: result.location,
         endDate: result.endDate,
+        endDateRaw: result.endDateRaw,
         eventType: result.eventType,
         results: [result]
       });
@@ -3141,10 +3199,159 @@ function DateRangeFilter({ value, onChange }: { value: DateRange; onChange: (ran
 }
 
 function LoadingState({ title }: { title: string }) {
+  const variant = loadingSkeletonVariant(title);
+
   return (
-    <div className="empty-state">
-      <span className="loader" />
+    <div className={`skeleton-loading skeleton-loading-${variant}`} aria-busy="true" aria-label={title}>
+      <RDLogoLoader title={title} compact />
+      {variant === "results" ? <ResultRoundSkeleton /> : null}
+      {variant === "nfr" ? <NfrSkeleton /> : null}
+      {variant === "standings" ? <StandingSkeletonList /> : null}
+      {variant === "search" ? <SearchSkeletonList /> : null}
+      {variant === "list" ? <ListSkeletonList /> : null}
+    </div>
+  );
+}
+
+function loadingSkeletonVariant(title: string) {
+  const normalized = title.toLowerCase();
+  if (normalized.includes("result") || normalized.includes("daysheet") || normalized.includes("money")) return "results";
+  if (normalized.includes("nfr")) return "nfr";
+  if (normalized.includes("standing")) return "standings";
+  if (normalized.includes("search")) return "search";
+  return "list";
+}
+
+function RDLogoLoader({ title = "Loading", compact = false }: { title?: string; compact?: boolean }) {
+  return (
+    <div className={compact ? "rd-logo-loader compact" : "rd-logo-loader"}>
+      <svg viewBox="0 0 0.66 0.58" aria-hidden="true">
+        <path
+          d="M .363 .1499 C .3352 .15 .3114 .1508 .3114 .1508 C .3114 .1508 .1014 .1502 .081 .3151 C .0713 .3938 .1094 .4485 .1643 .4813 C .2071 .5069 .2601 .5183 .3084 .5189 C .3191 .519 .3461 .5214 .3568 .5206 L .3572 .1871 C .3572 .1871 .3949 .1868 .4134 .1879 C .4173 .1882 .4899 .1934 .4868 .2546 C .4862 .2672 .4857 .2772 .4818 .2864 C .4667 .3221 .4304 .3355 .4046 .347 C .4008 .3487 .5614 .526 .5614 .526 L .5972 .4973 L .4641 .3555 C .4641 .3555 .5022 .3349 .5225 .2993 C .5347 .2777 .5396 .2495 .5287 .2182 C .5237 .2042 .5152 .189 .4983 .177 C .4713 .1577 .4445 .1538 .4379 .1527 C .4223 .1502 .3907 .1497 .363 .1499 M .3126 .1894 L .3132 .482 C .3132 .482 .1146 .4828 .1263 .3218 C .1339 .2157 .2598 .1892 .3126 .1894"
+        />
+      </svg>
       <strong>{title}</strong>
+    </div>
+  );
+}
+
+function ResultRoundSkeleton() {
+  return (
+    <div className="result-round-list skeleton-result-round-list">
+      {Array.from({ length: 2 }, (_, sectionIndex) => (
+        <section className="app-card result-round-card skeleton-card" key={sectionIndex}>
+          <div className="result-round-title">
+            <span className="skeleton-line medium" />
+            <span className="skeleton-line short" />
+            <span className="skeleton-line short" />
+          </div>
+          <div className="result-round-rows">
+            {Array.from({ length: 4 }, (_, rowIndex) => (
+              <div className="result-winner-row skeleton-result-row" key={rowIndex}>
+                <span className="skeleton-line rank" />
+                <div className="result-athlete-identity">
+                  <span className="skeleton-avatar" />
+                  <div>
+                    <span className="skeleton-line medium" />
+                    <span className="skeleton-line short" />
+                  </div>
+                </div>
+                <span className="skeleton-line short" />
+                <span className="skeleton-line amount" />
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function StandingSkeletonList() {
+  return (
+    <div className="skeleton-list">
+      {Array.from({ length: 5 }, (_, index) => (
+        <section className="app-card standings-card skeleton-card skeleton-standing-card" key={index}>
+          <div className="standings-card-content">
+            <div className="standing-copy">
+              <div className="standing-name-stack">
+                <span className="skeleton-pill rank-badge" />
+                <div>
+                  <span className="skeleton-line large" />
+                  <span className="skeleton-line medium" />
+                </div>
+              </div>
+            </div>
+            <div className="card-metrics">
+              <span className="skeleton-line short" />
+              <span className="skeleton-line amount" />
+            </div>
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function ListSkeletonList() {
+  return (
+    <div className="skeleton-list">
+      {Array.from({ length: 5 }, (_, index) => (
+        <section className="app-card rodeo-card skeleton-card skeleton-list-card" key={index}>
+          <div>
+            <span className="skeleton-line large" />
+            <span className="skeleton-line medium" />
+            <div className="skeleton-chip-row">
+              <span className="skeleton-pill chip" />
+              <span className="skeleton-pill chip" />
+            </div>
+          </div>
+          <span className="skeleton-line amount" />
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function SearchSkeletonList() {
+  return (
+    <div className="skeleton-list">
+      {Array.from({ length: 4 }, (_, index) => (
+        <section className="app-card athlete-search-row skeleton-search-row" key={index}>
+          <div>
+            <span className="skeleton-avatar" />
+            <div>
+              <span className="skeleton-line medium" />
+              <span className="skeleton-line short" />
+            </div>
+          </div>
+          <span className="skeleton-pill icon" />
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function NfrSkeleton() {
+  return (
+    <div className="nfr-card-list skeleton-list">
+      {Array.from({ length: 3 }, (_, index) => (
+        <section className="app-card nfr-contestant-card skeleton-card" key={index}>
+          <div className="nfr-contestant-main">
+            <span className="skeleton-pill rank-badge" />
+            <div>
+              <span className="skeleton-line large" />
+              <span className="skeleton-line medium" />
+            </div>
+          </div>
+          <div className="nfr-card-divider" />
+          <div className="skeleton-nfr-rounds">
+            {Array.from({ length: 10 }, (_, roundIndex) => (
+              <span className="skeleton-line short" key={roundIndex} />
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

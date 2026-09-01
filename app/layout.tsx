@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import { ThemeSync } from "./components/theme-sync";
+import { appSettingsStorageKey } from "./lib/local-preferences";
 import { absoluteUrl, seoKeywords, siteDescription, siteUrl } from "./lib/seo";
+import { darkThemeVariables, defaultSettings, themeVariables } from "./lib/theme";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -61,6 +64,36 @@ export const viewport: Viewport = {
   maximumScale: 1
 };
 
+function themeInitScript() {
+  return `
+(function() {
+  try {
+    var root = document.documentElement;
+    var stored = window.localStorage.getItem(${JSON.stringify(appSettingsStorageKey)});
+    var settings = Object.assign(${JSON.stringify(defaultSettings)}, stored ? JSON.parse(stored) : {});
+    var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    var resolved = settings.appearanceMode === "device" ? (prefersDark ? "dark" : "light") : settings.appearanceMode;
+    var lightThemes = ${JSON.stringify(themeVariables)};
+    var darkTheme = ${JSON.stringify(darkThemeVariables)};
+    var variables = resolved === "dark" ? darkTheme : lightThemes[settings.accentTheme] || lightThemes.classic;
+
+    root.dataset.theme = resolved;
+    root.dataset.appearanceMode = settings.appearanceMode || "device";
+    root.dataset.compactLists = settings.compactLists ? "true" : "false";
+    root.style.colorScheme = resolved;
+
+    for (var key in variables) {
+      root.style.setProperty(key, variables[key]);
+    }
+  } catch (error) {
+    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      document.documentElement.dataset.theme = "dark";
+      document.documentElement.style.colorScheme = "dark";
+    }
+  }
+})();`;
+}
+
 export default function RootLayout({
   children
 }: Readonly<{
@@ -93,7 +126,10 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript() }} />
+      </head>
       <body>
         <script
           type="application/ld+json"
@@ -101,6 +137,7 @@ export default function RootLayout({
             __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c")
           }}
         />
+        <ThemeSync />
         {children}
         <Analytics />
       </body>

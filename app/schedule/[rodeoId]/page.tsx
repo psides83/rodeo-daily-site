@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { ScheduleRodeoClient } from "./schedule-rodeo-client";
-import { ThemeSync } from "../../components/theme-sync";
 import { mapRodeo } from "../../lib/rodeo-data";
 import type { ApiRodeo } from "../../lib/types";
 import { absoluteUrl } from "../../lib/seo";
@@ -67,7 +66,6 @@ export default async function ScheduleRodeoRoutePage({ params, searchParams }: S
 
   return (
     <main className="browser-stage routed-stage">
-      <ThemeSync />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
