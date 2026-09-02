@@ -8,13 +8,14 @@ import type { ApiDaysheetResponse, ApiRodeoResults, DaysheetRow, EventName, Load
 
 type ResultsRodeoClientProps = {
   rodeoId: number;
+  initialRodeo: RodeoRow;
 };
 
 function eventParam(value: string | null): EventName {
   return events.includes(value as EventName) ? (value as EventName) : "Tie-Down Roping";
 }
 
-export function ResultsRodeoClient({ rodeoId }: ResultsRodeoClientProps) {
+export function ResultsRodeoClient({ rodeoId, initialRodeo }: ResultsRodeoClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [event, setEvent] = useState<EventName>(() => eventParam(searchParams.get("event")));
@@ -22,20 +23,7 @@ export function ResultsRodeoClient({ rodeoId }: ResultsRodeoClientProps) {
   const [daysheetState, setDaysheetState] = useState<LoadState>("idle");
   const [daysheets, setDaysheets] = useState<DaysheetRow[]>([]);
   const [topMoneyEarners, setTopMoneyEarners] = useState<TopMoneyEarner[]>([]);
-  const [rodeo, setRodeo] = useState<RodeoRow>({
-    id: rodeoId,
-    name: searchParams.get("name") || `Rodeo #${rodeoId || ""}`,
-    location: searchParams.get("location") || "",
-    venueName: searchParams.get("venue") || "",
-    websiteUrl: searchParams.get("website") || null,
-    startDate: searchParams.get("start") || "",
-    endDate: searchParams.get("end") || "",
-    payout: searchParams.get("payout") || "",
-    hasDaysheets: searchParams.get("daysheets") === "true",
-    inProgress: false,
-    winners: [],
-    resultRounds: []
-  });
+  const [rodeo, setRodeo] = useState<RodeoRow>(initialRodeo);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,7 +37,7 @@ export function ResultsRodeoClient({ rodeoId }: ResultsRodeoClientProps) {
         const resultRounds = mapResultRounds(payload, eventCodes[event]);
         const moneyEarners = mapTopMoneyEarners(payload, eventCodes[event]);
         if (!cancelled) {
-          setRodeo((current) => ({ ...current, winners, resultRounds }));
+          setRodeo((current) => ({ ...current, ...rodeoDetailFromResults(payload, current), winners, resultRounds }));
           setTopMoneyEarners(moneyEarners);
           setState("loaded");
         }
@@ -98,4 +86,15 @@ export function ResultsRodeoClient({ rodeoId }: ResultsRodeoClientProps) {
       onBack={() => router.back()}
     />
   );
+}
+
+function rodeoDetailFromResults(payload: ApiRodeoResults, current: RodeoRow): Partial<RodeoRow> {
+  const detail = payload.data?.[0];
+  if (!detail) return {};
+
+  return {
+    name: detail.RodeoName?.trim() || current.name,
+    location: [detail.City, detail.State || detail.StateAbbrv].filter(Boolean).join(", ") || current.location,
+    venueName: detail.VenueName?.trim() || current.venueName
+  };
 }

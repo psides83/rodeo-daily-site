@@ -921,6 +921,73 @@ html[data-theme="dark"] .app-window {
   gap: 12px;
 }
 
+.news-admin-mentions-editor {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(107, 111, 118, 0.16);
+  border-radius: 8px;
+  background: rgba(107, 111, 118, 0.06);
+}
+
+.news-admin-mentions-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.news-admin-mentions-heading div {
+  display: grid;
+  gap: 3px;
+}
+
+.news-admin-mentions-heading span {
+  color: var(--app-primary);
+  font-size: 0.82rem;
+  font-weight: 950;
+}
+
+.news-admin-mentions-heading p {
+  margin: 0;
+  color: var(--app-tertiary);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.news-admin-mentions-heading button {
+  min-height: 34px;
+  padding: 0 12px;
+}
+
+.news-admin-mention-list {
+  display: grid;
+  gap: 8px;
+}
+
+.news-admin-mention-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.news-admin-mention-row.mentioned-event-row {
+  grid-template-columns: minmax(120px, 0.8fr) minmax(180px, 1fr) minmax(180px, 1fr) auto;
+}
+
+.news-admin-mention-row label span {
+  color: var(--app-tertiary);
+  font-size: 0.7rem;
+}
+
+.news-admin-mention-row button {
+  min-height: 42px;
+  padding: 0 10px;
+  color: #8a3324;
+}
+
 .news-admin-card label {
   display: grid;
   gap: 6px;
@@ -6727,6 +6794,15 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
     grid-template-columns: 1fr;
   }
 
+  .news-admin-mention-row,
+  .news-admin-mention-row.mentioned-event-row {
+    grid-template-columns: 1fr;
+  }
+
+  .news-admin-mention-row button {
+    width: 100%;
+  }
+
   .news-admin-hero {
     align-items: flex-start;
     flex-direction: column;
@@ -7055,6 +7131,10 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
     width: 100%;
   }
 
+  .results-routed-window .stack {
+    --mobile-card-rail: calc(100vw - 12px);
+  }
+
   .mobile-context-strip {
     margin: 0 8px 8px;
   }
@@ -7312,6 +7392,15 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
 }
 
 @media (max-width: 760px) and (orientation: portrait) {
+  .browser-stage.routed-stage {
+    padding: 8px 0 0;
+  }
+
+  .results-routed-window {
+    width: 100%;
+    padding: 0 6px 28px;
+  }
+
   .tab-scroll {
     padding: 24px 0 132px;
   }
@@ -7325,9 +7414,14 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
   .stack > .chip-grid,
   .stack > .chip-row,
   .stack > .list-stack,
+  .stack > .detail-results-section,
   .stack > .rodeo-list-section {
     width: var(--mobile-card-rail);
     max-width: var(--mobile-card-rail);
+  }
+
+  .results-routed-window .stack {
+    --mobile-card-rail: calc(100vw - 12px);
   }
 
   .standings-filter-card {
@@ -7801,6 +7895,10 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
 @media (max-width: 340px) {
   .stack {
     --mobile-card-rail: calc(100vw - 24px);
+  }
+
+  .results-routed-window .stack {
+    --mobile-card-rail: calc(100vw - 10px);
   }
 
   .standings-filter-card {

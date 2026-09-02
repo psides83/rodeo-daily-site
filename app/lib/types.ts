@@ -325,6 +325,12 @@ export type ApiRound = {
 
 export type ApiRodeoResults = {
   data?: Array<{
+    RodeoId?: number;
+    RodeoName?: string;
+    City?: string;
+    State?: string;
+    StateAbbrv?: string;
+    VenueName?: string | null;
     Events?: Partial<Record<EventCode, Record<string, ApiRound[]>>>;
   }>;
 };

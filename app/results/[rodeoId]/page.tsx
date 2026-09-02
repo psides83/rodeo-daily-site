@@ -66,8 +66,8 @@ export default async function ResultsRodeoRoutePage({ params, searchParams }: Re
           __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c")
         }}
       />
-      <section className="routed-window">
-        <ResultsRodeoClient rodeoId={rodeoId} />
+      <section className="routed-window results-routed-window">
+        <ResultsRodeoClient rodeoId={rodeoId} initialRodeo={rodeoRowFromSeo(rodeo, searchParams)} />
       </section>
     </main>
   );
@@ -199,6 +199,25 @@ function seoRodeoFromRow(rodeo: ReturnType<typeof mapRodeo>): SeoRodeo {
     startDateRaw: rodeo.startDateRaw || "",
     endDateRaw: rodeo.endDateRaw || "",
     payout: rodeo.payout
+  };
+}
+
+function rodeoRowFromSeo(rodeo: SeoRodeo, searchParams?: Record<string, string | string[] | undefined>) {
+  return {
+    id: rodeo.id,
+    name: rodeo.name,
+    location: rodeo.location,
+    venueName: rodeo.venueName,
+    websiteUrl: searchParam(searchParams, "website") || null,
+    startDate: rodeo.startDate,
+    endDate: rodeo.endDate,
+    startDateRaw: rodeo.startDateRaw,
+    endDateRaw: rodeo.endDateRaw,
+    payout: rodeo.payout,
+    hasDaysheets: searchParam(searchParams, "daysheets") === "true",
+    inProgress: false,
+    winners: [],
+    resultRounds: []
   };
 }
 

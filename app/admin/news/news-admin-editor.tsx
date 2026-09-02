@@ -138,7 +138,7 @@ export function NewsAdminEditor() {
         mentionedRodeos: cleanMentionedRodeos(draft.mentionedRodeos),
         mentionedEvents: cleanMentionedEvents(draft.mentionedEvents),
         heroImage: draft.heroImage?.trim() || undefined,
-        publishedAt: draft.publishedAt || undefined
+        publishedAt: normalizePublishDate(draft.publishedAt)
       };
 
       const response = await fetch("/api/admin/news", {
@@ -312,38 +312,20 @@ export function NewsAdminEditor() {
                 </label>
                 <label>
                   <span>Publish Date</span>
-                  <input value={draft.publishedAt ?? ""} onChange={(event) => updateDraft({ publishedAt: event.target.value })} type="datetime-local" />
+                  <input value={datetimeLocalValue(draft.publishedAt)} onChange={(event) => updateDraft({ publishedAt: event.target.value })} type="datetime-local" />
                 </label>
               </div>
 
               <div className="news-admin-entity-fields">
-                <label>
-                  <span>Mentioned Athletes</span>
-                  <textarea
-                    value={formatMentionedAthletes(draft.mentionedAthletes)}
-                    onChange={(event) => updateDraft({ mentionedAthletes: parseMentionedAthletes(event.target.value) })}
-                    placeholder="Athlete Name | 12345"
-                    rows={4}
-                  />
-                </label>
-                <label>
-                  <span>Mentioned Rodeos</span>
-                  <textarea
-                    value={formatMentionedRodeos(draft.mentionedRodeos)}
-                    onChange={(event) => updateDraft({ mentionedRodeos: parseMentionedRodeos(event.target.value) })}
-                    placeholder="Rodeo Name | 19105"
-                    rows={4}
-                  />
-                </label>
-                <label>
-                  <span>Mentioned Events</span>
-                  <textarea
-                    value={formatMentionedEvents(draft.mentionedEvents)}
-                    onChange={(event) => updateDraft({ mentionedEvents: parseMentionedEvents(event.target.value) })}
-                    placeholder="Barrel Racing | /wpra-standings/2026/barrel-racing | /wpra-results/barrel-racing"
-                    rows={4}
-                  />
-                </label>
+                <MentionedAthletesEditor
+                  athletes={draft.mentionedAthletes}
+                  onChange={(mentionedAthletes) => updateDraft({ mentionedAthletes })}
+                />
+                <MentionedRodeosEditor
+                  rodeos={draft.mentionedRodeos}
+                  onChange={(mentionedRodeos) => updateDraft({ mentionedRodeos })}
+                />
+                <MentionedEventsEditor events={draft.mentionedEvents} onChange={(mentionedEvents) => updateDraft({ mentionedEvents })} />
               </div>
 
               <div className="news-admin-actions">
@@ -391,7 +373,7 @@ export function NewsAdminEditor() {
               {posts.length === 0 && <p>No posts found.</p>}
               {posts.map((post) => (
                 <div className="news-admin-list-row" key={post.slug}>
-                  <button type="button" onClick={() => setDraft(post)}>
+                  <button type="button" onClick={() => setDraft(adminPostToDraft(post))}>
                     <strong>{post.title}</strong>
                     <span>{post.status === "published" ? "Published on /news" : "Draft - hidden from /news"}</span>
                   </button>
@@ -416,6 +398,175 @@ export function NewsAdminEditor() {
   }
 }
 
+function MentionedAthletesEditor({
+  athletes,
+  onChange
+}: {
+  athletes: NewsMentionedAthlete[];
+  onChange: (athletes: NewsMentionedAthlete[]) => void;
+}) {
+  const rows = athletes.length ? athletes : [{ name: "", athleteId: 0 }];
+
+  return (
+    <section className="news-admin-mentions-editor">
+      <div className="news-admin-mentions-heading">
+        <div>
+          <span>Mentioned Athletes</span>
+          <p>People linked at the bottom of the article.</p>
+        </div>
+        <button type="button" onClick={() => onChange([...athletes, { name: "", athleteId: 0 }])}>
+          Add Athlete
+        </button>
+      </div>
+      <div className="news-admin-mention-list">
+        {rows.map((athlete, index) => (
+          <div className="news-admin-mention-row mentioned-athlete-row" key={`athlete-${index}`}>
+            <label>
+              <span>Name</span>
+              <input
+                value={athlete.name}
+                onChange={(event) => onChange(updateMentionRow(rows, index, { name: event.target.value }))}
+                placeholder="Athlete name"
+              />
+            </label>
+            <label>
+              <span>ID</span>
+              <input
+                inputMode="numeric"
+                value={athlete.athleteId || ""}
+                onChange={(event) => onChange(updateMentionRow(rows, index, { athleteId: Number(event.target.value) }))}
+                placeholder="12345"
+              />
+            </label>
+            <button type="button" onClick={() => onChange(removeMentionRow(rows, index))} disabled={rows.length === 1 && !athlete.name && !athlete.athleteId}>
+              Remove
+            </button>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function MentionedRodeosEditor({
+  rodeos,
+  onChange
+}: {
+  rodeos: NewsMentionedRodeo[];
+  onChange: (rodeos: NewsMentionedRodeo[]) => void;
+}) {
+  const rows = rodeos.length ? rodeos : [{ name: "", rodeoId: 0 }];
+
+  return (
+    <section className="news-admin-mentions-editor">
+      <div className="news-admin-mentions-heading">
+        <div>
+          <span>Mentioned Rodeos</span>
+          <p>Rodeos linked at the bottom of the article.</p>
+        </div>
+        <button type="button" onClick={() => onChange([...rodeos, { name: "", rodeoId: 0 }])}>
+          Add Rodeo
+        </button>
+      </div>
+      <div className="news-admin-mention-list">
+        {rows.map((rodeo, index) => (
+          <div className="news-admin-mention-row mentioned-rodeo-row" key={`rodeo-${index}`}>
+            <label>
+              <span>Name</span>
+              <input
+                value={rodeo.name}
+                onChange={(event) => onChange(updateMentionRow(rows, index, { name: event.target.value }))}
+                placeholder="Rodeo name"
+              />
+            </label>
+            <label>
+              <span>ID</span>
+              <input
+                inputMode="numeric"
+                value={rodeo.rodeoId || ""}
+                onChange={(event) => onChange(updateMentionRow(rows, index, { rodeoId: Number(event.target.value) }))}
+                placeholder="19105"
+              />
+            </label>
+            <button type="button" onClick={() => onChange(removeMentionRow(rows, index))} disabled={rows.length === 1 && !rodeo.name && !rodeo.rodeoId}>
+              Remove
+            </button>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function MentionedEventsEditor({
+  events,
+  onChange
+}: {
+  events: NewsMentionedEvent[];
+  onChange: (events: NewsMentionedEvent[]) => void;
+}) {
+  const rows = events.length ? events : [{ name: "", standingsHref: "", resultsHref: "" }];
+
+  return (
+    <section className="news-admin-mentions-editor">
+      <div className="news-admin-mentions-heading">
+        <div>
+          <span>Mentioned Events</span>
+          <p>Event pages related to the article.</p>
+        </div>
+        <button type="button" onClick={() => onChange([...events, { name: "", standingsHref: "", resultsHref: "" }])}>
+          Add Event
+        </button>
+      </div>
+      <div className="news-admin-mention-list">
+        {rows.map((event, index) => (
+          <div className="news-admin-mention-row mentioned-event-row" key={`event-${index}`}>
+            <label>
+              <span>Name</span>
+              <input
+                value={event.name}
+                onChange={(inputEvent) => onChange(updateMentionRow(rows, index, { name: inputEvent.target.value }))}
+                placeholder="Barrel Racing"
+              />
+            </label>
+            <label>
+              <span>Standings Link</span>
+              <input
+                value={event.standingsHref}
+                onChange={(inputEvent) => onChange(updateMentionRow(rows, index, { standingsHref: inputEvent.target.value }))}
+                placeholder="/wpra-standings/2026/barrel-racing"
+              />
+            </label>
+            <label>
+              <span>Results Link</span>
+              <input
+                value={event.resultsHref ?? ""}
+                onChange={(inputEvent) => onChange(updateMentionRow(rows, index, { resultsHref: inputEvent.target.value }))}
+                placeholder="/wpra-results/barrel-racing"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => onChange(removeMentionRow(rows, index))}
+              disabled={rows.length === 1 && !event.name && !event.standingsHref && !event.resultsHref}
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function updateMentionRow<T>(rows: T[], index: number, next: Partial<T>) {
+  return rows.map((row, rowIndex) => (rowIndex === index ? { ...row, ...next } : row));
+}
+
+function removeMentionRow<T>(rows: T[], index: number) {
+  return rows.filter((_, rowIndex) => rowIndex !== index);
+}
+
 function isInvalidSupabaseTokenError(error: unknown) {
   if (!(error instanceof Error)) return false;
   const message = error.message.toLowerCase();
@@ -431,6 +582,13 @@ function splitList(value: string) {
 
 function cleanList(value: string[]) {
   return value.map((item) => item.trim()).filter(Boolean);
+}
+
+function adminPostToDraft(post: AdminNewsPost): NewsPostInput {
+  return {
+    ...post,
+    publishedAt: datetimeLocalValue(post.publishedAt)
+  };
 }
 
 function publicNewsPostToAdminPost(post: RodeoNewsPost): AdminNewsPost {
@@ -482,54 +640,26 @@ function adminPostDate(post: AdminNewsPost) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function datetimeLocalValue(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value.includes("T") ? value.slice(0, 16) : "";
+  const offsetMs = date.getTimezoneOffset() * 60 * 1000;
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+}
+
+function normalizePublishDate(value?: string) {
+  if (!value) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
 function slugify(value: string) {
   return value
     .toLowerCase()
     .replace(/&/g, "and")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-}
-
-function formatMentionedAthletes(value: NewsMentionedAthlete[]) {
-  return value.map((item) => [item.name, item.athleteId > 0 ? String(item.athleteId) : ""].filter(Boolean).join(" | ")).join("\n");
-}
-
-function formatMentionedRodeos(value: NewsMentionedRodeo[]) {
-  return value.map((item) => [item.name, item.rodeoId > 0 ? String(item.rodeoId) : ""].filter(Boolean).join(" | ")).join("\n");
-}
-
-function formatMentionedEvents(value: NewsMentionedEvent[]) {
-  return value.map((item) => [item.name, item.standingsHref, item.resultsHref].filter(Boolean).join(" | ")).join("\n");
-}
-
-function parseMentionedAthletes(value: string): NewsMentionedAthlete[] {
-  return value
-    .split("\n")
-    .map((line) => {
-      const [name = "", athleteId = ""] = line.split("|").map((part) => part.trim());
-      return { name, athleteId: Number(athleteId) };
-    })
-    .filter((item) => item.name || item.athleteId);
-}
-
-function parseMentionedRodeos(value: string): NewsMentionedRodeo[] {
-  return value
-    .split("\n")
-    .map((line) => {
-      const [name = "", rodeoId = ""] = line.split("|").map((part) => part.trim());
-      return { name, rodeoId: Number(rodeoId) };
-    })
-    .filter((item) => item.name || item.rodeoId);
-}
-
-function parseMentionedEvents(value: string): NewsMentionedEvent[] {
-  return value
-    .split("\n")
-    .map((line) => {
-      const [name = "", standingsHref = "", resultsHref = ""] = line.split("|").map((part) => part.trim());
-      return { name, standingsHref, resultsHref: resultsHref || undefined };
-    })
-    .filter((item) => item.name || item.standingsHref || item.resultsHref);
 }
 
 function cleanMentionedAthletes(value: NewsMentionedAthlete[]) {
