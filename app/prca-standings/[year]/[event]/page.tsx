@@ -59,6 +59,7 @@ export default async function StandingsSeoPage({ params }: StandingsSeoPageProps
   const description = `Current ${year} ${event.name} world standings with ranked athletes, hometowns, and season earnings.`;
   const appHref = `/?tab=standings`;
   const pageUrl = absoluteUrl(`/prca-standings/${year}/${event.slug}`);
+  const relatedResultLinks = prcaRelatedResultLinks(event);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -129,6 +130,23 @@ export default async function StandingsSeoPage({ params }: StandingsSeoPageProps
             <p className="seo-standings-empty">Standings are temporarily unavailable. Open Rodeo Daily for the latest app view.</p>
           )}
         </section>
+
+        <section className="app-card seo-related-links-section" aria-label={`Related ${event.name} results pages`}>
+          <div>
+            <span>Related Results</span>
+            <h2>{event.name} Results and Standings</h2>
+            <p>
+              Move from {year} PRCA {event.name} standings into related PRCA results, WPRA results, pro rodeo results, and rodeo standings pages.
+            </p>
+          </div>
+          <nav className="seo-related-links" aria-label={`Related ${event.name} results links`}>
+            {relatedResultLinks.map((link) => (
+              <Link href={link.href} key={link.href}>
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        </section>
       </section>
     </main>
   );
@@ -166,4 +184,32 @@ function wpraStandingsUrl(year: string, eventCode: string) {
 
 function safeYear(value: string) {
   return /^20\d{2}$/.test(value) ? value : null;
+}
+
+function prcaRelatedResultLinks(event: NonNullable<ReturnType<typeof standingEventForSlug>>) {
+  const resultSlug = resultSlugForStandingEvent(event.slug);
+  const links = [
+    { href: "/prca-results", label: "PRCA Results" },
+    { href: "/pro-rodeo-results", label: "Pro Rodeo Results" },
+    { href: "/standings", label: "PRCA and WPRA Standings" }
+  ];
+
+  if (resultSlug) {
+    links.unshift(
+      { href: `/prca-results/${resultSlug}`, label: `PRCA ${event.name} Results` },
+      { href: `/pro-rodeo-results/${resultSlug}`, label: `Pro Rodeo ${event.name} Results` }
+    );
+  }
+
+  if (wpraEvents.has(event.code) && resultSlug) {
+    links.splice(2, 0, { href: `/wpra-results/${resultSlug}`, label: `WPRA ${event.name} Results` });
+  }
+
+  return links;
+}
+
+function resultSlugForStandingEvent(slug: string) {
+  if (slug === "all-around") return null;
+  if (slug === "team-roping-headers" || slug === "team-roping-heelers") return "team-roping";
+  return slug;
 }

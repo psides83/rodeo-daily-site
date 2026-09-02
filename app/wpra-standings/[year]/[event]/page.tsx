@@ -58,6 +58,7 @@ export default async function WpraStandingsEventPage({ params }: WpraStandingsPa
   const description = `Current ${year} WPRA ${event.name} world standings with ranked athletes, hometowns, and season earnings.`;
   const appHref = "/?tab=standings";
   const pageUrl = absoluteUrl(`/wpra-standings/${year}/${event.slug}`);
+  const relatedResultLinks = wpraRelatedResultLinks(event);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -128,6 +129,23 @@ export default async function WpraStandingsEventPage({ params }: WpraStandingsPa
             <p className="seo-standings-empty">WPRA standings are temporarily unavailable. Open Rodeo Daily for the latest app view.</p>
           )}
         </section>
+
+        <section className="app-card seo-related-links-section" aria-label={`Related ${event.name} results pages`}>
+          <div>
+            <span>Related Results</span>
+            <h2>{event.name} Results and Standings</h2>
+            <p>
+              Move from {year} WPRA {event.name} standings into related WPRA results, PRCA results, pro rodeo results, and rodeo standings pages.
+            </p>
+          </div>
+          <nav className="seo-related-links" aria-label={`Related ${event.name} results links`}>
+            {relatedResultLinks.map((link) => (
+              <Link href={link.href} key={link.href}>
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        </section>
       </section>
     </main>
   );
@@ -156,4 +174,15 @@ function wpraStandingEventForSlug(slug: string) {
 
 function safeYear(value: string) {
   return /^20\d{2}$/.test(value) ? value : null;
+}
+
+function wpraRelatedResultLinks(event: NonNullable<ReturnType<typeof wpraStandingEventForSlug>>) {
+  return [
+    { href: `/wpra-results/${event.slug}`, label: `WPRA ${event.name} Results` },
+    { href: `/prca-results/${event.slug}`, label: `PRCA ${event.name} Results` },
+    { href: `/pro-rodeo-results/${event.slug}`, label: `Pro Rodeo ${event.name} Results` },
+    { href: "/wpra-results", label: "WPRA Results" },
+    { href: "/pro-rodeo-results", label: "Pro Rodeo Results" },
+    { href: "/standings", label: "PRCA and WPRA Standings" }
+  ];
 }
