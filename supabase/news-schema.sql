@@ -15,6 +15,9 @@ create table if not exists public.news_posts (
   tags text[] not null default '{}',
   hero_image text,
   source_urls text[] not null default '{}',
+  mentioned_athletes jsonb not null default '[]'::jsonb,
+  mentioned_rodeos jsonb not null default '[]'::jsonb,
+  mentioned_events jsonb not null default '[]'::jsonb,
   featured boolean not null default false,
   story_score integer,
   published_at timestamptz,
@@ -52,6 +55,9 @@ alter table public.news_story_candidates add column if not exists detected_event
 alter table public.news_story_candidates add column if not exists keywords text[] not null default '{}';
 alter table public.news_story_candidates add column if not exists published_at timestamptz;
 alter table public.news_story_candidates add column if not exists dismissed_at timestamptz;
+alter table public.news_posts add column if not exists mentioned_athletes jsonb not null default '[]'::jsonb;
+alter table public.news_posts add column if not exists mentioned_rodeos jsonb not null default '[]'::jsonb;
+alter table public.news_posts add column if not exists mentioned_events jsonb not null default '[]'::jsonb;
 
 create table if not exists public.news_sources (
   id uuid primary key default gen_random_uuid(),

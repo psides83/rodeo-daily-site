@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RodeoDailyLogoMark } from "../../components/rodeo-views";
-import type { RodeoNewsPost } from "../../lib/news";
+import type { NewsMentionedAthlete, NewsMentionedEvent, NewsMentionedRodeo, RodeoNewsPost } from "../../lib/news";
 import type { AdminNewsPost, NewsAdminDiagnostics, NewsAdminLogin, NewsPostInput } from "../../lib/supabase-news";
 
 const emptyPost: NewsPostInput = {
@@ -17,6 +17,9 @@ const emptyPost: NewsPostInput = {
   author: "Rodeo Daily",
   tags: ["PRCA results", "WPRA results", "pro rodeo results"],
   sourceUrls: [],
+  mentionedAthletes: [],
+  mentionedRodeos: [],
+  mentionedEvents: [],
   featured: false,
   storyScore: undefined,
   publishedAt: ""
@@ -131,6 +134,9 @@ export function NewsAdminEditor() {
         author: draft.author.trim() || "Rodeo Daily",
         tags: cleanList(draft.tags),
         sourceUrls: cleanList(draft.sourceUrls),
+        mentionedAthletes: cleanMentionedAthletes(draft.mentionedAthletes),
+        mentionedRodeos: cleanMentionedRodeos(draft.mentionedRodeos),
+        mentionedEvents: cleanMentionedEvents(draft.mentionedEvents),
         heroImage: draft.heroImage?.trim() || undefined,
         publishedAt: draft.publishedAt || undefined
       };
@@ -310,6 +316,36 @@ export function NewsAdminEditor() {
                 </label>
               </div>
 
+              <div className="news-admin-entity-fields">
+                <label>
+                  <span>Mentioned Athletes</span>
+                  <textarea
+                    value={formatMentionedAthletes(draft.mentionedAthletes)}
+                    onChange={(event) => updateDraft({ mentionedAthletes: parseMentionedAthletes(event.target.value) })}
+                    placeholder="Athlete Name | 12345"
+                    rows={4}
+                  />
+                </label>
+                <label>
+                  <span>Mentioned Rodeos</span>
+                  <textarea
+                    value={formatMentionedRodeos(draft.mentionedRodeos)}
+                    onChange={(event) => updateDraft({ mentionedRodeos: parseMentionedRodeos(event.target.value) })}
+                    placeholder="Rodeo Name | 19105"
+                    rows={4}
+                  />
+                </label>
+                <label>
+                  <span>Mentioned Events</span>
+                  <textarea
+                    value={formatMentionedEvents(draft.mentionedEvents)}
+                    onChange={(event) => updateDraft({ mentionedEvents: parseMentionedEvents(event.target.value) })}
+                    placeholder="Barrel Racing | /wpra-standings/2026/barrel-racing | /wpra-results/barrel-racing"
+                    rows={4}
+                  />
+                </label>
+              </div>
+
               <div className="news-admin-actions">
                 <label className="news-admin-check">
                   <input checked={draft.status === "published"} onChange={(event) => updateDraft({ status: event.target.checked ? "published" : "draft" })} type="checkbox" />
@@ -409,6 +445,9 @@ function publicNewsPostToAdminPost(post: RodeoNewsPost): AdminNewsPost {
     tags: post.tags,
     heroImage: post.heroImage,
     sourceUrls: post.sourceUrls,
+    mentionedAthletes: post.mentionedAthletes,
+    mentionedRodeos: post.mentionedRodeos,
+    mentionedEvents: post.mentionedEvents,
     featured: post.featured,
     storyScore: post.storyScore,
     publishedAt: post.publishedAt,
@@ -449,4 +488,68 @@ function slugify(value: string) {
     .replace(/&/g, "and")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function formatMentionedAthletes(value: NewsMentionedAthlete[]) {
+  return value.map((item) => [item.name, item.athleteId > 0 ? String(item.athleteId) : ""].filter(Boolean).join(" | ")).join("\n");
+}
+
+function formatMentionedRodeos(value: NewsMentionedRodeo[]) {
+  return value.map((item) => [item.name, item.rodeoId > 0 ? String(item.rodeoId) : ""].filter(Boolean).join(" | ")).join("\n");
+}
+
+function formatMentionedEvents(value: NewsMentionedEvent[]) {
+  return value.map((item) => [item.name, item.standingsHref, item.resultsHref].filter(Boolean).join(" | ")).join("\n");
+}
+
+function parseMentionedAthletes(value: string): NewsMentionedAthlete[] {
+  return value
+    .split("\n")
+    .map((line) => {
+      const [name = "", athleteId = ""] = line.split("|").map((part) => part.trim());
+      return { name, athleteId: Number(athleteId) };
+    })
+    .filter((item) => item.name || item.athleteId);
+}
+
+function parseMentionedRodeos(value: string): NewsMentionedRodeo[] {
+  return value
+    .split("\n")
+    .map((line) => {
+      const [name = "", rodeoId = ""] = line.split("|").map((part) => part.trim());
+      return { name, rodeoId: Number(rodeoId) };
+    })
+    .filter((item) => item.name || item.rodeoId);
+}
+
+function parseMentionedEvents(value: string): NewsMentionedEvent[] {
+  return value
+    .split("\n")
+    .map((line) => {
+      const [name = "", standingsHref = "", resultsHref = ""] = line.split("|").map((part) => part.trim());
+      return { name, standingsHref, resultsHref: resultsHref || undefined };
+    })
+    .filter((item) => item.name || item.standingsHref || item.resultsHref);
+}
+
+function cleanMentionedAthletes(value: NewsMentionedAthlete[]) {
+  return value
+    .map((item) => ({ name: item.name.trim(), athleteId: Number(item.athleteId) }))
+    .filter((item) => item.name && Number.isInteger(item.athleteId) && item.athleteId > 0);
+}
+
+function cleanMentionedRodeos(value: NewsMentionedRodeo[]) {
+  return value
+    .map((item) => ({ name: item.name.trim(), rodeoId: Number(item.rodeoId) }))
+    .filter((item) => item.name && Number.isInteger(item.rodeoId) && item.rodeoId > 0);
+}
+
+function cleanMentionedEvents(value: NewsMentionedEvent[]) {
+  return value
+    .map((item) => ({
+      name: item.name.trim(),
+      standingsHref: item.standingsHref.trim(),
+      resultsHref: item.resultsHref?.trim() || undefined
+    }))
+    .filter((item) => item.name && item.standingsHref.startsWith("/"));
 }

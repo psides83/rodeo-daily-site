@@ -15,6 +15,25 @@ export type RodeoNewsPost = {
   storyScore?: number;
   tags: string[];
   paragraphs: string[];
+  mentionedAthletes: NewsMentionedAthlete[];
+  mentionedRodeos: NewsMentionedRodeo[];
+  mentionedEvents: NewsMentionedEvent[];
+};
+
+export type NewsMentionedAthlete = {
+  name: string;
+  athleteId: number;
+};
+
+export type NewsMentionedRodeo = {
+  name: string;
+  rodeoId: number;
+};
+
+export type NewsMentionedEvent = {
+  name: string;
+  standingsHref: string;
+  resultsHref?: string;
 };
 
 export const newsPosts: RodeoNewsPost[] = [
@@ -39,6 +58,23 @@ export const newsPosts: RodeoNewsPost[] = [
     ],
     storyScore: 92,
     tags: ["WPRA news", "PRCA news", "ProRodeo news", "WPRA standings", "PRCA results", "barrel racing", "Carlee Otero", "Michael Otero", "NFR standings"],
+    mentionedAthletes: [],
+    mentionedRodeos: [
+      { name: "RODEOHOUSTON", rodeoId: 18188 },
+      { name: "Utah Days of 47 Rodeo", rodeoId: 18585 }
+    ],
+    mentionedEvents: [
+      {
+        name: "barrel racing",
+        standingsHref: "/wpra-standings/2026/barrel-racing",
+        resultsHref: "/wpra-results/barrel-racing"
+      },
+      {
+        name: "tie-down roping",
+        standingsHref: "/prca-standings/2026/tie-down-roping",
+        resultsHref: "/prca-results/tie-down-roping"
+      }
+    ],
     paragraphs: [
       "# Carlee Otero Is Closing In on the WPRA World Lead",
       "### Otero has turned late-summer consistency into a real chance at taking over the barrel racing race before the regular season closes.",

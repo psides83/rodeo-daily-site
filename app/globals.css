@@ -709,6 +709,67 @@ html[data-theme="dark"] .app-window {
   gap: 8px;
 }
 
+.news-entity-footer {
+  display: grid;
+  gap: 14px;
+  padding: clamp(18px, 3vw, 24px);
+  border: 1px solid rgba(76, 95, 82, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.56);
+}
+
+.news-entity-footer h2,
+.news-entity-group h3 {
+  margin: 0;
+  color: var(--app-primary);
+  line-height: 1.15;
+}
+
+.news-entity-footer h2 {
+  font-size: 1rem;
+}
+
+.news-entity-footer-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.news-entity-group {
+  display: grid;
+  gap: 8px;
+}
+
+.news-entity-group h3 {
+  font-size: 0.84rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.news-entity-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.news-entity-links span {
+  display: contents;
+}
+
+.news-entity-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid rgba(160, 138, 89, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.68);
+  color: var(--app-secondary);
+  font-size: 0.86rem;
+  font-weight: 850;
+  text-decoration: none;
+}
+
 .news-source-list h2 {
   margin: 0;
   color: var(--app-primary);
@@ -852,6 +913,11 @@ html[data-theme="dark"] .app-window {
 .news-admin-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.news-admin-entity-fields {
+  display: grid;
   gap: 12px;
 }
 
@@ -3315,6 +3381,7 @@ html[data-theme="dark"] .seo-page-card,
 html[data-theme="dark"] .news-featured-story,
 html[data-theme="dark"] .news-card,
 html[data-theme="dark"] .news-article-body,
+html[data-theme="dark"] .news-entity-footer,
 html[data-theme="dark"] .news-ad-slot,
 html[data-theme="dark"] .news-inline-ad-slot,
 html[data-theme="dark"] .news-admin-hero,
@@ -3365,6 +3432,42 @@ html[data-theme="dark"] .ios-app-promo-banner,
 html[data-theme="dark"] .follow-alerts-panel,
 html[data-theme="dark"] .athlete-bio-document {
   background: var(--card-bg-strong);
+  border-color: var(--line);
+}
+
+html[data-theme="dark"] .marketing-page {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255, 212, 120, 0.12), transparent 28rem),
+    linear-gradient(135deg, #151915 0%, var(--page-bg) 52%, #101410 100%);
+}
+
+html[data-theme="dark"] .marketing-header-links a,
+html[data-theme="dark"] .marketing-web-link {
+  background: var(--control-bg);
+  border-color: var(--line);
+}
+
+html[data-theme="dark"] .marketing-hero,
+html[data-theme="dark"] .marketing-phone-preview {
+  background: var(--card-bg);
+  border-color: var(--line);
+  box-shadow: var(--shadow);
+}
+
+html[data-theme="dark"] .marketing-phone-screen {
+  background: var(--stage-bg);
+  border-color: var(--line);
+}
+
+html[data-theme="dark"] .marketing-preview-card,
+html[data-theme="dark"] .marketing-preview-row {
+  background: var(--card-bg-strong);
+  border-color: var(--line);
+  box-shadow: var(--shadow);
+}
+
+html[data-theme="dark"] .seo-page-footer a {
+  background: var(--control-bg);
   border-color: var(--line);
 }
 
@@ -6580,8 +6683,13 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
 
   .news-index-header,
   .news-article-hero,
-  .news-article-body {
+  .news-article-body,
+  .news-entity-footer {
     padding: 18px;
+  }
+
+  .news-entity-footer-grid {
+    grid-template-columns: 1fr;
   }
 
   .news-index-header h1,

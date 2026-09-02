@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { GoogleAdSlot } from "../../components/google-ads";
 import { NewsAppShell } from "../../components/news-app-shell";
-import { newsPostImage, newsPostUrl } from "../../lib/news";
+import { newsPostImage, newsPostUrl, type RodeoNewsPost } from "../../lib/news";
 import { absoluteUrl } from "../../lib/seo";
 import { fetchNewsPostBySlug, fetchPublishedNewsPosts } from "../../lib/supabase-news";
 
@@ -12,6 +12,12 @@ type NewsArticlePageProps = {
   params: {
     slug: string;
   };
+};
+
+type ArticleEntityLink = {
+  key: string;
+  name: string;
+  href: string;
 };
 
 export const dynamic = "force-dynamic";
@@ -53,6 +59,8 @@ export async function generateMetadata({ params }: NewsArticlePageProps): Promis
 export default async function NewsArticlePage({ params }: NewsArticlePageProps) {
   const post = await fetchNewsPostBySlug(params.slug);
   if (!post) notFound();
+  const entityLinks = articleEntityLinks(post);
+  const linkedEntities = new Set<string>();
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -83,6 +91,7 @@ export default async function NewsArticlePage({ params }: NewsArticlePageProps) 
           "pro rodeo results",
           "pro rodeo standings"
         ],
+        mentions: articleJsonLdMentions(post),
         author: {
           "@type": "Organization",
           name: post.author
@@ -125,7 +134,7 @@ export default async function NewsArticlePage({ params }: NewsArticlePageProps) 
     ]
   };
   const articleBlocks = post.paragraphs
-    .map((paragraph) => renderArticleBlock(paragraph, post.title))
+    .map((paragraph) => renderArticleBlock(paragraph, post.title, entityLinks, linkedEntities))
     .filter((block): block is ReactNode => block !== null);
 
   return (
@@ -165,6 +174,8 @@ export default async function NewsArticlePage({ params }: NewsArticlePageProps) 
           ))}
         </section>
 
+        <ArticleEntityFooter post={post} />
+
         {post.sourceUrls.length > 0 && (
           <section className="news-source-list">
             <h2>Sources</h2>
@@ -188,13 +199,63 @@ export default async function NewsArticlePage({ params }: NewsArticlePageProps) 
   );
 }
 
+function ArticleEntityFooter({ post }: { post: RodeoNewsPost }) {
+  const hasEntities = post.mentionedAthletes.length > 0 || post.mentionedRodeos.length > 0 || post.mentionedEvents.length > 0;
+  if (!hasEntities) return null;
+
+  return (
+    <section className="news-entity-footer" aria-label="Article mentions">
+      <h2>Article Mentions</h2>
+      <div className="news-entity-footer-grid">
+        {post.mentionedAthletes.length > 0 && (
+          <div className="news-entity-group">
+            <h3>Athletes</h3>
+            <div className="news-entity-links">
+              {post.mentionedAthletes.map((athlete) => (
+                <Link href={`/athletes/${athlete.athleteId}`} key={`athlete-${athlete.athleteId}`}>
+                  {athlete.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+        {post.mentionedRodeos.length > 0 && (
+          <div className="news-entity-group">
+            <h3>Rodeos</h3>
+            <div className="news-entity-links">
+              {post.mentionedRodeos.map((rodeo) => (
+                <Link href={`/results/${rodeo.rodeoId}`} key={`rodeo-${rodeo.rodeoId}`}>
+                  {rodeo.name} Results
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+        {post.mentionedEvents.length > 0 && (
+          <div className="news-entity-group">
+            <h3>Events</h3>
+            <div className="news-entity-links">
+              {post.mentionedEvents.map((event) => (
+                <span key={`event-${event.name}-${event.standingsHref}`}>
+                  <Link href={event.standingsHref}>{event.name} Standings</Link>
+                  {event.resultsHref && <Link href={event.resultsHref}>{event.name} Results</Link>}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function formatNewsDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Recently Published";
   return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(date);
 }
 
-function renderArticleBlock(value: string, articleTitle: string): ReactNode | null {
+function renderArticleBlock(value: string, articleTitle: string, entityLinks: ArticleEntityLink[], linkedEntities: Set<string>): ReactNode | null {
   const trimmed = value.trim();
 
   const image = markdownImage(trimmed);
@@ -209,14 +270,14 @@ function renderArticleBlock(value: string, articleTitle: string): ReactNode | nu
   }
 
   if (isBlockquote(trimmed)) {
-    return <blockquote>{trimmed.split("\n").map((line) => line.replace(/^>\s?/, "")).join(" ")}</blockquote>;
+    return <blockquote>{renderInlineMarkdown(trimmed.split("\n").map((line) => line.replace(/^>\s?/, "")).join(" "), entityLinks, linkedEntities)}</blockquote>;
   }
 
   if (isBulletList(trimmed)) {
     return (
       <ul>
         {trimmed.split("\n").map((line) => (
-          <li key={line}>{renderInlineMarkdown(line.replace(/^[-*]\s+/, ""))}</li>
+          <li key={line}>{renderInlineMarkdown(line.replace(/^[-*]\s+/, ""), entityLinks, linkedEntities)}</li>
         ))}
       </ul>
     );
@@ -226,7 +287,7 @@ function renderArticleBlock(value: string, articleTitle: string): ReactNode | nu
     return (
       <ol>
         {trimmed.split("\n").map((line) => (
-          <li key={line}>{renderInlineMarkdown(line.replace(/^\d+\.\s+/, ""))}</li>
+          <li key={line}>{renderInlineMarkdown(line.replace(/^\d+\.\s+/, ""), entityLinks, linkedEntities)}</li>
         ))}
       </ol>
     );
@@ -246,7 +307,7 @@ function renderArticleBlock(value: string, articleTitle: string): ReactNode | nu
     return <h2>{renderInlineMarkdown(trimmed.replace(/^##\s+/, ""))}</h2>;
   }
 
-  return <p>{renderInlineMarkdown(trimmed)}</p>;
+  return <p>{renderInlineMarkdown(trimmed, entityLinks, linkedEntities)}</p>;
 }
 
 function isBulletList(value: string) {
@@ -275,7 +336,7 @@ function markdownImage(value: string) {
   };
 }
 
-function renderInlineMarkdown(value: string): ReactNode[] {
+function renderInlineMarkdown(value: string, entityLinks: ArticleEntityLink[] = [], linkedEntities = new Set<string>()): ReactNode[] {
   const parts: ReactNode[] = [];
   const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]+\]\([^)]+\))/g;
   let cursor = 0;
@@ -283,7 +344,7 @@ function renderInlineMarkdown(value: string): ReactNode[] {
 
   while ((match = pattern.exec(value))) {
     if (match.index > cursor) {
-      parts.push(value.slice(cursor, match.index));
+      parts.push(...renderLinkedText(value.slice(cursor, match.index), entityLinks, linkedEntities, `text-${cursor}`));
     }
 
     const token = match[0];
@@ -300,19 +361,110 @@ function renderInlineMarkdown(value: string): ReactNode[] {
         )
       );
     } else if (token.startsWith("**")) {
-      parts.push(<strong key={`${token}-${match.index}`}>{token.slice(2, -2)}</strong>);
+      parts.push(<strong key={`${token}-${match.index}`}>{renderLinkedText(token.slice(2, -2), entityLinks, linkedEntities, `strong-${match.index}`)}</strong>);
     } else {
-      parts.push(<em key={`${token}-${match.index}`}>{token.slice(1, -1)}</em>);
+      parts.push(<em key={`${token}-${match.index}`}>{renderLinkedText(token.slice(1, -1), entityLinks, linkedEntities, `em-${match.index}`)}</em>);
     }
 
     cursor = match.index + token.length;
   }
 
   if (cursor < value.length) {
-    parts.push(value.slice(cursor));
+    parts.push(...renderLinkedText(value.slice(cursor), entityLinks, linkedEntities, `text-${cursor}`));
   }
 
   return parts;
+}
+
+function renderLinkedText(value: string, entityLinks: ArticleEntityLink[], linkedEntities: Set<string>, keyPrefix: string): ReactNode[] {
+  if (!entityLinks.length || !value.trim()) return [value];
+
+  const nodes: ReactNode[] = [];
+  let cursor = 0;
+  let linkIndex = 0;
+
+  while (cursor < value.length) {
+    const next = nextEntityMention(value, cursor, entityLinks, linkedEntities);
+    if (!next) {
+      nodes.push(value.slice(cursor));
+      break;
+    }
+
+    if (next.start > cursor) nodes.push(value.slice(cursor, next.start));
+    nodes.push(
+      <Link href={next.entity.href} key={`${keyPrefix}-${next.entity.key}-${linkIndex}`}>
+        {value.slice(next.start, next.end)}
+      </Link>
+    );
+    linkedEntities.add(next.entity.key);
+    cursor = next.end;
+    linkIndex += 1;
+  }
+
+  return nodes;
+}
+
+function nextEntityMention(value: string, cursor: number, entityLinks: ArticleEntityLink[], linkedEntities: Set<string>) {
+  let best: { entity: ArticleEntityLink; start: number; end: number } | null = null;
+  const text = value.slice(cursor);
+
+  for (const entity of entityLinks) {
+    if (linkedEntities.has(entity.key)) continue;
+    const match = new RegExp(`(^|[^A-Za-z0-9])(${escapeRegExp(entity.name)})(?=$|[^A-Za-z0-9])`, "i").exec(text);
+    if (!match) continue;
+    const start = cursor + match.index + match[1].length;
+    const end = start + match[2].length;
+
+    if (!best || start < best.start || (start === best.start && entity.name.length > best.entity.name.length)) {
+      best = { entity, start, end };
+    }
+  }
+
+  return best;
+}
+
+function articleEntityLinks(post: RodeoNewsPost): ArticleEntityLink[] {
+  return [
+    ...post.mentionedAthletes.map((athlete) => ({
+      key: `athlete-${athlete.athleteId}`,
+      name: athlete.name,
+      href: `/athletes/${athlete.athleteId}`
+    })),
+    ...post.mentionedRodeos.map((rodeo) => ({
+      key: `rodeo-${rodeo.rodeoId}`,
+      name: rodeo.name,
+      href: `/results/${rodeo.rodeoId}`
+    })),
+    ...post.mentionedEvents.map((event) => ({
+      key: `event-${event.name.toLowerCase()}-${event.standingsHref}`,
+      name: event.name,
+      href: event.standingsHref
+    }))
+  ].sort((left, right) => right.name.length - left.name.length);
+}
+
+function articleJsonLdMentions(post: RodeoNewsPost) {
+  return [
+    ...post.mentionedAthletes.map((athlete) => ({
+      "@type": "Person",
+      name: athlete.name,
+      url: absoluteUrl(`/athletes/${athlete.athleteId}`)
+    })),
+    ...post.mentionedRodeos.map((rodeo) => ({
+      "@type": "SportsEvent",
+      name: rodeo.name,
+      url: absoluteUrl(`/results/${rodeo.rodeoId}`)
+    })),
+    ...post.mentionedEvents.map((event) => ({
+      "@type": "Thing",
+      name: event.name,
+      url: absoluteUrl(event.standingsHref)
+    }))
+  ];
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function safeMarkdownUrl(value: string) {

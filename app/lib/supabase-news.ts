@@ -1,4 +1,4 @@
-import { newsPosts, type RodeoNewsPost } from "./news";
+import { newsPosts, type NewsMentionedAthlete, type NewsMentionedEvent, type NewsMentionedRodeo, type RodeoNewsPost } from "./news";
 import { supabasePublicUrl, supabasePublishableKey } from "./supabase-config";
 import type { ApiPosition, ApiRodeo, ApiRodeoResults, ApiRound, EventCode } from "./types";
 
@@ -24,6 +24,9 @@ type SupabaseNewsPostRow = {
   tags: string[] | null;
   hero_image: string | null;
   source_urls: string[] | null;
+  mentioned_athletes?: NewsMentionedAthlete[] | null;
+  mentioned_rodeos?: NewsMentionedRodeo[] | null;
+  mentioned_events?: NewsMentionedEvent[] | null;
   featured: boolean;
   story_score: number | null;
   published_at: string | null;
@@ -67,6 +70,9 @@ export type NewsPostInput = {
   tags: string[];
   heroImage?: string;
   sourceUrls: string[];
+  mentionedAthletes: NewsMentionedAthlete[];
+  mentionedRodeos: NewsMentionedRodeo[];
+  mentionedEvents: NewsMentionedEvent[];
   featured: boolean;
   storyScore?: number;
   publishedAt?: string;
@@ -637,6 +643,9 @@ function mapNewsPostRow(row: SupabaseNewsPostRow): RodeoNewsPost {
     featured: row.featured,
     heroImage: row.hero_image ?? undefined,
     sourceUrls: row.source_urls ?? [],
+    mentionedAthletes: normalizeMentionedAthletes(row.mentioned_athletes),
+    mentionedRodeos: normalizeMentionedRodeos(row.mentioned_rodeos),
+    mentionedEvents: normalizeMentionedEvents(row.mentioned_events),
     storyScore: row.story_score ?? undefined,
     tags: row.tags ?? [],
     paragraphs: row.content
@@ -658,6 +667,9 @@ function mapAdminNewsPostRow(row: SupabaseNewsPostRow): AdminNewsPost {
     tags: row.tags ?? [],
     heroImage: row.hero_image ?? undefined,
     sourceUrls: row.source_urls ?? [],
+    mentionedAthletes: normalizeMentionedAthletes(row.mentioned_athletes),
+    mentionedRodeos: normalizeMentionedRodeos(row.mentioned_rodeos),
+    mentionedEvents: normalizeMentionedEvents(row.mentioned_events),
     featured: row.featured,
     storyScore: row.story_score ?? undefined,
     publishedAt: row.published_at ?? undefined,
@@ -697,6 +709,9 @@ function newsPostInputToRow(input: NewsPostInput): SupabaseNewsPostRow {
     tags: input.tags,
     hero_image: input.heroImage || null,
     source_urls: input.sourceUrls,
+    mentioned_athletes: normalizeMentionedAthletes(input.mentionedAthletes),
+    mentioned_rodeos: normalizeMentionedRodeos(input.mentionedRodeos),
+    mentioned_events: normalizeMentionedEvents(input.mentionedEvents),
     featured: input.featured,
     story_score: input.storyScore ?? null,
     published_at: publishedAt,
@@ -706,6 +721,53 @@ function newsPostInputToRow(input: NewsPostInput): SupabaseNewsPostRow {
 
 function normalizeNewsPostStatus(status: string | null | undefined): "draft" | "published" {
   return status?.trim().toLowerCase() === "published" ? "published" : "draft";
+}
+
+function normalizeMentionedAthletes(value: unknown): NewsMentionedAthlete[] {
+  return Array.isArray(value)
+    ? value
+        .map((item) => {
+          const record = isRecord(item) ? item : {};
+          return {
+            name: typeof record.name === "string" ? record.name.trim() : "",
+            athleteId: typeof record.athleteId === "number" ? record.athleteId : Number(record.athleteId)
+          };
+        })
+        .filter((item) => item.name && Number.isInteger(item.athleteId) && item.athleteId > 0)
+    : [];
+}
+
+function normalizeMentionedRodeos(value: unknown): NewsMentionedRodeo[] {
+  return Array.isArray(value)
+    ? value
+        .map((item) => {
+          const record = isRecord(item) ? item : {};
+          return {
+            name: typeof record.name === "string" ? record.name.trim() : "",
+            rodeoId: typeof record.rodeoId === "number" ? record.rodeoId : Number(record.rodeoId)
+          };
+        })
+        .filter((item) => item.name && Number.isInteger(item.rodeoId) && item.rodeoId > 0)
+    : [];
+}
+
+function normalizeMentionedEvents(value: unknown): NewsMentionedEvent[] {
+  return Array.isArray(value)
+    ? value
+        .map((item) => {
+          const record = isRecord(item) ? item : {};
+          return {
+            name: typeof record.name === "string" ? record.name.trim() : "",
+            standingsHref: typeof record.standingsHref === "string" ? record.standingsHref.trim() : "",
+            resultsHref: typeof record.resultsHref === "string" ? record.resultsHref.trim() : undefined
+          };
+        })
+        .filter((item) => item.name && item.standingsHref.startsWith("/"))
+    : [];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 async function discoverRecentStoryCandidates(): Promise<Array<Omit<SupabaseStoryCandidateRow, "id" | "selected" | "article_id" | "created_at">>> {
@@ -960,6 +1022,9 @@ function buildFallbackGeneratedPost(storyPacket: NewsStoryPacket): NewsPostInput
     author: "Rodeo Daily",
     tags: cleanList(["PRCA results", "WPRA results", "pro rodeo results", "PRCA standings", "WPRA standings", event, athlete]),
     sourceUrls,
+    mentionedAthletes: [],
+    mentionedRodeos: [],
+    mentionedEvents: [],
     featured: false,
     storyScore: candidate.relevanceScore,
     publishedAt: ""
