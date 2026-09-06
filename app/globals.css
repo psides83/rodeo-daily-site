@@ -6631,6 +6631,11 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
 }
 
 @media (max-width: 760px) and (orientation: portrait) {
+  html,
+  body {
+    background: var(--app-bg);
+  }
+
   .phone-surface {
     --mobile-tab-bar-bottom: calc(env(safe-area-inset-bottom) + 20px);
     --mobile-tab-scroll-bottom: calc(132px + env(safe-area-inset-bottom));
@@ -6705,6 +6710,7 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
   }
 
   .home-seo-section {
+    display: none;
     padding: 18px;
     border-radius: 16px;
   }
@@ -6833,7 +6839,9 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
   }
 
   .browser-stage {
+    min-height: 100dvh;
     padding: 0;
+    background: var(--app-bg);
   }
 
   .app-window {
