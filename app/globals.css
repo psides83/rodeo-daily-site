@@ -6631,6 +6631,12 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
 }
 
 @media (max-width: 760px) and (orientation: portrait) {
+  .phone-surface {
+    --mobile-tab-bar-bottom: calc(env(safe-area-inset-bottom) + 20px);
+    --mobile-tab-scroll-bottom: calc(132px + env(safe-area-inset-bottom));
+    min-height: 100dvh;
+  }
+
   .marketing-page {
     padding: 12px;
   }
@@ -6831,7 +6837,7 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
   }
 
   .app-window {
-    min-height: 100vh;
+    min-height: 100dvh;
     border: 0;
     border-radius: 0;
   }
@@ -6886,7 +6892,7 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
 
   .content-grid {
     display: block;
-    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   .sidebar {
@@ -6906,13 +6912,13 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
   }
 
   .tab-scroll {
-    height: 100vh;
+    height: 100dvh;
     min-height: 0;
     width: 100%;
     max-width: 100vw;
     overflow-x: hidden;
     overflow-y: auto;
-    padding: 10px 0 112px;
+    padding: 10px 0 var(--mobile-tab-scroll-bottom);
   }
 
   .stack,
@@ -6926,7 +6932,7 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
   }
 
   .phone-surface.has-context-strip .tab-scroll {
-    height: calc(100vh - 80px);
+    height: calc(100dvh - 80px);
   }
 
   .stack {
@@ -6995,7 +7001,7 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
   .tab-bar {
     display: grid;
     right: 10px;
-    bottom: 20px;
+    bottom: var(--mobile-tab-bar-bottom);
     left: 10px;
   }
 
@@ -7122,8 +7128,12 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
 }
 
 @media (max-width: 430px) {
+  .phone-surface {
+    --mobile-tab-scroll-bottom: calc(124px + env(safe-area-inset-bottom));
+  }
+
   .tab-scroll {
-    padding: 8px 0 110px;
+    padding: 8px 0 var(--mobile-tab-scroll-bottom);
   }
 
   .stack {
@@ -7402,7 +7412,7 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
   }
 
   .tab-scroll {
-    padding: 24px 0 132px;
+    padding: 24px 0 var(--mobile-tab-scroll-bottom);
   }
 
   .stack {
