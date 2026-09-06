@@ -1,5 +1,4 @@
 import { newsPostUrl } from "../../lib/news";
-import { absoluteUrl } from "../../lib/seo";
 import { fetchPublishedNewsPosts } from "../../lib/supabase-news";
 
 const newsSitemapWindowMs = 2 * 24 * 60 * 60 * 1000;
@@ -8,17 +7,12 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const cutoff = Date.now() - newsSitemapWindowMs;
-  const posts = (await fetchPublishedNewsPosts())
-    .filter((post) => {
-      const publishedAt = new Date(post.publishedAt).getTime();
-      return Number.isFinite(publishedAt) && publishedAt >= cutoff;
-    })
-    .slice(0, 1000);
+  const posts = (await fetchPublishedNewsPosts()).slice(0, 1000);
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
-${posts.map(newsSitemapItem).join("\n")}
+${posts.map((post) => newsSitemapItem(post, cutoff)).join("\n")}
 </urlset>`;
 
   return new Response(xml, {
@@ -29,17 +23,20 @@ ${posts.map(newsSitemapItem).join("\n")}
   });
 }
 
-function newsSitemapItem(post: Awaited<ReturnType<typeof fetchPublishedNewsPosts>>[number]) {
+function newsSitemapItem(post: Awaited<ReturnType<typeof fetchPublishedNewsPosts>>[number], cutoff: number) {
+  const publishedAt = new Date(post.publishedAt).getTime();
+  const isRecentNews = Number.isFinite(publishedAt) && publishedAt >= cutoff;
+
   return `  <url>
     <loc>${escapeXml(newsPostUrl(post))}</loc>
-    <news:news>
+${isRecentNews ? `    <news:news>
       <news:publication>
         <news:name>Rodeo Daily</news:name>
         <news:language>en</news:language>
       </news:publication>
       <news:publication_date>${escapeXml(post.publishedAt)}</news:publication_date>
       <news:title>${escapeXml(post.title)}</news:title>
-    </news:news>
+    </news:news>` : ""}
   </url>`;
 }
 
