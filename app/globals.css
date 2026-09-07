@@ -3575,6 +3575,29 @@ html[data-theme="dark"] .ios-app-card {
   border-color: var(--line);
 }
 
+html[data-theme="dark"] .draw-list,
+html[data-theme="dark"] .reride-list {
+  border-color: rgba(188, 188, 207, 0.16);
+  background: rgba(15, 20, 17, 0.62);
+}
+
+html[data-theme="dark"] .draw-row {
+  border-top-color: rgba(188, 188, 207, 0.12);
+}
+
+html[data-theme="dark"] .draw-row strong {
+  color: var(--app-primary);
+}
+
+html[data-theme="dark"] .draw-row p {
+  color: rgba(188, 188, 207, 0.76);
+}
+
+html[data-theme="dark"] .draw-row.turnout strong,
+html[data-theme="dark"] .draw-row.turnout p {
+  color: rgba(188, 188, 207, 0.46);
+}
+
 html[data-theme="dark"] .select-chip,
 html[data-theme="dark"] .chip-button,
 html[data-theme="dark"] .date-range-filter,

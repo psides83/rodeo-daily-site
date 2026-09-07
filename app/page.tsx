@@ -6,7 +6,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PwaRegister } from "./pwa-register";
 import { GoogleAdsController } from "./components/google-ads";
 import {
   CookieConsentBanner,
@@ -956,7 +955,6 @@ export default function Home() {
 
   return (
     <main className="browser-stage">
-      <PwaRegister />
       {preferencesLoaded && <GoogleAdsController consent={appSettings.adConsent} />}
       <section className="app-window" aria-label="Rodeo Daily web app">
         {showIosAppBanner && <IosAppPromoBanner onDismiss={dismissIosAppBanner} />}

@@ -4,6 +4,7 @@ import { ThemeSync } from "./components/theme-sync";
 import { appSettingsStorageKey } from "./lib/local-preferences";
 import { absoluteUrl, seoKeywords, siteDescription, siteUrl } from "./lib/seo";
 import { darkThemeVariables, defaultSettings, themeVariables } from "./lib/theme";
+import { PwaRegister } from "./pwa-register";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -138,6 +139,7 @@ export default function RootLayout({
           }}
         />
         <ThemeSync />
+        <PwaRegister />
         {children}
         <Analytics />
       </body>

@@ -29,6 +29,9 @@ const tourIds: Record<string, string> = {
   playoffSeries: "17"
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const resource = searchParams.get("resource");
@@ -186,11 +189,11 @@ function nfrStandingsUrl(searchParams: URLSearchParams) {
 
 async function proxy(url: URL) {
   const response = await fetch(url, {
+    cache: "no-store",
     headers: {
       "Cache-Control": "no-cache",
       Pragma: "no-cache"
-    },
-    next: { revalidate: 60 }
+    }
   });
 
   if (!response.ok) {

@@ -1,4 +1,4 @@
-const CACHE_NAME = "rodeo-daily-shell-v4";
+const CACHE_NAME = "rodeo-daily-shell-v5";
 const APP_SHELL = [
   "/manifest.webmanifest",
   "/rodeo-daily-icon.png",
@@ -34,6 +34,11 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (requestUrl.pathname.startsWith("/_next/")) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  if (requestUrl.pathname.startsWith("/api/")) {
     event.respondWith(fetch(event.request));
     return;
   }
