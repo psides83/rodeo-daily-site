@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const canonicalHost = "prorodeoresults.app";
-const redirectHosts = new Set(["www.prorodeoresults.app", "rodeo-daily-site.vercel.app"]);
+const canonicalHost = "www.prorodeoresults.app";
+const redirectHosts = new Set(["prorodeoresults.app", "rodeo-daily-site.vercel.app"]);
 
 export function middleware(request: NextRequest) {
   const host = request.headers.get("host")?.split(":")[0].toLowerCase();
