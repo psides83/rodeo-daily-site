@@ -1735,6 +1735,100 @@ html[data-theme="dark"] .app-window {
   color: var(--app-primary);
 }
 
+.pwa-install-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(30, 33, 30, 0.28);
+  backdrop-filter: blur(10px);
+}
+
+.pwa-install-card {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  width: min(420px, 100%);
+  padding: 20px;
+  border: 1px solid rgba(160, 138, 89, 0.28);
+  border-radius: 16px;
+  background: var(--card-bg-strong);
+  box-shadow: 0 24px 72px rgba(30, 33, 30, 0.26);
+}
+
+.pwa-install-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(107, 111, 118, 0.12);
+  color: var(--app-primary);
+}
+
+.pwa-install-icon {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border: 1px solid rgba(160, 138, 89, 0.3);
+  border-radius: 16px;
+  background: rgba(160, 138, 89, 0.12);
+  color: var(--app-secondary);
+}
+
+.pwa-install-copy {
+  display: grid;
+  gap: 8px;
+  padding-right: 28px;
+}
+
+.pwa-install-copy h2 {
+  margin: 0;
+  color: var(--app-primary);
+  font-size: 1.28rem;
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+
+.pwa-install-copy p,
+.pwa-install-actions p {
+  margin: 0;
+  color: var(--app-tertiary);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.pwa-install-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.pwa-install-actions button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(160, 138, 89, 0.24);
+  border-radius: 999px;
+  background: rgba(160, 138, 89, 0.08);
+  color: var(--app-primary);
+  font-weight: 900;
+}
+
+.pwa-install-actions .primary {
+  border-color: rgba(160, 138, 89, 0.5);
+  background: var(--app-secondary);
+  color: var(--button-active-text);
+}
+
 .top-toolbar {
   position: relative;
   display: flex;
@@ -3496,6 +3590,7 @@ html[data-theme="dark"] .load-more-button {
 }
 
 html[data-theme="dark"] .ios-app-promo-banner,
+html[data-theme="dark"] .pwa-install-card,
 html[data-theme="dark"] .follow-alerts-panel,
 html[data-theme="dark"] .athlete-bio-document {
   background: var(--card-bg-strong);
@@ -3539,6 +3634,7 @@ html[data-theme="dark"] .seo-page-footer a {
 }
 
 html[data-theme="dark"] .ios-app-promo-banner > button,
+html[data-theme="dark"] .pwa-install-close,
 html[data-theme="dark"] .header-search button,
 html[data-theme="dark"] .active-date-filter-chip button {
   background: rgba(188, 188, 207, 0.12);
@@ -3549,6 +3645,7 @@ html[data-theme="dark"] .rank-badge,
 html[data-theme="dark"] .rodeo-card-date-row em,
 html[data-theme="dark"] .cookie-consent-actions .primary,
 html[data-theme="dark"] .consent-choice.active,
+html[data-theme="dark"] .pwa-install-actions .primary,
 html[data-theme="dark"] .appearance-choice.active {
   color: #171b18;
 }
@@ -6892,6 +6989,34 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
     grid-column: 2;
     align-self: center;
     justify-self: end;
+  }
+
+  .pwa-install-dialog {
+    align-items: end;
+    padding: 12px;
+  }
+
+  .pwa-install-card {
+    gap: 12px;
+    padding: 18px;
+    border-radius: 16px;
+  }
+
+  .pwa-install-copy {
+    padding-right: 24px;
+  }
+
+  .pwa-install-copy h2 {
+    font-size: 1.12rem;
+  }
+
+  .pwa-install-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .pwa-install-actions button {
+    width: 100%;
   }
 
   .top-toolbar {

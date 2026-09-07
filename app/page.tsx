@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, CircleDollarSign, ListOrdered, MonitorSmartphone, Newspaper, Search, Settings, ShieldCheck, Trophy, Users, X } from "lucide-react";
+import { Calendar, CircleDollarSign, Download, ListOrdered, MonitorSmartphone, Newspaper, Search, Settings, ShieldCheck, Trophy, Users, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -128,6 +128,12 @@ const moreSectionRoutes = Object.entries(moreSectionRouteValues).reduce(
 
 const iosAppStoreUrl = "https://apps.apple.com/us/app/rodeo-daily/id1671624492";
 const iosAppBannerDismissedKey = "rodeodaily.iosAppBannerDismissed";
+const pwaInstallDialogDismissedKey = "rodeodaily.pwaInstallDialogDismissed";
+
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+};
 
 const homepageSeoLinks = [
   { href: "/prca-results", label: "PRCA Results" },
@@ -173,11 +179,14 @@ function updateDocumentSeo(title: string, description: string) {
   descriptionTag.content = description;
 }
 
-function isAppleDevice() {
+function isIosDevice() {
   const userAgent = navigator.userAgent || "";
   const platform = navigator.platform || "";
-  const maxTouchPoints = navigator.maxTouchPoints || 0;
-  return /iPhone|iPad|iPod|Macintosh/.test(userAgent) || /Mac/.test(platform) || (platform === "MacIntel" && maxTouchPoints > 1);
+  return /iPhone|iPad|iPod/.test(userAgent) || (platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function isPwaStandalone() {
+  return window.matchMedia("(display-mode: standalone)").matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
 }
 
 function IosAppPromoBanner({ onDismiss }: { onDismiss: () => void }) {
@@ -196,6 +205,48 @@ function IosAppPromoBanner({ onDismiss }: { onDismiss: () => void }) {
       <button type="button" aria-label="Dismiss iOS app banner" onClick={onDismiss}>
         <X size={16} />
       </button>
+    </section>
+  );
+}
+
+function PwaInstallHelperDialog({
+  canInstall,
+  onDismiss,
+  onInstall
+}: {
+  canInstall: boolean;
+  onDismiss: () => void;
+  onInstall: () => void;
+}) {
+  return (
+    <section className="pwa-install-dialog" role="dialog" aria-modal="true" aria-labelledby="pwa-install-title">
+      <div className="pwa-install-card">
+        <button className="pwa-install-close" type="button" aria-label="Dismiss install helper" onClick={onDismiss}>
+          <X size={18} />
+        </button>
+        <div className="pwa-install-icon" aria-hidden="true">
+          <Download size={24} />
+        </div>
+        <div className="pwa-install-copy">
+          <h2 id="pwa-install-title">Use Rodeo Daily as an app</h2>
+          <p>
+            Add Rodeo Daily to your home screen or desktop for a faster app-style launch, full-screen browsing, and quick access to
+            standings, results, schedules, and favorites.
+          </p>
+        </div>
+        <div className="pwa-install-actions">
+          {canInstall ? (
+            <button className="primary" type="button" onClick={onInstall}>
+              Install App
+            </button>
+          ) : (
+            <p>Open your browser menu and choose Install app or Add to Home screen.</p>
+          )}
+          <button type="button" onClick={onDismiss}>
+            Not Now
+          </button>
+        </div>
+      </div>
     </section>
   );
 }
@@ -283,6 +334,8 @@ export default function Home() {
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const [followAlertsOpen, setFollowAlertsOpen] = useState(false);
   const [showIosAppBanner, setShowIosAppBanner] = useState(false);
+  const [showPwaInstallDialog, setShowPwaInstallDialog] = useState(false);
+  const [pwaInstallPrompt, setPwaInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [moreSection, setMoreSection] = useState<MoreSection>("menu");
   const [standingsState, setStandingsState] = useState<LoadState>("idle");
   const [resultsState, setResultsState] = useState<LoadState>("idle");
@@ -394,7 +447,39 @@ export default function Home() {
 
   useEffect(() => {
     const dismissed = window.localStorage.getItem(iosAppBannerDismissedKey) === "true";
-    setShowIosAppBanner(isAppleDevice() && !dismissed);
+    setShowIosAppBanner(isIosDevice() && !dismissed);
+  }, []);
+
+  useEffect(() => {
+    if (isIosDevice() || isPwaStandalone() || window.localStorage.getItem(pwaInstallDialogDismissedKey) === "true") {
+      return;
+    }
+
+    const showFallbackTimer = window.setTimeout(() => {
+      setShowPwaInstallDialog((current) => current || !isPwaStandalone());
+    }, 1800);
+
+    function handleBeforeInstallPrompt(event: Event) {
+      event.preventDefault();
+      window.clearTimeout(showFallbackTimer);
+      setPwaInstallPrompt(event as BeforeInstallPromptEvent);
+      setShowPwaInstallDialog(true);
+    }
+
+    function handleAppInstalled() {
+      window.localStorage.setItem(pwaInstallDialogDismissedKey, "true");
+      setShowPwaInstallDialog(false);
+      setPwaInstallPrompt(null);
+    }
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+
+    return () => {
+      window.clearTimeout(showFallbackTimer);
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
+    };
   }, []);
 
   useEffect(() => {
@@ -850,12 +935,38 @@ export default function Home() {
     setShowIosAppBanner(false);
   }
 
+  function dismissPwaInstallDialog() {
+    window.localStorage.setItem(pwaInstallDialogDismissedKey, "true");
+    setShowPwaInstallDialog(false);
+  }
+
+  async function installPwa() {
+    if (!pwaInstallPrompt) {
+      return;
+    }
+
+    const promptEvent = pwaInstallPrompt;
+    setPwaInstallPrompt(null);
+    await promptEvent.prompt();
+    const choice = await promptEvent.userChoice;
+    if (choice.outcome === "accepted") {
+      dismissPwaInstallDialog();
+    }
+  }
+
   return (
     <main className="browser-stage">
       <PwaRegister />
       {preferencesLoaded && <GoogleAdsController consent={appSettings.adConsent} />}
       <section className="app-window" aria-label="Rodeo Daily web app">
         {showIosAppBanner && <IosAppPromoBanner onDismiss={dismissIosAppBanner} />}
+        {showPwaInstallDialog && (
+          <PwaInstallHelperDialog
+            canInstall={Boolean(pwaInstallPrompt)}
+            onDismiss={dismissPwaInstallDialog}
+            onInstall={installPwa}
+          />
+        )}
         {preferencesLoaded && <CookieConsentBanner consent={appSettings.adConsent} onChoose={updateAdConsent} />}
         <header className="top-toolbar">
           <div className="identity">

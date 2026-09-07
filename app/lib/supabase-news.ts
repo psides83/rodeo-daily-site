@@ -179,7 +179,7 @@ export async function fetchPublishedNewsPosts() {
 
   try {
     const rows = await fetchPublishedNewsPostRows();
-    return rows.map(mapNewsPostRow);
+    return rows.length ? rows.map(mapNewsPostRow) : fallbackPublishedPosts();
   } catch {
     return fallbackPublishedPosts();
   }
