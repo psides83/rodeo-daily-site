@@ -2522,6 +2522,118 @@ html[data-theme="dark"] .app-window {
   max-width: 100% !important;
 }
 
+.house-ad-shell {
+  min-height: 0;
+  padding: 8px;
+  border-style: solid;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.42)),
+    color-mix(in srgb, var(--card-bg) 80%, var(--page-bg));
+}
+
+.house-ad-shell > span {
+  justify-self: start;
+  padding-left: 4px;
+}
+
+.house-ad-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 108px;
+  padding: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(107, 111, 118, 0.14);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.9), transparent 34%),
+    rgba(255, 255, 255, 0.68);
+  color: var(--app-primary);
+  text-decoration: none;
+  box-shadow: 0 10px 24px rgba(30, 33, 30, 0.08);
+}
+
+.house-ad-icon {
+  display: inline-grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--app-primary);
+}
+
+.house-ad-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.house-ad-copy strong {
+  color: var(--app-secondary);
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.house-ad-copy b {
+  min-width: 0;
+  color: var(--app-primary);
+  font-size: clamp(0.98rem, 2vw, 1.18rem);
+  line-height: 1.15;
+}
+
+.house-ad-copy em {
+  min-width: 0;
+  color: var(--app-tertiary);
+  font-size: 0.86rem;
+  font-style: normal;
+  font-weight: 680;
+  line-height: 1.35;
+}
+
+.house-ad-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--app-primary);
+  color: var(--button-active-text);
+  font-size: 0.82rem;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.house-ad-app .house-ad-icon,
+.house-ad-app .house-ad-cta {
+  background: #235b66;
+}
+
+.house-ad-daily .house-ad-icon,
+.house-ad-daily .house-ad-cta {
+  background: #7d3228;
+}
+
+.house-ad-roping .house-ad-icon,
+.house-ad-roping .house-ad-cta {
+  background: #5f5133;
+}
+
+.house-ad-video .house-ad-icon,
+.house-ad-video .house-ad-cta {
+  background: #354f7c;
+}
+
+.house-ad-podcast .house-ad-icon,
+.house-ad-podcast .house-ad-cta {
+  background: #4d5d52;
+}
+
 .header-card {
   display: grid;
   gap: 8px;
@@ -7171,6 +7283,15 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
   .champions-reference-card dl,
   .nfr-season-card dl {
     grid-template-columns: 1fr;
+  }
+
+  .house-ad-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .house-ad-cta {
+    grid-column: 1 / -1;
+    width: 100%;
   }
 
   .news-shell,

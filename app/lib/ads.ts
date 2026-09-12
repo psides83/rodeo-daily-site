@@ -12,6 +12,7 @@ export type AdPlacement =
   | "generalMediumRectangle";
 
 export const adsensePublisherId = "ca-pub-4837925489125062";
+export const houseAdsEnabled = process.env.NEXT_PUBLIC_ENABLE_ADSENSE !== "true";
 
 export const adsenseSlots: Partial<Record<AdPlacement, string | undefined>> = {
   standingsListInline: process.env.NEXT_PUBLIC_ADSENSE_SLOT_STANDINGS_LIST ?? "5395053591",
