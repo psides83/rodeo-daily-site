@@ -1,7 +1,7 @@
 "use client";
 
 import { Clapperboard, Mic2, PlayCircle, Radio, Smartphone } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   adsensePublisherId,
   adsenseSlots,
@@ -30,15 +30,16 @@ type HouseAd = {
   cta: string;
   theme: "app" | "video" | "podcast" | "roping" | "daily";
   icon: typeof Smartphone;
+  imageUrl?: string;
 };
 
 const houseAds: HouseAd[] = [
   {
-    eyebrow: "Rodeo Daily App",
+    eyebrow: "Rodeo Daily iOS App",
     title: "Follow standings, results, schedules, and favorites on iPhone.",
-    body: "Get the Rodeo Daily app for quick season checks, athlete tracking, and rodeo updates from your home screen.",
+    body: "Download the iOS app for quick season checks, athlete tracking, and rodeo updates from your iPhone home screen.",
     href: "https://apps.apple.com/us/app/rodeo-daily/id1671624492",
-    cta: "View on App Store",
+    cta: "Download",
     theme: "app",
     icon: Smartphone
   },
@@ -49,7 +50,8 @@ const houseAds: HouseAd[] = [
     href: "https://www.youtube.com/@calfropingdaily",
     cta: "Watch on YouTube",
     theme: "daily",
-    icon: PlayCircle
+    icon: PlayCircle,
+    imageUrl: "https://yt3.googleusercontent.com/HsUqv3VpRHL1o9Z_zkvRJmtCRRY5Ol1Uyp37Fqa87zeJu3jGvINpwM-jK8F-InmmSibzaaPxBw=s900-c-k-c0x00ffffff-no-rj"
   },
   {
     eyebrow: "CalfRoper6.0",
@@ -58,7 +60,8 @@ const houseAds: HouseAd[] = [
     href: "https://www.youtube.com/@CalfRoper6.0",
     cta: "Open Channel",
     theme: "roping",
-    icon: Clapperboard
+    icon: Clapperboard,
+    imageUrl: "https://yt3.googleusercontent.com/LQfGctIbTeVamGdrf_P-sPFyR6jHFL-NaWGUYUx-ofcBNRqQQ44o-CfnwR4wsLhy32I3jyqlsA=s900-c-k-c0x00ffffff-no-rj"
   },
   {
     eyebrow: "Roping Boyz",
@@ -67,7 +70,8 @@ const houseAds: HouseAd[] = [
     href: "https://www.youtube.com/@RopingBoyz",
     cta: "Watch Videos",
     theme: "video",
-    icon: Radio
+    icon: Radio,
+    imageUrl: "https://yt3.googleusercontent.com/ZTsd7WrYre57kU-7QqEeSuW2D2nMgI5oIv1RiwfUWWNFJGRV96ww69iPZP8OxnvGKI2FU19S=s900-c-k-c0x00ffffff-no-rj"
   },
   {
     eyebrow: "The Rope Cast",
@@ -76,9 +80,32 @@ const houseAds: HouseAd[] = [
     href: "https://www.youtube.com/@TheRopeCast",
     cta: "Visit Channel",
     theme: "podcast",
-    icon: Mic2
+    icon: Mic2,
+    imageUrl: "https://yt3.googleusercontent.com/gGwCuXhcwmUKtIKLB1mEZQg2P2qJfFHOxYVZfluBaVJ0R-kC4eXYmmaWSJKlN6H8w08V1zY2=s900-c-k-c0x00ffffff-no-rj"
   }
 ];
+
+let houseAdDeck: HouseAd[] = [];
+
+function shuffleHouseAds() {
+  const shuffled = [...houseAds];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+  }
+  return shuffled;
+}
+
+function drawHouseAd(previousAd?: HouseAd) {
+  if (houseAdDeck.length === 0) {
+    houseAdDeck = shuffleHouseAds();
+    if (previousAd && houseAdDeck[0] === previousAd && houseAdDeck.length > 1) {
+      [houseAdDeck[0], houseAdDeck[1]] = [houseAdDeck[1], houseAdDeck[0]];
+    }
+  }
+
+  return houseAdDeck.shift() ?? houseAds[0];
+}
 
 export function GoogleAdsController({ consent }: { consent: AppSettings["adConsent"] }) {
   useEffect(() => {
@@ -116,7 +143,7 @@ export function GoogleAdSlot({
 }) {
   const pushedRef = useRef(false);
   const slot = adsenseSlots[placement];
-  const houseAd = houseAdForPlacement(placement);
+  const [houseAd, setHouseAd] = useState(() => houseAdForPlacement(placement));
 
   useEffect(() => {
     if (houseAdsEnabled || !slot || pushedRef.current) return;
@@ -128,6 +155,11 @@ export function GoogleAdSlot({
       pushedRef.current = false;
     }
   }, [slot]);
+
+  useEffect(() => {
+    if (!houseAdsEnabled) return;
+    setHouseAd((currentAd) => drawHouseAd(currentAd));
+  }, []);
 
   if (houseAdsEnabled) {
     return <HouseAdSlot ad={houseAd} className={className} placement={placement} />;
@@ -157,15 +189,27 @@ function HouseAdSlot({ ad, className, placement }: { ad: HouseAd; className: str
     <aside className={`google-ad-shell house-ad-shell house-ad-${ad.theme} ${className}`} data-placement={placement} aria-label="Promoted rodeo link">
       <span>Promoted</span>
       <a className="house-ad-card" href={ad.href} target="_blank" rel="noreferrer">
-        <span className="house-ad-icon" aria-hidden="true">
-          <Icon size={22} />
+        <span className={ad.imageUrl ? "house-ad-icon house-ad-avatar" : "house-ad-icon"} aria-hidden="true">
+          {ad.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={ad.imageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" />
+          ) : (
+            <Icon size={22} />
+          )}
         </span>
         <span className="house-ad-copy">
           <strong>{ad.eyebrow}</strong>
           <b>{ad.title}</b>
           <em>{ad.body}</em>
         </span>
-        <span className="house-ad-cta">{ad.cta}</span>
+        {ad.theme === "app" ? (
+          <span className="house-ad-store-badge">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/app-store-badge.svg" alt="Download on the App Store" />
+          </span>
+        ) : (
+          <span className="house-ad-cta">{ad.cta}</span>
+        )}
       </a>
     </aside>
   );
