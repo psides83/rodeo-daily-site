@@ -42,6 +42,7 @@ import {
   saveFollowedAthletes,
   toggleSavedAthlete
 } from "./lib/local-preferences";
+import { currentNfrSeasonLabel } from "./lib/nfr";
 import { applyAppTheme, defaultSettings, resolveAppearanceMode } from "./lib/theme";
 import type {
   ApiBusinessJournalResponse,
@@ -355,7 +356,7 @@ export default function Home() {
     if (activeTab === "Results") return `${resultEvent} Rodeo Results`;
     if (isScheduleViewActive) return "Upcoming Rodeos";
     if (moreSection === "favorites") return `${followedAthletes.length} followed athletes`;
-    if (moreSection === "nfr") return `${nfrEvent} NFR standings`;
+    if (moreSection === "nfr") return `${currentNfrSeasonLabel} ${nfrEvent} standings`;
     if (moreSection === "listings") return "Rodeo business listings and schedule details";
     if (moreSection === "champions") return "Historic PRCA world champions";
     if (moreSection === "settings") return "Preferences and app info";

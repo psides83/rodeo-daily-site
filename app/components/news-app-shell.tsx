@@ -18,7 +18,7 @@ const moreLinks = [
   { label: "Favorite Athletes", href: "/?tab=more&section=favorites", icon: Users },
   { label: "NFR Standings", href: "/?tab=more&section=nfr", icon: Trophy },
   { label: "Rodeo Listings", href: "/?tab=more&section=listings", icon: Newspaper },
-  { label: "Past Champions", href: "/?tab=more&section=champions", icon: ShieldCheck },
+  { label: "Past Champions", href: "/past-champions", icon: ShieldCheck },
   { label: "Settings", href: "/?tab=more&section=settings", icon: Settings }
 ];
 

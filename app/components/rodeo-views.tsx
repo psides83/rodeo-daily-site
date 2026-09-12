@@ -76,6 +76,7 @@ import {
   standingTypeOptions,
   topChampionCounts
 } from "../lib/rodeo-data";
+import { currentNfrSeasonLabel } from "../lib/nfr";
 
 const athletePlaceholderImage = "/noimage.png";
 
@@ -1274,7 +1275,7 @@ function NfrStandingsView({
       <section className="app-card nfr-header-card">
         <div className="nfr-header-main">
           <div>
-            <h2>NFR</h2>
+            <h2>{currentNfrSeasonLabel}</h2>
             <p>{event}</p>
           </div>
           <div className="nfr-header-actions">
@@ -1283,7 +1284,7 @@ function NfrStandingsView({
           </div>
         </div>
         <div className="nfr-status-line">
-          {currentRound ? <span>Current through Round {currentRound}</span> : null}
+          {currentRound ? <span>{currentNfrSeasonLabel} through Round {currentRound}</span> : null}
           <span>Sorted by {sort}</span>
         </div>
       </section>
@@ -1479,6 +1480,11 @@ function SettingsView({
           <a href="/support">
             <CircleHelp size={17} />
             <span>App Support</span>
+            <ChevronRight size={16} />
+          </a>
+          <a href="/past-champions">
+            <ShieldCheck size={17} />
+            <span>Past Champions Reference</span>
             <ChevronRight size={16} />
           </a>
           <a href="/privacy">

@@ -125,6 +125,7 @@ export default function AboutPage() {
             <Link href="/standings">Standings</Link>
             <Link href="/results">Results</Link>
             <Link href="/schedule">Schedule</Link>
+            <Link href="/past-champions">Past Champions</Link>
             <Link href="/support">Support</Link>
             <Link href="/privacy">Privacy Policy</Link>
           </nav>

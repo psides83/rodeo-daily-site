@@ -74,6 +74,7 @@ export function SeoLandingPage({
           <Link href="/prca-standings">PRCA Standings</Link>
           <Link href="/wpra-results">WPRA Results</Link>
           <Link href="/wpra-standings">WPRA Standings</Link>
+          <Link href="/past-champions">Past Champions</Link>
           <Link href="/about">About Rodeo Daily</Link>
           <Link href="/news">Rodeo News</Link>
           <Link href="/ios-app">iOS App</Link>

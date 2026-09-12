@@ -1260,6 +1260,290 @@ html[data-theme="dark"] .app-window {
   text-decoration: none;
 }
 
+.past-champions-shell {
+  width: min(1080px, 100%);
+}
+
+.champions-reference-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  gap: clamp(16px, 3vw, 28px);
+  align-items: center;
+  padding: clamp(16px, 3vw, 24px);
+}
+
+.champions-reference-card > div {
+  display: grid;
+  gap: 8px;
+}
+
+.champions-reference-card span,
+.champion-event-summary h2 {
+  color: var(--app-secondary);
+}
+
+.champions-reference-card span {
+  font-size: 0.78rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.champions-reference-card h2,
+.champion-event-summary h2 {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+.champions-reference-card h2 {
+  color: var(--app-primary);
+  font-size: clamp(1.45rem, 4vw, 2.1rem);
+}
+
+.champions-reference-card p,
+.champion-event-summary p {
+  margin: 0;
+  color: var(--app-tertiary);
+  font-weight: 680;
+  line-height: 1.5;
+}
+
+.champions-reference-card dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.champions-reference-card dl > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(107, 111, 118, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.champions-reference-card dt {
+  color: var(--app-tertiary);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.champions-reference-card dd {
+  margin: 0;
+  color: var(--app-primary);
+  font-size: 1.22rem;
+  font-weight: 950;
+}
+
+.champions-seo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.champion-event-summary {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: clamp(16px, 2.6vw, 22px);
+}
+
+.champion-event-summary h2 {
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.champion-event-summary ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.champion-event-summary li {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 2px 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid rgba(107, 111, 118, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.56);
+}
+
+.champion-event-summary li span {
+  grid-row: span 2;
+  color: var(--app-secondary);
+  font-weight: 950;
+}
+
+.champion-event-summary li strong {
+  min-width: 0;
+  color: var(--app-primary);
+  font-weight: 950;
+}
+
+.champion-event-summary li em {
+  min-width: 0;
+  color: var(--app-tertiary);
+  font-size: 0.86rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.nfr-seo-shell {
+  width: min(1080px, 100%);
+}
+
+.nfr-season-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  gap: clamp(16px, 3vw, 28px);
+  align-items: center;
+  padding: clamp(16px, 3vw, 24px);
+}
+
+.nfr-season-card > div {
+  display: grid;
+  gap: 8px;
+}
+
+.nfr-season-card span,
+.nfr-event-summary-heading span {
+  color: var(--app-secondary);
+  font-size: 0.78rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.nfr-season-card h2,
+.nfr-event-summary h2 {
+  margin: 0;
+  color: var(--app-primary);
+  letter-spacing: 0;
+}
+
+.nfr-season-card h2 {
+  font-size: clamp(1.45rem, 4vw, 2.1rem);
+}
+
+.nfr-season-card p,
+.nfr-event-summary p {
+  margin: 0;
+  color: var(--app-tertiary);
+  font-weight: 680;
+  line-height: 1.5;
+}
+
+.nfr-season-card dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.nfr-season-card dl > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(107, 111, 118, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.nfr-season-card dt {
+  color: var(--app-tertiary);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.nfr-season-card dd {
+  margin: 0;
+  color: var(--app-primary);
+  font-size: 1.22rem;
+  font-weight: 950;
+}
+
+.nfr-seo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.nfr-event-summary {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: clamp(16px, 2.6vw, 22px);
+}
+
+.nfr-event-summary-heading {
+  display: grid;
+  gap: 8px;
+}
+
+.nfr-event-summary h2 {
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.nfr-event-summary ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nfr-event-summary li {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid rgba(107, 111, 118, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.56);
+}
+
+.nfr-event-summary li > span {
+  display: inline-grid;
+  min-height: 34px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--app-secondary);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.nfr-event-summary li div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.nfr-event-summary li strong {
+  min-width: 0;
+  color: var(--app-primary);
+  font-weight: 950;
+}
+
+.nfr-event-summary li em {
+  min-width: 0;
+  color: var(--app-tertiary);
+  font-size: 0.86rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .privacy-page-shell {
   width: min(860px, 100%);
 }
@@ -6874,6 +7158,18 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
   }
 
   .seo-page-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .champions-reference-card,
+  .nfr-season-card,
+  .champions-seo-grid,
+  .nfr-seo-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .champions-reference-card dl,
+  .nfr-season-card dl {
     grid-template-columns: 1fr;
   }
 
