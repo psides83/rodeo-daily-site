@@ -1,4 +1,4 @@
-import { Calendar, CircleDollarSign, ListOrdered, MonitorSmartphone, Newspaper, Settings, ShieldCheck, Trophy, Users } from "lucide-react";
+import { Calendar, CircleDollarSign, CircleHelp, ListOrdered, MonitorSmartphone, Newspaper, Settings, ShieldCheck, Trophy, Users } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { RodeoDailyLogoMark } from "./rodeo-views";
@@ -14,6 +14,7 @@ const desktopTabs = primaryTabs.filter((item) => item.label !== "More");
 const bottomTabs = primaryTabs.filter((item) => item.label !== "Schedule");
 
 const moreLinks = [
+  { label: "About Rodeo Daily", href: "/about", icon: CircleHelp },
   { label: "Favorite Athletes", href: "/?tab=more&section=favorites", icon: Users },
   { label: "NFR Standings", href: "/?tab=more&section=nfr", icon: Trophy },
   { label: "Rodeo Listings", href: "/?tab=more&section=listings", icon: Newspaper },

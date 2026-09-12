@@ -17,6 +17,7 @@ export default function RodeoResultsPage() {
       description="Use Rodeo Daily to check rodeo results, PRCA results, WPRA results, pro rodeo results, PRCA standings, WPRA standings, individual rodeo pages, event leaders, and payouts."
       primaryHref="/?tab=results"
       primaryLabel="View Rodeo Results"
+      trustIntro="Rodeo Daily is a rodeo reference app: it collects standings, results, schedules, athlete pages, and rodeo detail links into one place for fans following the season."
       sections={[
         {
           title: "Event Results",
@@ -29,6 +30,18 @@ export default function RodeoResultsPage() {
         {
           title: "Results, Schedule, and Standings Together",
           body: "Rodeo Daily connects results with schedules, standings, athlete pages, daysheets, NFR standings, and rodeo listings."
+        },
+        {
+          title: "Rodeo Detail Context",
+          body: "Detail pages help readers connect a rodeo name with location, venue, dates, event leaders, round data, and payout information when the source provides it."
+        },
+        {
+          title: "Fan-Facing Reference",
+          body: "The site is designed for quick repeat use during the rodeo season, especially when fans are moving between current results and updated standings."
+        },
+        {
+          title: "Data Notes",
+          body: "Official associations and rodeo offices remain the authority for entries, payout disputes, rule decisions, and final records. Rodeo Daily organizes available data for easier browsing."
         }
       ]}
     />

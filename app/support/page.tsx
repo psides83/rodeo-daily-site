@@ -174,6 +174,7 @@ export default function SupportPage() {
         </section>
 
         <footer className="seo-page-footer" aria-label="Rodeo Daily legal and support links">
+          <Link href="/about">About Rodeo Daily</Link>
           <Link href="/ios-app">iOS App</Link>
           <Link href="/privacy">Privacy Policy</Link>
           <Link href="/">Open App</Link>

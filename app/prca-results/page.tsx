@@ -17,6 +17,7 @@ export default function PrcaResultsPage() {
       description="Rodeo Daily gives rodeo fans a fast way to follow PRCA results by event, open rodeo detail pages, review leaders, see round results, and check payouts when they are available."
       primaryHref="/?tab=results"
       primaryLabel="Open Results"
+      trustIntro="The results experience is the center of Rodeo Daily: event pages, rodeo pages, standings links, athlete profiles, and schedule context are organized for fans who follow PRCA results throughout the season."
       sections={[
         {
           title: "Results by Event",
@@ -29,6 +30,18 @@ export default function PrcaResultsPage() {
         {
           title: "Built for Rodeo Fans",
           body: "Rodeo Daily is designed as a fast web version of the Rodeo Daily app for checking PRCA results, rodeo standings, schedules, athletes, and more."
+        },
+        {
+          title: "What Each Page Connects",
+          body: "Result pages connect a rodeo's event leaders with schedule details, athlete pages, standings pages, daysheets, and other ways to follow the same rodeo."
+        },
+        {
+          title: "Update Timing",
+          body: "Results can change when official data sources post corrections, finals, or payout updates. Rodeo Daily refreshes data views and gives readers a support path for questions."
+        },
+        {
+          title: "Independent Reference",
+          body: "Rodeo Daily is built as an independent fan-facing reference and is not a rodeo entry, payout dispute, or official association support system."
         }
       ]}
       relatedLinks={seoResultEvents.map((event) => ({

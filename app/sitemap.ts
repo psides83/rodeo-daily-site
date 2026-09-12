@@ -95,6 +95,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.55
     },
     {
+      url: absoluteUrl("/about"),
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.62
+    },
+    {
       url: absoluteUrl("/ios-app"),
       lastModified: now,
       changeFrequency: "monthly",

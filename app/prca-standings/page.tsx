@@ -17,6 +17,7 @@ export default function PrcaStandingsPage() {
       description="Rodeo Daily helps fans follow PRCA standings by season, standings type, and event with athlete cards, earnings, rankings, profile pages, stats, results, career data, and highlights."
       primaryHref="/?tab=standings"
       primaryLabel="Open Standings"
+      trustIntro="Rodeo Daily turns PRCA standings into a usable season reference, linking rankings to athlete pages, results pages, schedule context, NFR races, and event-specific views."
       sections={[
         {
           title: "World, Circuit, and Rookie Standings",
@@ -29,6 +30,18 @@ export default function PrcaStandingsPage() {
         {
           title: "Athlete Profiles",
           body: "Open athlete pages from the standings to view stats, results, career information, highlights, and biography details where available."
+        },
+        {
+          title: "Season Context",
+          body: "Standings pages are built for checking who is leading, who is moving, and how current results connect with the broader PRCA season."
+        },
+        {
+          title: "Clear Data Use",
+          body: "Rodeo Daily organizes PRCA standings and related data for fan browsing. Official associations remain the final authority for official records and eligibility decisions."
+        },
+        {
+          title: "Support and Corrections",
+          body: "Readers can report confusing rankings, broken athlete links, or missing context through Rodeo Daily support with the event, year, athlete, and source details."
         }
       ]}
       relatedLinks={seoStandingEvents.map((event) => ({

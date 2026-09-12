@@ -17,6 +17,7 @@ export default function WpraStandingsPage() {
       description="Rodeo Daily tracks WPRA standings for barrel racing and breakaway roping with season rankings, athlete earnings, profiles, and related pro rodeo standings."
       primaryHref="/?tab=standings"
       primaryLabel="Open Standings"
+      trustIntro="WPRA standings are part of the main Rodeo Daily standings workflow, connecting barrel racing and breakaway rankings to athlete pages, related results, and schedule context."
       sections={[
         {
           title: "Current WPRA Standings",
@@ -29,6 +30,18 @@ export default function WpraStandingsPage() {
         {
           title: "Breakaway Roping Standings",
           body: "Track breakaway roping standings, current rankings, athlete earnings, and related rodeo results from one web app."
+        },
+        {
+          title: "Results Connections",
+          body: "Move from WPRA standings into related result pages to understand how recent rodeos may affect the barrel racing and breakaway standings races."
+        },
+        {
+          title: "Source-Aware Reference",
+          body: "Rodeo Daily organizes WPRA standings for fans and notes that official standings can update as results are finalized or corrected."
+        },
+        {
+          title: "Built for Mobile Use",
+          body: "The standings pages are designed for quick checks on a phone, with app navigation, related links, and readable event pages for repeat visits."
         }
       ]}
       relatedLinks={wpraStandingEvents.map((event) => ({

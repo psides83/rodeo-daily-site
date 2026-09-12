@@ -7,6 +7,7 @@ type SeoLandingPageProps = {
   description: string;
   primaryHref: string;
   primaryLabel: string;
+  trustIntro?: string;
   sections: Array<{
     title: string;
     body: string;
@@ -17,7 +18,16 @@ type SeoLandingPageProps = {
   }>;
 };
 
-export function SeoLandingPage({ eyebrow, title, description, primaryHref, primaryLabel, sections, relatedLinks = [] }: SeoLandingPageProps) {
+export function SeoLandingPage({
+  eyebrow,
+  title,
+  description,
+  primaryHref,
+  primaryLabel,
+  trustIntro,
+  sections,
+  relatedLinks = []
+}: SeoLandingPageProps) {
   return (
     <main className="seo-page">
       <section className="seo-page-shell">
@@ -35,6 +45,7 @@ export function SeoLandingPage({ eyebrow, title, description, primaryHref, prima
           <span>{eyebrow}</span>
           <h1>{title}</h1>
           <p>{description}</p>
+          {trustIntro ? <p className="seo-page-trust-intro">{trustIntro}</p> : null}
           <Link href={primaryHref}>{primaryLabel}</Link>
         </section>
 
@@ -63,6 +74,7 @@ export function SeoLandingPage({ eyebrow, title, description, primaryHref, prima
           <Link href="/prca-standings">PRCA Standings</Link>
           <Link href="/wpra-results">WPRA Results</Link>
           <Link href="/wpra-standings">WPRA Standings</Link>
+          <Link href="/about">About Rodeo Daily</Link>
           <Link href="/news">Rodeo News</Link>
           <Link href="/ios-app">iOS App</Link>
           <Link href="/support">Support</Link>

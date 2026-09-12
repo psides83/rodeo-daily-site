@@ -199,6 +199,7 @@ export default function PrivacyPage() {
         </section>
 
         <footer className="seo-page-footer" aria-label="Rodeo Daily legal and support links">
+          <Link href="/about">About Rodeo Daily</Link>
           <Link href="/ios-app">iOS App</Link>
           <Link href="/support">Support</Link>
           <Link href="/">Open App</Link>

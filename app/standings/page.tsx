@@ -17,6 +17,7 @@ export default function StandingsPage() {
       description="Use Rodeo Daily to follow PRCA standings, WPRA standings, pro rodeo standings, PRCA results, WPRA results, athlete rankings, season earnings, and event-specific standings pages."
       primaryHref="/?tab=standings"
       primaryLabel="Open Standings"
+      trustIntro="Standings are one of the core Rodeo Daily features, with event pages, athlete profile links, earnings, hometowns, standings types, results context, and schedule navigation built for season-long use."
       sections={[
         {
           title: "PRCA Standings",
@@ -29,6 +30,18 @@ export default function StandingsPage() {
         {
           title: "Pro Rodeo Standings",
           body: "Move between standings, results, schedules, NFR reference pages, athlete profiles, and rodeo listings in one rodeo app."
+        },
+        {
+          title: "Event Pages",
+          body: "Each event standings page can show ranked athletes, earnings, hometowns, profile links, related result pages, and a direct path back into the full app view."
+        },
+        {
+          title: "Why Fans Use It",
+          body: "Rodeo fans often compare standings and results during the same visit. Rodeo Daily keeps those workflows close together instead of scattering them across separate pages."
+        },
+        {
+          title: "Data Updates",
+          body: "Standings may shift as official sources publish new results, corrections, or season totals. Rodeo Daily provides a support path for data questions and corrections."
         }
       ]}
       relatedLinks={[

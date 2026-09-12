@@ -17,6 +17,7 @@ export default function ProRodeoStandingsPage() {
       description="Rodeo Daily helps fans follow pro rodeo standings with PRCA standings, WPRA standings, event rankings, season earnings, athlete profiles, schedules, and results."
       primaryHref="/?tab=standings"
       primaryLabel="Open Standings"
+      trustIntro="The pro rodeo standings pages make the season easier to follow by organizing event rankings, standings types, athlete profile links, results context, and schedule paths in one place."
       sections={[
         {
           title: "PRCA Standings",
@@ -29,6 +30,18 @@ export default function ProRodeoStandingsPage() {
         {
           title: "Standings to Results",
           body: "Move from pro rodeo standings into PRCA results, WPRA results, schedules, NFR standings, and athlete detail pages."
+        },
+        {
+          title: "Event Rankings",
+          body: "Rodeo Daily separates standings by event so fans can follow all-around, roughstock, timed events, barrel racing, and breakaway races more clearly."
+        },
+        {
+          title: "Data Transparency",
+          body: "The site is an independent rodeo reference that organizes available standings and result information while pointing official decisions back to official sources."
+        },
+        {
+          title: "Corrections",
+          body: "Support links are available for readers who spot broken pages, outdated context, or data questions tied to a specific athlete, rodeo, event, or standings year."
         }
       ]}
       relatedLinks={[

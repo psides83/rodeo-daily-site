@@ -1471,6 +1471,11 @@ function SettingsView({
       <section className="settings-form-section">
         <h3>About</h3>
         <div className="app-card settings-form-card settings-link-list">
+          <a href="/about">
+            <CircleHelp size={17} />
+            <span>About Rodeo Daily</span>
+            <ChevronRight size={16} />
+          </a>
           <a href="/support">
             <CircleHelp size={17} />
             <span>App Support</span>

@@ -17,6 +17,7 @@ export default function SchedulePage() {
       description="Rodeo Daily helps fans find upcoming rodeos, PRCA schedule details, venues, dates, daysheets, payouts, results links, and rodeo detail pages."
       primaryHref="/?tab=schedule"
       primaryLabel="Open Schedule"
+      trustIntro="The schedule is part of the main Rodeo Daily rodeo workflow, connecting upcoming rodeos to detail pages, daysheets, results, standings, athlete information, and listing context."
       sections={[
         {
           title: "Upcoming Rodeos",
@@ -29,6 +30,18 @@ export default function SchedulePage() {
         {
           title: "Schedule to Results",
           body: "Move from schedule pages into pro rodeo results, PRCA results, WPRA results, standings, and athlete profile pages."
+        },
+        {
+          title: "Rodeo Detail Pages",
+          body: "Individual schedule pages can include dates, venues, locations, payout information, official website links, daysheets, and result paths when they become available."
+        },
+        {
+          title: "Updated Season View",
+          body: "Rodeo schedules may change as event offices update dates, pages, entries, or daysheets. Rodeo Daily keeps schedule browsing tied to the same app used for current results."
+        },
+        {
+          title: "Official Decisions",
+          body: "Use Rodeo Daily for browsing and planning context. For entries, fees, stock draws, payout disputes, or time-sensitive event operations, contact the official rodeo office."
         }
       ]}
       relatedLinks={[

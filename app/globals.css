@@ -306,6 +306,13 @@ html[data-theme="dark"] .app-window {
   line-height: 1.5;
 }
 
+.seo-page-hero .seo-page-trust-intro {
+  max-width: 760px;
+  color: var(--app-primary);
+  font-size: 0.98rem;
+  font-weight: 820;
+}
+
 .seo-page-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
