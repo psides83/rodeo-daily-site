@@ -41,7 +41,8 @@ const houseAds: HouseAd[] = [
     href: "https://apps.apple.com/us/app/rodeo-daily/id1671624492",
     cta: "Download",
     theme: "app",
-    icon: Smartphone
+    icon: Smartphone,
+    imageUrl: "/rodeo-daily-icon.png"
   },
   {
     eyebrow: "Calf Roping Daily",
