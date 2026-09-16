@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { normalizeTrackedDestination, recordTrackedClick } from "../../lib/click-tracking";
+import { detectLikelyBot, normalizeTrackedDestination, recordTrackedClick } from "../../lib/click-tracking";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -39,6 +39,9 @@ export async function GET(request: NextRequest, context: { params: { campaign: s
     firstForwardedIp(headerValue(request, "x-forwarded-for")) ||
     headerValue(request, "x-real-ip") ||
     headerValue(request, "cf-connecting-ip");
+  const userAgent = headerValue(request, "user-agent");
+  const referrer = headerValue(request, "referer");
+  const botDetection = detectLikelyBot(userAgent, referrer);
 
   try {
     await recordTrackedClick({
@@ -51,9 +54,11 @@ export async function GET(request: NextRequest, context: { params: { campaign: s
       latitude: numericHeader(request, "x-vercel-ip-latitude"),
       longitude: numericHeader(request, "x-vercel-ip-longitude"),
       timezone: headerValue(request, "x-vercel-ip-timezone"),
-      userAgent: headerValue(request, "user-agent"),
-      referrer: headerValue(request, "referer"),
-      source: headerValue(request, "x-vercel-ip-country") ? "vercel" : headerValue(request, "cf-ipcountry") ? "cloudflare" : "headers"
+      userAgent,
+      referrer,
+      source: headerValue(request, "x-vercel-ip-country") ? "vercel" : headerValue(request, "cf-ipcountry") ? "cloudflare" : "headers",
+      isLikelyBot: botDetection.isLikelyBot,
+      botReason: botDetection.botReason
     });
   } catch (error) {
     console.error(error);

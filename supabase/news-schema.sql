@@ -137,8 +137,13 @@ create table if not exists public.tracked_link_clicks (
   user_agent text,
   referrer text,
   location_source text,
+  is_likely_bot boolean not null default false,
+  bot_reason text,
   clicked_at timestamptz not null default now()
 );
+
+alter table public.tracked_link_clicks add column if not exists is_likely_bot boolean not null default false;
+alter table public.tracked_link_clicks add column if not exists bot_reason text;
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -238,5 +243,6 @@ create index if not exists news_standings_snapshots_lookup_idx on public.news_st
 create index if not exists news_standings_snapshot_rows_snapshot_rank_idx on public.news_standings_snapshot_rows(snapshot_id, rank);
 create index if not exists tracked_link_clicks_campaign_clicked_at_idx on public.tracked_link_clicks(campaign, clicked_at desc);
 create index if not exists tracked_link_clicks_clicked_at_idx on public.tracked_link_clicks(clicked_at desc);
+create index if not exists tracked_link_clicks_human_campaign_clicked_at_idx on public.tracked_link_clicks(campaign, clicked_at desc) where is_likely_bot = false;
 create index if not exists news_story_signals_week_idx on public.news_story_signals(week_start desc, week_end desc);
 create index if not exists news_image_candidates_review_idx on public.news_image_candidates(review_status, created_at desc);
