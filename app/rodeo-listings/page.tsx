@@ -33,7 +33,7 @@ export default function RodeoListingsPage() {
       ]}
       relatedLinks={[
         { href: "/schedule", label: "Rodeo Schedule" },
-        { href: "/pro-rodeo-results", label: "Pro Rodeo Results" },
+        { href: "/results", label: "Pro Rodeo Results" },
         { href: "/prca-results", label: "PRCA Results" },
         { href: "/standings", label: "Rodeo Standings" }
       ]}

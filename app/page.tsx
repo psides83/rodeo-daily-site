@@ -138,10 +138,10 @@ type BeforeInstallPromptEvent = Event & {
 const homepageSeoLinks = [
   { href: "/prca-results", label: "PRCA Results" },
   { href: "/wpra-results", label: "WPRA Results" },
-  { href: "/pro-rodeo-results", label: "Pro Rodeo Results" },
+  { href: "/results", label: "Pro Rodeo Results" },
   { href: "/prca-standings", label: "PRCA Standings" },
   { href: "/wpra-standings", label: "WPRA Standings" },
-  { href: "/pro-rodeo-standings", label: "Pro Rodeo Standings" },
+  { href: "/standings", label: "Pro Rodeo Standings" },
   { href: "/schedule", label: "PRCA Schedule" },
   { href: "/nfr-standings", label: "NFR Standings" },
   { href: "/news", label: "PRCA and WPRA News" },

@@ -180,9 +180,8 @@ function wpraRelatedResultLinks(event: NonNullable<ReturnType<typeof wpraStandin
   return [
     { href: `/wpra-results/${event.slug}`, label: `WPRA ${event.name} Results` },
     { href: `/prca-results/${event.slug}`, label: `PRCA ${event.name} Results` },
-    { href: `/pro-rodeo-results/${event.slug}`, label: `Pro Rodeo ${event.name} Results` },
     { href: "/wpra-results", label: "WPRA Results" },
-    { href: "/pro-rodeo-results", label: "Pro Rodeo Results" },
+    { href: "/results", label: "All Rodeo Results" },
     { href: "/standings", label: "PRCA and WPRA Standings" }
   ];
 }

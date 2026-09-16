@@ -47,7 +47,7 @@ export default function PrcaEventResultsPage({ params }: EventResultsPageProps) 
       ]}
       relatedLinks={[
         { href: "/prca-results", label: "PRCA Results" },
-        { href: "/pro-rodeo-results", label: "Pro Rodeo Results" },
+        { href: "/results", label: "All Rodeo Results" },
         { href: `/prca-standings/2026/${event.slug}`, label: `2026 PRCA ${event.name} Standings` }
       ]}
     />

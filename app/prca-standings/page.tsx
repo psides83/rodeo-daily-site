@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { SeoLandingPage } from "../components/seo-landing-page";
-import { pageMetadata, seoStandingEvents } from "../lib/seo";
+import { pageMetadata, prcaStandingEvents } from "../lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   title: "PRCA Standings & Pro Rodeo Standings",
@@ -44,7 +44,7 @@ export default function PrcaStandingsPage() {
           body: "Readers can report confusing rankings, broken athlete links, or missing context through Rodeo Daily support with the event, year, athlete, and source details."
         }
       ]}
-      relatedLinks={seoStandingEvents.map((event) => ({
+      relatedLinks={prcaStandingEvents.map((event) => ({
         href: `/prca-standings/2026/${event.slug}`,
         label: `2026 PRCA ${event.name} Standings`
       }))}

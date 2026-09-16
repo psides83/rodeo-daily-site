@@ -63,6 +63,8 @@ export type SeoResultEvent = (typeof seoResultEvents)[number];
 
 export const wpraStandingEvents = seoStandingEvents.filter((event) => event.code === "GB" || event.code === "LB");
 export const wpraResultEvents = seoResultEvents.filter((event) => event.code === "GB" || event.code === "LB");
+export const prcaStandingEvents = seoStandingEvents.filter((event) => event.code !== "GB" && event.code !== "LB");
+export const prcaResultEvents = seoResultEvents.filter((event) => event.code !== "GB" && event.code !== "LB");
 
 export function absoluteUrl(path = "/") {
   return `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;

@@ -46,7 +46,6 @@ export default function SchedulePage() {
       ]}
       relatedLinks={[
         { href: "/results", label: "Rodeo Results" },
-        { href: "/pro-rodeo-results", label: "Pro Rodeo Results" },
         { href: "/standings", label: "Rodeo Standings" },
         { href: "/rodeo-listings", label: "Rodeo Listings" }
       ]}

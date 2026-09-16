@@ -47,7 +47,7 @@ export default function WpraEventResultsPage({ params }: WpraEventResultsPagePro
       ]}
       relatedLinks={[
         { href: "/wpra-results", label: "WPRA Results" },
-        { href: "/pro-rodeo-results", label: "Pro Rodeo Results" },
+        { href: "/results", label: "All Rodeo Results" },
         { href: `/wpra-standings/2026/${event.slug}`, label: `2026 WPRA ${event.name} Standings` }
       ]}
     />

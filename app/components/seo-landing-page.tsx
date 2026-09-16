@@ -70,7 +70,7 @@ export function SeoLandingPage({
 
         <footer className="seo-page-footer" aria-label="Rodeo Daily legal and support links">
           <Link href="/prca-results">PRCA Results</Link>
-          <Link href="/pro-rodeo-results">Pro Rodeo Results</Link>
+          <Link href="/results">Pro Rodeo Results</Link>
           <Link href="/prca-standings">PRCA Standings</Link>
           <Link href="/wpra-results">WPRA Results</Link>
           <Link href="/wpra-standings">WPRA Standings</Link>

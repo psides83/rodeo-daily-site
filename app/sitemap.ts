@@ -1,10 +1,16 @@
 import type { MetadataRoute } from "next";
-import { absoluteUrl, seoResultEvents, seoStandingEvents, wpraResultEvents, wpraStandingEvents } from "./lib/seo";
+import {
+  absoluteUrl,
+  prcaResultEvents,
+  prcaStandingEvents,
+  seoStandingEvents,
+  wpraResultEvents,
+  wpraStandingEvents
+} from "./lib/seo";
 import { fetchPublishedNewsPosts } from "./lib/supabase-news";
 import { mapBusinessJournalRows } from "./lib/rodeo-data";
 import type { ApiBusinessJournalResponse, ApiPosition, ApiRodeo } from "./lib/types";
 
-const now = new Date();
 const standingsSeoYears = ["2026", "2025"];
 const localizedPublicRoutes = ["/br/privacy", "/br/support", "/br/ios-app", "/mx/privacy", "/mx/support", "/mx/ios-app"];
 const standingsApiBaseUrl = "https://d1kfpvgfupbmyo.cloudfront.net/services/pro_rodeo.ashx/";
@@ -18,163 +24,112 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: absoluteUrl("/"),
-      lastModified: now,
       changeFrequency: "hourly",
       priority: 1
     },
     {
       url: absoluteUrl("/results"),
-      lastModified: now,
       changeFrequency: "hourly",
       priority: 0.99
     },
     {
       url: absoluteUrl("/standings"),
-      lastModified: now,
       changeFrequency: "hourly",
       priority: 0.99
     },
     {
       url: absoluteUrl("/prca-results"),
-      lastModified: now,
-      changeFrequency: "hourly",
-      priority: 0.98
-    },
-    {
-      url: absoluteUrl("/pro-rodeo-results"),
-      lastModified: now,
       changeFrequency: "hourly",
       priority: 0.98
     },
     {
       url: absoluteUrl("/prca-standings"),
-      lastModified: now,
       changeFrequency: "hourly",
       priority: 0.98
     },
     {
       url: absoluteUrl("/wpra-results"),
-      lastModified: now,
       changeFrequency: "hourly",
       priority: 0.94
     },
     {
       url: absoluteUrl("/wpra-standings"),
-      lastModified: now,
       changeFrequency: "hourly",
       priority: 0.94
-    },
-    {
-      url: absoluteUrl("/pro-rodeo-standings"),
-      lastModified: now,
-      changeFrequency: "hourly",
-      priority: 0.94
-    },
-    {
-      url: absoluteUrl("/rodeo-results"),
-      lastModified: now,
-      changeFrequency: "hourly",
-      priority: 0.92
-    },
-    {
-      url: absoluteUrl("/rodeo-standings"),
-      lastModified: now,
-      changeFrequency: "hourly",
-      priority: 0.92
     },
     {
       url: absoluteUrl("/privacy"),
-      lastModified: now,
       changeFrequency: "yearly",
       priority: 0.45
     },
     {
       url: absoluteUrl("/support"),
-      lastModified: now,
       changeFrequency: "monthly",
       priority: 0.55
     },
     {
       url: absoluteUrl("/about"),
-      lastModified: now,
       changeFrequency: "monthly",
       priority: 0.62
     },
     {
       url: absoluteUrl("/ios-app"),
-      lastModified: now,
       changeFrequency: "monthly",
       priority: 0.82
     },
     {
       url: absoluteUrl("/schedule"),
-      lastModified: now,
       changeFrequency: "daily",
       priority: 0.85
     },
     {
       url: absoluteUrl("/nfr-standings"),
-      lastModified: now,
       changeFrequency: "daily",
       priority: 0.75
     },
     {
       url: absoluteUrl("/past-champions"),
-      lastModified: now,
       changeFrequency: "weekly",
       priority: 0.72
     },
     {
       url: absoluteUrl("/rodeo-listings"),
-      lastModified: now,
       changeFrequency: "daily",
       priority: 0.7
     },
     {
       url: absoluteUrl("/news"),
-      lastModified: now,
       changeFrequency: "daily",
       priority: 0.96
     }
   ];
 
   const standingsRoutes: MetadataRoute.Sitemap = standingsSeoYears.flatMap((year) =>
-    seoStandingEvents.map((event) => ({
+    prcaStandingEvents.map((event) => ({
       url: absoluteUrl(`/prca-standings/${year}/${event.slug}`),
-      lastModified: now,
       changeFrequency: "hourly" as const,
       priority: year === "2026" ? 0.96 : 0.82
     }))
   );
-  const prcaResultRoutes: MetadataRoute.Sitemap = seoResultEvents.map((event) => ({
+  const prcaResultRoutes: MetadataRoute.Sitemap = prcaResultEvents.map((event) => ({
     url: absoluteUrl(`/prca-results/${event.slug}`),
-    lastModified: now,
     changeFrequency: "hourly" as const,
     priority: 0.9
   }));
-  const proRodeoResultRoutes: MetadataRoute.Sitemap = seoResultEvents.map((event) => ({
-    url: absoluteUrl(`/pro-rodeo-results/${event.slug}`),
-    lastModified: now,
-    changeFrequency: "hourly" as const,
-    priority: 0.88
-  }));
   const wpraResultRoutes: MetadataRoute.Sitemap = wpraResultEvents.map((event) => ({
     url: absoluteUrl(`/wpra-results/${event.slug}`),
-    lastModified: now,
     changeFrequency: "hourly" as const,
     priority: 0.9
   }));
   const wpraStandingsRoutes: MetadataRoute.Sitemap = standingsSeoYears.flatMap((year) =>
     wpraStandingEvents.map((event) => ({
       url: absoluteUrl(`/wpra-standings/${year}/${event.slug}`),
-      lastModified: now,
       changeFrequency: "hourly" as const,
       priority: year === "2026" ? 0.94 : 0.8
     }))
   );
   const localizedRoutes = localizedPublicRoutes.map((route) => ({
     url: absoluteUrl(route),
-    lastModified: now,
     changeFrequency: "monthly" as const,
     priority: route.endsWith("/ios-app") ? 0.72 : 0.48
   }));
@@ -190,7 +145,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...standingsRoutes,
     ...wpraStandingsRoutes,
     ...prcaResultRoutes,
-    ...proRodeoResultRoutes,
     ...wpraResultRoutes,
     ...athleteRoutes,
     ...resultRoutes,
@@ -232,7 +186,6 @@ async function topAthleteSitemapRoutes(): Promise<MetadataRoute.Sitemap> {
 
     return athleteIds.map((id) => ({
       url: absoluteUrl(`/athletes/${id}`),
-      lastModified: now,
       changeFrequency: "daily" as const,
       priority: 0.72
     }));
@@ -277,7 +230,6 @@ async function upcomingScheduleSitemapRoutes(): Promise<MetadataRoute.Sitemap> {
       .slice(0, 80)
       .map((rodeo) => ({
         url: absoluteUrl(`/schedule/${rodeo.RodeoId}`),
-        lastModified: now,
         changeFrequency: "daily" as const,
         priority: 0.76
       }));
@@ -306,7 +258,6 @@ async function recentResultSitemapRoutes(): Promise<MetadataRoute.Sitemap> {
       .slice(0, 80)
       .map((rodeo) => ({
         url: absoluteUrl(`/results/${rodeo.RodeoId}`),
-        lastModified: now,
         changeFrequency: "daily" as const,
         priority: 0.78
       }));
@@ -324,7 +275,6 @@ async function businessJournalSitemapRoutes(): Promise<MetadataRoute.Sitemap> {
       .slice(0, 80)
       .map((listing) => ({
         url: absoluteUrl(`/listings/${encodeURIComponent(listing.id)}`),
-        lastModified: now,
         changeFrequency: "daily" as const,
         priority: 0.68
       }));

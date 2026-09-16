@@ -190,15 +190,12 @@ function prcaRelatedResultLinks(event: NonNullable<ReturnType<typeof standingEve
   const resultSlug = resultSlugForStandingEvent(event.slug);
   const links = [
     { href: "/prca-results", label: "PRCA Results" },
-    { href: "/pro-rodeo-results", label: "Pro Rodeo Results" },
+    { href: "/results", label: "All Rodeo Results" },
     { href: "/standings", label: "PRCA and WPRA Standings" }
   ];
 
   if (resultSlug) {
-    links.unshift(
-      { href: `/prca-results/${resultSlug}`, label: `PRCA ${event.name} Results` },
-      { href: `/pro-rodeo-results/${resultSlug}`, label: `Pro Rodeo ${event.name} Results` }
-    );
+    links.unshift({ href: `/prca-results/${resultSlug}`, label: `PRCA ${event.name} Results` });
   }
 
   if (wpraEvents.has(event.code) && resultSlug) {

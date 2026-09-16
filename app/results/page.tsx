@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { SeoLandingPage } from "../components/seo-landing-page";
-import { pageMetadata, seoResultEvents, wpraResultEvents } from "../lib/seo";
+import { pageMetadata, prcaResultEvents, wpraResultEvents } from "../lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   title: "PRCA Results, WPRA Results & Pro Rodeo Results",
@@ -9,7 +9,7 @@ export const metadata: Metadata = pageMetadata({
   path: "/results"
 });
 
-const prcaResultLinks = seoResultEvents.map((event) => ({
+const prcaResultLinks = prcaResultEvents.map((event) => ({
   href: `/prca-results/${event.slug}`,
   label: `PRCA ${event.name} Results`
 }));
@@ -54,7 +54,7 @@ export default function ResultsPage() {
           body: "The results pages are built for fans who check back throughout a rodeo week and want a fast path from leaders to standings and upcoming schedule pages."
         }
       ]}
-      relatedLinks={[{ href: "/pro-rodeo-results", label: "Pro Rodeo Results" }, ...prcaResultLinks, ...wpraResultLinks]}
+      relatedLinks={[...prcaResultLinks, ...wpraResultLinks]}
     />
   );
 }

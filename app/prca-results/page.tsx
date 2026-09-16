@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { SeoLandingPage } from "../components/seo-landing-page";
-import { pageMetadata, seoResultEvents } from "../lib/seo";
+import { pageMetadata, prcaResultEvents } from "../lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   title: "PRCA Results & Pro Rodeo Results",
@@ -44,7 +44,7 @@ export default function PrcaResultsPage() {
           body: "Rodeo Daily is built as an independent fan-facing reference and is not a rodeo entry, payout dispute, or official association support system."
         }
       ]}
-      relatedLinks={seoResultEvents.map((event) => ({
+      relatedLinks={prcaResultEvents.map((event) => ({
         href: `/prca-results/${event.slug}`,
         label: `PRCA ${event.name} Results`
       }))}
