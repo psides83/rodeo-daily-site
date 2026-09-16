@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   }
 };
 
-const updatedDate = "August 28, 2026";
+const updatedDate = "September 16, 2026";
 const contactEmail = "thewaymediaco@gmail.com";
 
 const sections = [
@@ -42,6 +42,7 @@ const sections = [
     title: "Information Collected Automatically",
     body: [
       "When you use the website, standard technical information may be processed by hosting, browser, analytics, advertising, or security systems. This can include your IP address, browser type, device type, operating system, pages viewed, referring pages, approximate location inferred from IP address, and interaction data.",
+      "When you click certain Rodeo Daily links, the site may record click attribution details such as the link campaign, destination, time of click, IP address, referrer, browser information, and approximate location inferred from IP address.",
       "The iOS app may process device-level information needed to operate app features, measure performance, show ads, diagnose problems, and improve the experience."
     ]
   },
@@ -121,7 +122,7 @@ export default function PrivacyPage() {
     "@type": "PrivacyPolicy",
     name: "Rodeo Daily Privacy Policy",
     url: absoluteUrl("/privacy"),
-    dateModified: "2026-08-28",
+    dateModified: "2026-09-16",
     publisher: {
       "@type": "Organization",
       name: "Rodeo Daily",
