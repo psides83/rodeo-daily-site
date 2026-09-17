@@ -31,21 +31,21 @@ const updatedDate = "September 16, 2026";
 const contactEmail = "thewaymediaco@gmail.com";
 
 const sections = [
-  {
-    title: "Information Rodeo Daily Collects",
-    body: [
-      "Rodeo Daily is designed primarily as an informational rodeo app. You can browse standings, results, schedules, daysheets, athlete profiles, past champions, and rodeo listings without creating an account.",
-      "The app and website may collect limited information you provide directly, such as an email message if you contact support. The app may also store preferences on your device, including favorite athletes, followed athletes, display settings, ad consent choices, and app banner dismissals."
-    ]
-  },
-  {
-    title: "Information Collected Automatically",
-    body: [
-      "When you use the website, standard technical information may be processed by hosting, browser, analytics, advertising, or security systems. This can include your IP address, browser type, device type, operating system, pages viewed, referring pages, approximate location inferred from IP address, and interaction data.",
-      "When you click certain Rodeo Daily links, the site may record click attribution details such as the link campaign, destination, time of click, IP address, referrer, browser information, and approximate location inferred from IP address.",
-      "The iOS app may process device-level information needed to operate app features, measure performance, show ads, diagnose problems, and improve the experience."
-    ]
-  },
+  // {
+  //   title: "Information Rodeo Daily Collects",
+  //   body: [
+  //     "Rodeo Daily is designed primarily as an informational rodeo app. You can browse standings, results, schedules, daysheets, athlete profiles, past champions, and rodeo listings without creating an account.",
+  //     "The app and website may collect limited information you provide directly, such as an email message if you contact support. The app may also store preferences on your device, including favorite athletes, followed athletes, display settings, ad consent choices, and app banner dismissals."
+  //   ]
+  // },
+  // {
+  //   title: "Information Collected Automatically",
+  //   body: [
+  //     "When you use the website, standard technical information may be processed by hosting, browser, analytics, advertising, or security systems. This can include your IP address, browser type, device type, operating system, pages viewed, referring pages, approximate location inferred from IP address, and interaction data.",
+  //     "When you click certain Rodeo Daily links, the site may record click attribution details such as the link campaign, destination, time of click, IP address, referrer, browser information, and approximate location inferred from IP address.",
+  //     "The iOS app may process device-level information needed to operate app features, measure performance, show ads, diagnose problems, and improve the experience."
+  //   ]
+  // },
   {
     title: "Cookies, Local Storage, and PWA Storage",
     body: [
