@@ -5,7 +5,7 @@ import { localeAlternates } from "../components/localized-public-pages";
 import { absoluteUrl } from "../lib/seo";
 
 const contactEmail = "thewaymediaco@gmail.com";
-const appStoreUrl = "https://apps.apple.com/us/app/rodeo-daily/id1671624492";
+const appStoreUrl = "https://apps.apple.com/app/apple-store/id1671624492?pt=121369596&ct=Rodeo%20Daily%20Site&mt=8";
 const supportMailto =
   "mailto:thewaymediaco@gmail.com?subject=Rodeo%20Daily%20Support&body=Tell%20us%20what%20you%20were%20trying%20to%20do%2C%20what%20happened%2C%20and%20what%20device%20or%20browser%20you%20were%20using.";
 

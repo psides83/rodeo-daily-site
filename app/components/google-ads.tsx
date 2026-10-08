@@ -38,7 +38,7 @@ const houseAds: HouseAd[] = [
     eyebrow: "Rodeo Daily iOS App",
     title: "Follow standings, results, schedules, and favorites on iPhone.",
     body: "Download the iOS app for quick season checks, athlete tracking, and rodeo updates from your iPhone home screen.",
-    href: "https://apps.apple.com/us/app/rodeo-daily/id1671624492",
+    href: "https://apps.apple.com/app/apple-store/id1671624492?pt=121369596&ct=Rodeo%20Daily%20Site&mt=8",
     cta: "Download",
     theme: "app",
     icon: Smartphone,

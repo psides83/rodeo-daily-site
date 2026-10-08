@@ -128,7 +128,7 @@ const nfrEvents: EventName[] = [
 const athleteProfileTabs = ["Stats", "Results", "Career", "Highlights"] as const;
 type AthleteProfileTab = (typeof athleteProfileTabs)[number];
 type AthleteResultSort = "Rodeo Date" | "Rodeo Earnings" | "Result" | "Earnings";
-const iosAppStoreUrl = "https://apps.apple.com/us/app/rodeo-daily/id1671624492";
+const iosAppStoreUrl = "https://apps.apple.com/app/apple-store/id1671624492?pt=121369596&ct=Rodeo%20Daily%20Site&mt=8";
 
 export function RodeoDailyLogoMark() {
   return (

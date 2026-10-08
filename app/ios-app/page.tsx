@@ -5,7 +5,7 @@ import { localeAlternates } from "../components/localized-public-pages";
 import { RodeoDailyLogoMark } from "../components/rodeo-views";
 import { absoluteUrl } from "../lib/seo";
 
-const appStoreUrl = "https://apps.apple.com/us/app/rodeo-daily/id1671624492";
+const appStoreUrl = "https://apps.apple.com/app/apple-store/id1671624492?pt=121369596&ct=Rodeo%20Daily%20Site&mt=8";
 
 export const metadata: Metadata = {
   title: "Rodeo Daily iPhone App, Widget & Apple Watch App",

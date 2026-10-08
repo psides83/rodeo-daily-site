@@ -126,7 +126,7 @@ const moreSectionRoutes = Object.entries(moreSectionRouteValues).reduce(
   {} as Record<string, MoreSection>
 );
 
-const iosAppStoreUrl = "https://apps.apple.com/us/app/rodeo-daily/id1671624492";
+const iosAppStoreUrl = "https://apps.apple.com/app/apple-store/id1671624492?pt=121369596&ct=Rodeo%20Daily%20Site&mt=8";
 const iosAppBannerDismissedKey = "rodeodaily.iosAppBannerDismissed";
 const pwaInstallDialogDismissedKey = "rodeodaily.pwaInstallDialogDismissed";
 
