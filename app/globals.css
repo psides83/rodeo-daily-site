@@ -2663,6 +2663,70 @@ html[data-theme="dark"] .app-window {
   background: #4d5d52;
 }
 
+.myrodeo-ad-card {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-height: 250px;
+  padding: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(107, 48, 23, 0.18);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fcf5e3, #f7f0e0);
+  color: #1f1714;
+  text-decoration: none;
+  container-type: inline-size;
+}
+
+.myrodeo-ad-card::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 64px;
+  right: -38px;
+  width: 118px;
+  height: 174px;
+  border-radius: 10px;
+  background: rgba(242, 204, 122, 0.55);
+  transform: rotate(-5deg);
+}
+
+.myrodeo-ad-phone {
+  position: absolute;
+  z-index: -1;
+  top: 84px;
+  right: -20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 92px;
+  height: 154px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+  transform: rotate(-5deg);
+}
+
+.myrodeo-ad-phone span { flex-shrink: 0; height: 8px; border-radius: 4px; background: rgba(107, 48, 23, 0.18); }
+.myrodeo-ad-phone span:first-child { width: 42px; height: 5px; background: rgba(107, 48, 23, 0.25); }
+.myrodeo-ad-phone span:nth-child(2) { height: 38px; background: #f7f0e0; }
+.myrodeo-ad-phone span:nth-child(4) { background: rgba(107, 48, 23, 0.12); }
+.myrodeo-ad-phone span:last-child { height: 34px; background: rgba(247, 240, 224, 0.9); }
+
+.myrodeo-ad-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.myrodeo-ad-header img { display: block; object-fit: contain; object-position: left center; }
+.myrodeo-ad-header > span { padding: 4px 8px; border-radius: 5px; background: rgba(107, 48, 23, 0.1); color: #735c4a; font-size: 10px; font-weight: 600; }
+.myrodeo-ad-headline { display: grid; gap: 4px; }
+.myrodeo-ad-headline strong { font-size: clamp(22px, 11cqi, 29px); font-weight: 900; line-height: 1.1; }
+.myrodeo-ad-headline em { font-family: Georgia, "Times New Roman", serif; font-size: clamp(18px, 9.4cqi, 27px); line-height: 1.1; }
+.myrodeo-ad-body { max-width: 430px; color: #735c4a; font-size: 13px; font-weight: 500; line-height: 1.4; }
+.myrodeo-ad-footer { display: flex; align-items: center; gap: 12px; margin-top: auto; color: #735c4a; font-size: 12px; font-weight: 600; }
+.myrodeo-ad-cta { flex-shrink: 0; padding: 8px 12px; border-radius: 5px; background: #6b3017; color: #fff; font-size: 13px; font-weight: 700; }
+.myrodeo-ad-card:focus-visible { outline: 3px solid #6b3017; outline-offset: 3px; }
+
 .header-card {
   display: grid;
   gap: 8px;

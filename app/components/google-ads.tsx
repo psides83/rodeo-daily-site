@@ -28,12 +28,22 @@ type HouseAd = {
   body: string;
   href: string;
   cta: string;
-  theme: "app" | "video" | "podcast" | "roping" | "daily";
+  theme: "app" | "video" | "podcast" | "roping" | "daily" | "myrodeo";
   icon: typeof Smartphone;
   imageUrl?: string;
 };
 
 const houseAds: HouseAd[] = [
+  {
+    eyebrow: "MyRodeo",
+    title: "Track the Ride.",
+    body: "Log runs, horses, records, videos and your rodeo community in one place.",
+    href: "https://apps.apple.com/us/app/myrodeo-platform/id6761296381",
+    cta: "Get the app",
+    theme: "myrodeo",
+    icon: Smartphone,
+    imageUrl: "/my-rodeo-logo.png"
+  },
   {
     eyebrow: "Rodeo Daily iOS App",
     title: "Follow standings, results, schedules, and favorites on iPhone.",
@@ -184,6 +194,33 @@ export function GoogleAdSlot({
 }
 
 function HouseAdSlot({ ad, className, placement }: { ad: HouseAd; className: string; placement: AdPlacement }) {
+  if (ad.theme === "myrodeo") {
+    return (
+      <aside className={`google-ad-shell house-ad-shell house-ad-myrodeo ${className}`} data-placement={placement} aria-label="Promoted rodeo link">
+        <span>Promoted</span>
+        <a className="myrodeo-ad-card" href={ad.href} target="_blank" rel="noreferrer" aria-label="Download MyRodeo on the App Store">
+          <span className="myrodeo-ad-phone" aria-hidden="true">
+            <span /><span /><span /><span /><span />
+          </span>
+          <span className="myrodeo-ad-header">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={ad.imageUrl} alt="MyRodeo" width={132} height={40} loading="lazy" />
+            <span>Ad</span>
+          </span>
+          <span className="myrodeo-ad-headline">
+            <strong>{ad.title}</strong>
+            <em>Remember the Journey.</em>
+          </span>
+          <span className="myrodeo-ad-body">{ad.body}</span>
+          <span className="myrodeo-ad-footer">
+            <span className="myrodeo-ad-cta">{ad.cta}</span>
+            <span>Built for rodeo families</span>
+          </span>
+        </a>
+      </aside>
+    );
+  }
+
   const Icon = ad.icon;
 
   return (
