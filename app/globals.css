@@ -8723,3 +8723,6 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
     box-shadow: 0 8px 22px rgba(30, 33, 30, 0.07);
   }
 }
+
+.site-trust-footer { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 24px; padding: 24px 16px 110px; font-size: 14px; }
+.site-trust-footer a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }

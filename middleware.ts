@@ -21,6 +21,13 @@ export function middleware(request: NextRequest) {
 
   const host = request.headers.get("host")?.split(":")[0].toLowerCase();
   if (!host || !redirectHosts.has(host)) {
+    const detailRoute = request.nextUrl.pathname.match(/^\/(?:results|schedule|athletes)\/([^/]+)\/?$/);
+    if (detailRoute && (!/^\d+$/.test(detailRoute[1]) || !Number.isSafeInteger(Number(detailRoute[1])) || Number(detailRoute[1]) <= 0)) {
+      return new NextResponse("This rodeo or athlete page could not be found.", {
+        status: 404,
+        headers: { "X-Robots-Tag": "noindex, follow" }
+      });
+    }
     return NextResponse.next();
   }
 

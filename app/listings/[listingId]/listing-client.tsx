@@ -40,13 +40,13 @@ function fallbackListing(id: string, searchParams: ReturnType<typeof useSearchPa
   };
 }
 
-export default function BusinessJournalListingRoutePage() {
+export default function BusinessJournalListingRoutePage({ initialListing }: { initialListing: BusinessJournalRow | null }) {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
   const listingId = safeDecode(paramValue(params.listingId) ?? "");
-  const [listing, setListing] = useState<BusinessJournalRow>(() => fallbackListing(listingId, searchParams));
-  const [state, setState] = useState<LoadState>("idle");
+  const [listing, setListing] = useState<BusinessJournalRow>(() => initialListing ?? fallbackListing(listingId, searchParams));
+  const [state, setState] = useState<LoadState>(initialListing ? "loaded" : "idle");
 
   useEffect(() => {
     let cancelled = false;

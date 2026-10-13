@@ -22,6 +22,7 @@ export async function generateMetadata({ params }: BusinessJournalListingPagePro
   if (!listing) {
     return {
       title: "Rodeo Listing",
+      robots: { index: false, follow: true },
       description: "View rodeo listing details, entry windows, performances, events, and added money on Rodeo Daily.",
       alternates: {
         canonical: absoluteUrl(path)
@@ -68,7 +69,7 @@ export default async function BusinessJournalListingRoutePage({ params }: Busine
           }}
         />
       )}
-      <BusinessJournalListingClient />
+      <BusinessJournalListingClient initialListing={listing} />
     </>
   );
 }
@@ -112,12 +113,7 @@ function listingJsonLd(listing: BusinessJournalRow) {
           address: listing.locationText
         }
       : undefined,
-    description: listingDescription(listing),
-    organizer: {
-      "@type": "Organization",
-      name: "Rodeo Daily",
-      url: absoluteUrl("/")
-    }
+    description: listingDescription(listing)
   };
 }
 

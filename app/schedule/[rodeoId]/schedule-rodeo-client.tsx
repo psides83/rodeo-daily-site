@@ -8,33 +8,21 @@ import type { ApiDaysheetResponse, ApiRodeoResults, DaysheetRow, EventName, Load
 
 type ScheduleRodeoClientProps = {
   rodeoId: number;
+  initialRodeo: RodeoRow;
 };
 
 function eventParam(value: string | null): EventName {
   return events.includes(value as EventName) ? (value as EventName) : "Tie-Down Roping";
 }
 
-export function ScheduleRodeoClient({ rodeoId }: ScheduleRodeoClientProps) {
+export function ScheduleRodeoClient({ rodeoId, initialRodeo }: ScheduleRodeoClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [event, setEvent] = useState<EventName>(() => eventParam(searchParams.get("event")));
   const [state, setState] = useState<LoadState>("idle");
   const [daysheetState, setDaysheetState] = useState<LoadState>("idle");
   const [daysheets, setDaysheets] = useState<DaysheetRow[]>([]);
-  const [rodeo, setRodeo] = useState<RodeoRow>({
-    id: rodeoId,
-    name: searchParams.get("name") || `Rodeo #${rodeoId || ""}`,
-    location: searchParams.get("location") || "",
-    venueName: searchParams.get("venue") || "",
-    websiteUrl: searchParams.get("website") || null,
-    startDate: searchParams.get("start") || "",
-    endDate: searchParams.get("end") || "",
-    payout: searchParams.get("payout") || "",
-    hasDaysheets: searchParams.get("daysheets") === "true",
-    inProgress: false,
-    winners: [],
-    resultRounds: []
-  });
+  const [rodeo, setRodeo] = useState<RodeoRow>(initialRodeo);
 
   useEffect(() => {
     let cancelled = false;

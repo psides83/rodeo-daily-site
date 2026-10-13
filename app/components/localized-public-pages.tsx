@@ -56,7 +56,7 @@ const localizedContent = {
       eyebrow: "Politica de Privacidade",
       intro:
         "Esta politica explica como o Rodeo Daily trata informacoes no app para iOS, no site e no Progressive Web App, incluindo publicidade, cookies, preferencias locais e fontes de dados de rodeio.",
-      updated: "Data de vigencia: 28 de agosto de 2026",
+      updated: "Data de vigencia: 13 de outubro de 2026",
       summary:
         "O Rodeo Daily nao exige conta para navegar por standings, resultados, calendarios, perfis de atletas ou daysheets. A maioria das preferencias fica salva no seu proprio dispositivo. Anuncios podem ser exibidos por servicos do Google, e voce pode gerenciar as escolhas de anuncios da web nas configuracoes de privacidade do app.",
       sections: [
@@ -71,6 +71,7 @@ const localizedContent = {
           title: "Informacoes Coletadas Automaticamente",
           body: [
             "Ao usar o site, informacoes tecnicas padrao podem ser processadas por sistemas de hospedagem, navegador, analise, publicidade ou seguranca. Isso pode incluir endereco IP, tipo de navegador, tipo de dispositivo, sistema operacional, paginas visualizadas, paginas de referencia, localizacao aproximada inferida pelo IP e dados de interacao.",
+            "Ao clicar em certos links, o site pode registrar campanha, destino, horario, endereco IP, navegador, referencia e localizacao aproximada inferida pelo IP.",
             "O app para iOS pode processar informacoes do dispositivo necessarias para operar recursos, medir desempenho, mostrar anuncios, diagnosticar problemas e melhorar a experiencia."
           ]
         },
@@ -85,6 +86,7 @@ const localizedContent = {
           title: "Publicidade",
           body: [
             "O Rodeo Daily pode exibir anuncios no app para iOS e no site. O Rodeo Daily pode usar servicos de publicidade do Google, incluindo Google AdMob no app iOS e Google AdSense no site.",
+            "Terceiros, incluindo o Google, usam cookies para exibir anuncios com base em visitas anteriores a este site ou a outros sites. Os cookies de publicidade do Google permitem que o Google e seus parceiros exibam anuncios com base nessas visitas. Terceiros podem colocar e ler cookies, usar web beacons e enderecos IP como resultado da publicidade.",
             "Provedores de publicidade podem usar cookies, identificadores de dispositivo, dados de uso e tecnologias semelhantes para exibir anuncios, medir desempenho, prevenir fraude, limitar frequencia e personalizar anuncios quando permitido."
           ]
         },
@@ -216,7 +218,7 @@ const localizedContent = {
       eyebrow: "Politica de Privacidad",
       intro:
         "Esta politica explica como Rodeo Daily maneja informacion en la app para iOS, el sitio web y la Progressive Web App, incluyendo publicidad, cookies, preferencias locales y fuentes de datos de rodeo.",
-      updated: "Fecha de vigencia: 28 de agosto de 2026",
+      updated: "Fecha de vigencia: 13 de octubre de 2026",
       summary:
         "Rodeo Daily no requiere una cuenta para consultar standings, resultados, calendarios, perfiles de atletas o daysheets. La mayoria de las preferencias se guardan en tu propio dispositivo. Se pueden mostrar anuncios mediante servicios de Google, y puedes gestionar tus opciones de anuncios web en la configuracion de privacidad de la app.",
       sections: [
@@ -231,6 +233,7 @@ const localizedContent = {
           title: "Informacion Recopilada Automaticamente",
           body: [
             "Cuando usas el sitio, informacion tecnica estandar puede ser procesada por sistemas de hosting, navegador, analitica, publicidad o seguridad. Esto puede incluir direccion IP, tipo de navegador, tipo de dispositivo, sistema operativo, paginas vistas, paginas de referencia, ubicacion aproximada inferida por IP y datos de interaccion.",
+            "Al hacer clic en determinados enlaces, el sitio puede registrar campana, destino, hora, direccion IP, navegador, referencia y ubicacion aproximada inferida por IP.",
             "La app de iOS puede procesar informacion del dispositivo necesaria para operar funciones, medir rendimiento, mostrar anuncios, diagnosticar problemas y mejorar la experiencia."
           ]
         },
@@ -245,6 +248,7 @@ const localizedContent = {
           title: "Publicidad",
           body: [
             "Rodeo Daily puede mostrar anuncios en la app de iOS y en el sitio web. Rodeo Daily puede usar servicios de publicidad de Google, incluyendo Google AdMob en la app iOS y Google AdSense en el sitio.",
+            "Proveedores externos, incluido Google, usan cookies para mostrar anuncios basados en visitas anteriores a este sitio o a otros sitios. Las cookies publicitarias de Google permiten que Google y sus socios muestren anuncios basados en esas visitas. Terceros pueden colocar y leer cookies, usar balizas web y direcciones IP como resultado de la publicidad.",
             "Los proveedores de publicidad pueden usar cookies, identificadores de dispositivo, datos de uso y tecnologias similares para entregar anuncios, medir rendimiento, prevenir fraude, limitar frecuencia y personalizar anuncios cuando este permitido."
           ]
         },
@@ -380,7 +384,7 @@ export function LocalizedPrivacyPage({ locale }: { locale: CountryLocale }) {
     name: content.privacy.title,
     url: absoluteUrl(routes.privacy),
     inLanguage: routes.language,
-    dateModified: "2026-08-28",
+    dateModified: "2026-10-13",
     publisher: {
       "@type": "Organization",
       name: "Rodeo Daily",
@@ -412,6 +416,8 @@ export function LocalizedPrivacyPage({ locale }: { locale: CountryLocale }) {
           ))}
         </section>
         <section className="app-card privacy-contact-card">
+          <h2>{locale === "br" ? "Publicidade do Google e escolhas" : "Publicidad de Google y opciones"}</h2>
+          <p><a href="https://policies.google.com/technologies/partner-sites">{locale === "br" ? "Como o Google usa informacoes" : "Como Google usa la informacion"}</a> · <a href="https://myadcenter.google.com/">{locale === "br" ? "Gerenciar anuncios personalizados" : "Gestionar anuncios personalizados"}</a> · <a href="https://optout.aboutads.info/">{locale === "br" ? "Opt-out de fornecedores participantes" : "Opt-out de proveedores participantes"}</a></p>
           <h2>{locale === "br" ? "Contato" : "Contacto"}</h2>
           <p>
             {locale === "br" ? "Para perguntas de privacidade ou suporte, entre em contato pelo email " : "Para preguntas de privacidad o soporte, contacta a "}

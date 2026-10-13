@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { ResultsRodeoClient } from "./results-rodeo-client";
-import { eventCodes, events, mapRodeo, mapWinners } from "../../lib/rodeo-data";
+import { eventCodes, events, mapRodeo, mapWinners, mapResultRounds, mapTopMoneyEarners } from "../../lib/rodeo-data";
 import type { ApiRodeo, ApiRodeoResults, EventCode, EventName } from "../../lib/types";
 import { absoluteUrl } from "../../lib/seo";
 
@@ -17,6 +18,7 @@ export const revalidate = 900;
 
 export async function generateMetadata({ params, searchParams }: ResultsRodeoRoutePageProps): Promise<Metadata> {
   const rodeoId = safeRodeoId(params.rodeoId);
+  if (!rodeoId) notFound();
   const resultDetail = rodeoId ? await fetchResultDetail(rodeoId) : null;
   const rodeo = await resolveRodeo(rodeoId ?? 0, searchParams, resultDetail);
   const event = eventParam(searchParam(searchParams, "event"));
@@ -33,6 +35,7 @@ export async function generateMetadata({ params, searchParams }: ResultsRodeoRou
   return {
     title,
     description,
+    robots: firstResultEventCode(resultDetail) ? { index: true, follow: true } : { index: false, follow: true },
     alternates: {
       canonical: absoluteUrl(path)
     },
@@ -51,7 +54,8 @@ export async function generateMetadata({ params, searchParams }: ResultsRodeoRou
 }
 
 export default async function ResultsRodeoRoutePage({ params, searchParams }: ResultsRodeoRoutePageProps) {
-  const rodeoId = safeRodeoId(params.rodeoId) ?? 0;
+  const rodeoId = safeRodeoId(params.rodeoId);
+  if (!rodeoId) notFound();
   const resultDetail = rodeoId ? await fetchResultDetail(rodeoId) : null;
   const rodeo = await resolveRodeo(rodeoId, searchParams, resultDetail);
   const event = selectedEvent(searchParam(searchParams, "event"), resultDetail) ?? "Tie-Down Roping";
@@ -67,7 +71,13 @@ export default async function ResultsRodeoRoutePage({ params, searchParams }: Re
         }}
       />
       <section className="routed-window results-routed-window">
-        <ResultsRodeoClient rodeoId={rodeoId} initialRodeo={rodeoRowFromSeo(rodeo, searchParams)} />
+        <ResultsRodeoClient
+          rodeoId={rodeoId}
+          initialEvent={event}
+          initialResultsLoaded={Boolean(resultDetail?.data?.[0])}
+          initialTopMoneyEarners={resultDetail ? mapTopMoneyEarners(resultDetail, eventCodes[event]) : []}
+          initialRodeo={{ ...rodeoRowFromSeo(rodeo, searchParams), winners, resultRounds: resultDetail ? mapResultRounds(resultDetail, eventCodes[event]) : [] }}
+        />
       </section>
     </main>
   );

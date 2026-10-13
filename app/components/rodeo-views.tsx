@@ -786,7 +786,7 @@ export function RodeoDetailView({
           </a>
         )}
 
-        <GoogleAdSlot placement="scheduleDetailBottom" />
+        {daysheetState === "loaded" && daysheets.length > 0 && <GoogleAdSlot placement="scheduleDetailBottom" />}
       </div>
     );
   }
@@ -928,7 +928,7 @@ export function RodeoDetailView({
         </section>
       )}
 
-      <GoogleAdSlot placement="resultsDetailSection" />
+      {state === "loaded" && (rodeo.winners.length > 0 || rodeo.resultRounds.length > 0 || topMoneyEarners.length > 0) && <GoogleAdSlot placement="resultsDetailSection" />}
     </div>
   );
 }

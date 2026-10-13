@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { AthleteProfileClient } from "./athlete-profile-client";
 import { mapAthleteBio } from "../../lib/rodeo-data";
 import type { ApiAthleteBioResponse, AthleteBio } from "../../lib/types";
@@ -19,12 +20,7 @@ export const revalidate = 1800;
 
 export async function generateMetadata({ params }: AthleteRoutePageProps): Promise<Metadata> {
   const athleteId = safeAthleteId(params.athleteId);
-  if (!athleteId) {
-    return {
-      title: "Athlete Profile",
-      description: "View PRCA athlete standings, results, career earnings, and rodeo profile details on Rodeo Daily."
-    };
-  }
+  if (!athleteId) notFound();
 
   const bio = await fetchAthleteBio(athleteId);
   const name = bio?.name || "PRCA Athlete";
@@ -58,7 +54,8 @@ export async function generateMetadata({ params }: AthleteRoutePageProps): Promi
 }
 
 export default async function AthleteRoutePage({ params, searchParams }: AthleteRoutePageProps) {
-  const athleteId = safeAthleteId(params.athleteId) ?? 0;
+  const athleteId = safeAthleteId(params.athleteId);
+  if (!athleteId) notFound();
   const bio = athleteId ? await fetchAthleteBio(athleteId) : null;
   const jsonLd = bio ? athleteJsonLd(bio) : null;
 

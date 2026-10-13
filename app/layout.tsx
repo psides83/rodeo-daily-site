@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Link from "next/link";
 import { Analytics } from "@vercel/analytics/next";
 import { ThemeSync } from "./components/theme-sync";
 import { appSettingsStorageKey } from "./lib/local-preferences";
@@ -61,8 +62,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: "#15130f",
   width: "device-width",
-  initialScale: 1,
-  maximumScale: 1
+  initialScale: 1
 };
 
 function themeInitScript() {
@@ -141,6 +141,13 @@ export default function RootLayout({
         <ThemeSync />
         <PwaRegister />
         {children}
+        <footer className="site-trust-footer" aria-label="About, contact, and privacy">
+          <Link href="/about">About Rodeo Daily</Link>
+          <Link href="/support">Contact & Corrections</Link>
+          <Link href="/privacy">Privacy Policy</Link>
+          <a href="https://www.prorodeo.com/">PRCA</a>
+          <a href="https://www.wpra.com/">WPRA</a>
+        </footer>
         <Analytics />
       </body>
     </html>

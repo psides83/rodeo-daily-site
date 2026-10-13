@@ -38,7 +38,7 @@ const sections = [
   {
     title: "Data Sources and Updates",
     body: [
-      "Rodeo Daily uses PRCA, WPRA, and related rodeo data sources to organize standings, results, schedules, daysheets, rodeo pages, athlete links, and event information in a mobile-friendly format.",
+      "Rodeo Daily is an independent fan reference and is not an official PRCA or WPRA website. Rodeo Daily uses PRCA, WPRA, and related rodeo data sources to organize standings, results, schedules, daysheets, rodeo pages, athlete links, and event information in a mobile-friendly format.",
       "Rodeo data can change as official associations post updates, correct results, finalize payouts, or publish new schedules. Rodeo Daily is intended as a fan-facing reference and points users back to official rodeo associations or rodeo offices for entries, rulings, and final operational decisions."
     ]
   },

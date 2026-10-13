@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { ScheduleRodeoClient } from "./schedule-rodeo-client";
 import { mapRodeo } from "../../lib/rodeo-data";
 import type { ApiRodeo } from "../../lib/types";
@@ -31,6 +32,7 @@ export const revalidate = 1800;
 
 export async function generateMetadata({ params, searchParams }: ScheduleRodeoRoutePageProps): Promise<Metadata> {
   const rodeoId = safeRodeoId(params.rodeoId);
+  if (!rodeoId) notFound();
   const rodeo = await resolveRodeo(rodeoId ?? 0, searchParams);
   const title = `${rodeo.name} Rodeo Schedule`;
   const locationText = rodeo.location ? ` in ${rodeo.location}` : "";
@@ -42,6 +44,7 @@ export async function generateMetadata({ params, searchParams }: ScheduleRodeoRo
   return {
     title,
     description,
+    robots: rodeo.name.startsWith("Rodeo #") ? { index: false, follow: true } : { index: true, follow: true },
     alternates: {
       canonical: absoluteUrl(path)
     },
@@ -60,7 +63,8 @@ export async function generateMetadata({ params, searchParams }: ScheduleRodeoRo
 }
 
 export default async function ScheduleRodeoRoutePage({ params, searchParams }: ScheduleRodeoRoutePageProps) {
-  const rodeoId = safeRodeoId(params.rodeoId) ?? 0;
+  const rodeoId = safeRodeoId(params.rodeoId);
+  if (!rodeoId) notFound();
   const rodeo = await resolveRodeo(rodeoId, searchParams);
   const jsonLd = scheduleJsonLd(rodeo);
 
@@ -73,7 +77,7 @@ export default async function ScheduleRodeoRoutePage({ params, searchParams }: S
         }}
       />
       <section className="routed-window">
-        <ScheduleRodeoClient rodeoId={rodeoId} />
+        <ScheduleRodeoClient rodeoId={rodeoId} initialRodeo={{ ...rodeo, inProgress: false, winners: [], resultRounds: [] }} />
       </section>
     </main>
   );

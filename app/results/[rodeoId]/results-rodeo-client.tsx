@@ -9,20 +9,23 @@ import type { ApiDaysheetResponse, ApiRodeoResults, DaysheetRow, EventName, Load
 type ResultsRodeoClientProps = {
   rodeoId: number;
   initialRodeo: RodeoRow;
+  initialEvent: EventName;
+  initialResultsLoaded: boolean;
+  initialTopMoneyEarners: TopMoneyEarner[];
 };
 
 function eventParam(value: string | null): EventName {
   return events.includes(value as EventName) ? (value as EventName) : "Tie-Down Roping";
 }
 
-export function ResultsRodeoClient({ rodeoId, initialRodeo }: ResultsRodeoClientProps) {
+export function ResultsRodeoClient({ rodeoId, initialRodeo, initialEvent, initialResultsLoaded, initialTopMoneyEarners }: ResultsRodeoClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [event, setEvent] = useState<EventName>(() => eventParam(searchParams.get("event")));
-  const [state, setState] = useState<LoadState>("idle");
+  const [event, setEvent] = useState<EventName>(() => searchParams.get("event") ? eventParam(searchParams.get("event")) : initialEvent);
+  const [state, setState] = useState<LoadState>(initialResultsLoaded ? "loaded" : "idle");
   const [daysheetState, setDaysheetState] = useState<LoadState>("idle");
   const [daysheets, setDaysheets] = useState<DaysheetRow[]>([]);
-  const [topMoneyEarners, setTopMoneyEarners] = useState<TopMoneyEarner[]>([]);
+  const [topMoneyEarners, setTopMoneyEarners] = useState<TopMoneyEarner[]>(initialTopMoneyEarners);
   const [rodeo, setRodeo] = useState<RodeoRow>(initialRodeo);
 
   useEffect(() => {

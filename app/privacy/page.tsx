@@ -27,25 +27,25 @@ export const metadata: Metadata = {
   }
 };
 
-const updatedDate = "September 16, 2026";
+const updatedDate = "October 13, 2026";
 const contactEmail = "thewaymediaco@gmail.com";
 
 const sections = [
-  // {
-  //   title: "Information Rodeo Daily Collects",
-  //   body: [
-  //     "Rodeo Daily is designed primarily as an informational rodeo app. You can browse standings, results, schedules, daysheets, athlete profiles, past champions, and rodeo listings without creating an account.",
-  //     "The app and website may collect limited information you provide directly, such as an email message if you contact support. The app may also store preferences on your device, including favorite athletes, followed athletes, display settings, ad consent choices, and app banner dismissals."
-  //   ]
-  // },
-  // {
-  //   title: "Information Collected Automatically",
-  //   body: [
-  //     "When you use the website, standard technical information may be processed by hosting, browser, analytics, advertising, or security systems. This can include your IP address, browser type, device type, operating system, pages viewed, referring pages, approximate location inferred from IP address, and interaction data.",
-  //     "When you click certain Rodeo Daily links, the site may record click attribution details such as the link campaign, destination, time of click, IP address, referrer, browser information, and approximate location inferred from IP address.",
-  //     "The iOS app may process device-level information needed to operate app features, measure performance, show ads, diagnose problems, and improve the experience."
-  //   ]
-  // },
+  {
+    title: "Information Rodeo Daily Collects",
+    body: [
+      "Rodeo Daily is designed primarily as an informational rodeo app. You can browse standings, results, schedules, daysheets, athlete profiles, past champions, and rodeo listings without creating an account.",
+      "The app and website may collect limited information you provide directly, such as an email message if you contact support. The app may also store preferences on your device, including favorite athletes, followed athletes, display settings, ad consent choices, and app banner dismissals."
+    ]
+  },
+  {
+    title: "Information Collected Automatically",
+    body: [
+      "When you use the website, standard technical information may be processed by hosting, browser, analytics, advertising, or security systems. The website uses Vercel Web Analytics to measure visits and performance. This can include your IP address, browser type, device type, operating system, pages viewed, referring pages, approximate location inferred from IP address, and interaction data.",
+      "When you click certain Rodeo Daily links, the site may record click attribution details such as the link campaign, destination, time of click, IP address, referrer, browser information, and approximate location inferred from IP address.",
+      "The iOS app may process device-level information needed to operate app features, measure performance, show ads, diagnose problems, and improve the experience."
+    ]
+  },
   {
     title: "Cookies, Local Storage, and PWA Storage",
     body: [
@@ -57,7 +57,8 @@ const sections = [
     title: "Advertising",
     body: [
       "Rodeo Daily may show ads in the iOS app and on the website. The previous Calf Roping Daily policy covered AdMob advertising. Rodeo Daily may use Google advertising services, including Google AdMob in the iOS app and Google AdSense on the website.",
-      "Advertising providers may use cookies, device identifiers, usage data, and similar technologies to deliver ads, measure ad performance, prevent fraud, cap ad frequency, and personalize ads where permitted. On the website, Rodeo Daily provides choices for personalized ads, basic non-personalized ads, or declining ad cookies where supported."
+      "Third-party vendors, including Google, use cookies to serve ads based on your prior visits to this website or other websites. Google’s advertising cookies enable Google and its partners to serve ads based on visits to this site and other sites on the Internet.",
+      "Third parties may place and read cookies on your browser, or use web beacons, IP addresses, device identifiers, and similar technologies as a result of ad serving. These technologies can support ad delivery, measurement, fraud prevention, frequency limits, and personalization where permitted. Non-personalized ads may still use cookies for these purposes."
     ]
   },
   {
@@ -122,7 +123,7 @@ export default function PrivacyPage() {
     "@type": "PrivacyPolicy",
     name: "Rodeo Daily Privacy Policy",
     url: absoluteUrl("/privacy"),
-    dateModified: "2026-09-16",
+    dateModified: "2026-10-13",
     publisher: {
       "@type": "Organization",
       name: "Rodeo Daily",
@@ -180,6 +181,8 @@ export default function PrivacyPage() {
         </section>
 
         <section className="app-card privacy-contact-card">
+          <h2>Google advertising and opt-out choices</h2>
+          <p>Learn <a href="https://policies.google.com/technologies/partner-sites">how Google uses information from sites and apps that use its services</a>. Manage personalized advertising through <a href="https://myadcenter.google.com/">Google My Ad Center</a>, or visit <a href="https://optout.aboutads.info/">the Digital Advertising Alliance opt-out tool</a> for participating third-party vendors. These choices do not prevent all ads or all cookies.</p>
           <h2>Contact</h2>
           <p>
             For privacy questions, support requests, or rights requests, contact{" "}
