@@ -8,7 +8,6 @@ import { absoluteUrl } from "../lib/seo";
 const championsApiUrl = "https://rodeo-data-api.psides83.workers.dev/v1/past-champions";
 const contactEmail = "thewaymediaco@gmail.com";
 
-export const dynamic = "force-dynamic";
 export const revalidate = 86400;
 
 export const metadata: Metadata = {

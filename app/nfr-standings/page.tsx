@@ -17,8 +17,7 @@ const nfrEvents: Array<{ name: EventName; code: string }> = [
   { name: "Bull Riding", code: eventCodes["Bull Riding"] }
 ];
 
-export const dynamic = "force-dynamic";
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: `${currentNfrSeason} NFR Standings`,

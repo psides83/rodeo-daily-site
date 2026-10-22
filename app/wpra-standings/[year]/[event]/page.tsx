@@ -15,7 +15,7 @@ type WpraStandingsPageProps = {
 
 const wpraApiBaseUrl = "https://rodeo-data-api.psides83.workers.dev";
 
-export const revalidate = 1800;
+export const revalidate = 86400;
 
 export function generateMetadata({ params }: WpraStandingsPageProps): Metadata {
   const event = wpraStandingEventForSlug(params.event);

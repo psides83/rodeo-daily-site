@@ -17,7 +17,7 @@ const standingsApiBaseUrl = "https://d1kfpvgfupbmyo.cloudfront.net/services/pro_
 const wpraApiBaseUrl = "https://rodeo-data-api.psides83.workers.dev";
 const wpraEvents = new Set(["GB", "LB"]);
 
-export const revalidate = 1800;
+export const revalidate = 86400;
 
 export function generateMetadata({ params }: StandingsSeoPageProps): Metadata {
   const event = standingEventForSlug(params.event);

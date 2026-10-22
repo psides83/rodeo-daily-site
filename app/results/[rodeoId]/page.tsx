@@ -14,7 +14,7 @@ type ResultsRodeoRoutePageProps = {
 
 const rodeoApiBaseUrl = "https://d1kfpvgfupbmyo.cloudfront.net/services/pro_rodeo.ashx/";
 
-export const revalidate = 900;
+export const revalidate = 86400;
 
 export async function generateMetadata({ params, searchParams }: ResultsRodeoRoutePageProps): Promise<Metadata> {
   const rodeoId = safeRodeoId(params.rodeoId);

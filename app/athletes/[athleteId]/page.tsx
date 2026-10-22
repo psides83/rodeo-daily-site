@@ -16,7 +16,7 @@ type AthleteRoutePageProps = {
 
 const athleteApiBaseUrl = "https://d1kfpvgfupbmyo.cloudfront.net/services/pro_rodeo.ashx/";
 
-export const revalidate = 1800;
+export const revalidate = 86400;
 
 export async function generateMetadata({ params }: AthleteRoutePageProps): Promise<Metadata> {
   const athleteId = safeAthleteId(params.athleteId);

@@ -197,13 +197,18 @@ async function proxy(url: URL) {
   });
 
   if (!response.ok) {
-    return NextResponse.json({ error: `Rodeo service returned ${response.status}` }, { status: response.status });
+    return NextResponse.json(
+      { error: `Rodeo service returned ${response.status}` },
+      { status: response.status, headers: { "Cache-Control": "no-store" } }
+    );
   }
 
   const data = await response.json();
   return NextResponse.json(data, {
     headers: {
-      "Cache-Control": "no-store, max-age=0"
+      // Keep browsers checking for updates; Vercel shares each public response for 24 hours.
+      "Cache-Control": "public, max-age=0, must-revalidate",
+      "Vercel-CDN-Cache-Control": "public, s-maxage=86400"
     }
   });
 }

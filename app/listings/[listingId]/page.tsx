@@ -12,7 +12,7 @@ type BusinessJournalListingPageProps = {
 
 const businessJournalFeedUrl = "https://psides83.github.io/pbj-scraper/pbj-detailed.json";
 
-export const revalidate = 1800;
+export const revalidate = 86400;
 
 export async function generateMetadata({ params }: BusinessJournalListingPageProps): Promise<Metadata> {
   const listingId = safeDecode(params.listingId);

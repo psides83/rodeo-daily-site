@@ -136,7 +136,7 @@ export function standingTypeHasEvents(type: StandingType) {
 }
 
 export async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await fetch(url);
   if (!response.ok) throw new Error(`Request failed with ${response.status}`);
   return response.json() as Promise<T>;
 }
