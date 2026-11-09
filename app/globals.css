@@ -1212,9 +1212,9 @@ html[data-theme="dark"] .app-window {
   gap: 12px;
   align-items: center;
   padding: 12px;
-  border: 1px solid rgba(107, 111, 118, 0.14);
+  border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--control-bg);
 }
 
 .seo-standings-list li > span {
@@ -1223,7 +1223,7 @@ html[data-theme="dark"] .app-window {
   place-items: center;
   border-radius: 999px;
   background: var(--app-secondary);
-  color: #fff;
+  color: var(--button-active-text);
   font-weight: 950;
 }
 
