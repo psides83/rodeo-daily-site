@@ -66,6 +66,20 @@ export const wpraResultEvents = seoResultEvents.filter((event) => event.code ===
 export const prcaStandingEvents = seoStandingEvents.filter((event) => event.code !== "GB" && event.code !== "LB");
 export const prcaResultEvents = seoResultEvents.filter((event) => event.code !== "GB" && event.code !== "LB");
 
+export function eventResultsAppHref(event: SeoResultEvent) {
+  return `/?tab=results&event=${event.slug}`;
+}
+
+export const currentWorldStandingsSeason = "2026";
+
+export function worldStandingsEventLink(event: SeoStandingEvent) {
+  const association = event.code === "GB" || event.code === "LB" ? "wpra" : "prca";
+  return {
+    href: `/${association}-standings/${currentWorldStandingsSeason}/${event.slug}`,
+    label: event.name
+  };
+}
+
 export function absoluteUrl(path = "/") {
   return `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }

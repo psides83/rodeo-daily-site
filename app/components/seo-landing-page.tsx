@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { RodeoDailyLogoMark } from "./rodeo-views";
 
@@ -7,6 +8,10 @@ type SeoLandingPageProps = {
   description: string;
   primaryHref: string;
   primaryLabel: string;
+  eventLinks?: {
+    title: string;
+    links: Array<{ href: string; label: string }>;
+  };
   trustIntro?: string;
   sections: Array<{
     title: string;
@@ -24,6 +29,7 @@ export function SeoLandingPage({
   description,
   primaryHref,
   primaryLabel,
+  eventLinks,
   trustIntro,
   sections,
   relatedLinks = []
@@ -45,8 +51,23 @@ export function SeoLandingPage({
           <span>{eyebrow}</span>
           <h1>{title}</h1>
           <p>{description}</p>
+          {eventLinks && (
+            <nav className="seo-event-links" aria-labelledby="seo-event-links-title">
+              <h2 id="seo-event-links-title">{eventLinks.title}</h2>
+              <ul>
+                {eventLinks.links.map(({ href, label }) => (
+                  <li key={href}>
+                    <Link href={href} prefetch={false}>
+                      {label}
+                      <ArrowRight size={16} aria-hidden="true" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
           {trustIntro ? <p className="seo-page-trust-intro">{trustIntro}</p> : null}
-          <Link href={primaryHref}>{primaryLabel}</Link>
+          {!eventLinks && <Link href={primaryHref}>{primaryLabel}</Link>}
         </section>
 
         <section className="seo-page-grid" aria-label="Rodeo Daily SEO content">

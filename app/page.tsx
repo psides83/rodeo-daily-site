@@ -43,6 +43,7 @@ import {
   toggleSavedAthlete
 } from "./lib/local-preferences";
 import { currentNfrSeasonLabel } from "./lib/nfr";
+import { currentWorldStandingsSeason, resultEventForSlug, seoResultEvents } from "./lib/seo";
 import { applyAppTheme, defaultSettings, resolveAppearanceMode } from "./lib/theme";
 import type {
   ApiBusinessJournalResponse,
@@ -165,7 +166,8 @@ function readAppRoute() {
   const params = new URL(window.location.href).searchParams;
   const tab = tabRoutes[params.get("tab") ?? ""] ?? "Standings";
   const section = tab === "More" ? moreSectionRoutes[params.get("section") ?? ""] ?? "menu" : "menu";
-  return { tab, section };
+  const resultEvent = tab === "Results" ? resultEventForSlug(params.get("event") ?? "") : undefined;
+  return { tab, section, resultEvent };
 }
 
 function updateDocumentSeo(title: string, description: string) {
@@ -304,7 +306,7 @@ export default function Home() {
   const [standingType, setStandingType] = useState<StandingType>("World Standings");
   const [standingEvent, setStandingEvent] = useState<EventName>("All Around");
   const [selectedCircuitId, setSelectedCircuitId] = useState(defaultCircuitId);
-  const [standingYear, setStandingYear] = useState("2026");
+  const [standingYear, setStandingYear] = useState(currentWorldStandingsSeason);
   const [resultEvent, setResultEvent] = useState<EventName>("Tie-Down Roping");
   const [nfrEvent, setNfrEvent] = useState<EventName>("Bareback Riding");
   const [resultsDateRange, setResultsDateRange] = useState<DateRange>({ start: "", end: "" });
@@ -406,6 +408,10 @@ export default function Home() {
       const route = readAppRoute();
       setActiveTab(route.tab);
       setMoreSection(route.section);
+      if (route.resultEvent) {
+        setResultsPage(1);
+        setResultEvent(route.resultEvent.name);
+      }
       setSearchText("");
       setTabBarHidden(false);
       setSearchExpanded(false);
@@ -504,7 +510,9 @@ export default function Home() {
       const normalizedSettings = { ...settings, favoriteStandingsEvent };
       setAppSettings(normalizedSettings);
       setStandingEvent(normalizedSettings.favoriteStandingsEvent);
-      setResultEvent(normalizedSettings.favoriteResultsEvent);
+      if (!readAppRoute().resultEvent) {
+        setResultEvent(normalizedSettings.favoriteResultsEvent);
+      }
     }
 
     setPreferencesLoaded(true);
@@ -840,6 +848,12 @@ export default function Home() {
   function updateResultEvent(event: EventName) {
     setResultsPage(1);
     setResultEvent(event);
+    const url = new URL(window.location.href);
+    const eventSlug = seoResultEvents.find(({ name }) => name === event)?.slug;
+    if (url.searchParams.has("event") && eventSlug) {
+      url.searchParams.set("event", eventSlug);
+      window.history.replaceState(window.history.state, "", url);
+    }
   }
 
   function updateResultsDateRange(range: DateRange) {

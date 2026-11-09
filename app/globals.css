@@ -313,6 +313,49 @@ html[data-theme="dark"] .app-window {
   font-weight: 820;
 }
 
+.seo-event-links {
+  width: 100%;
+  margin-block: 8px;
+}
+
+.seo-event-links h2 {
+  margin: 0 0 12px;
+  color: var(--app-primary);
+  font-size: 1.25rem;
+}
+
+.seo-event-links ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.seo-event-links a {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+  height: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--control-bg);
+  color: var(--app-primary);
+}
+
+.seo-event-links a:hover,
+.seo-event-links a:focus-visible {
+  border-color: var(--app-secondary);
+  background: rgba(160, 138, 89, 0.12);
+}
+
+.seo-event-links a svg {
+  flex-shrink: 0;
+}
+
 .seo-page-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

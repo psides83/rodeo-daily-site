@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SeoLandingPage } from "../../components/seo-landing-page";
-import { pageMetadata, resultEventForSlug, wpraResultEvents } from "../../lib/seo";
+import { eventResultsAppHref, pageMetadata, resultEventForSlug, wpraResultEvents } from "../../lib/seo";
 
 type WpraEventResultsPageProps = {
   params: {
@@ -29,8 +29,8 @@ export default function WpraEventResultsPage({ params }: WpraEventResultsPagePro
       eyebrow="WPRA Results"
       title={`WPRA ${event.name} Results`}
       description={`Use Rodeo Daily to follow WPRA ${event.name} results with pro rodeo result pages, leaders, round results, payouts, schedules, standings, and athlete profiles.`}
-      primaryHref="/?tab=results"
-      primaryLabel="Open Results"
+      primaryHref={eventResultsAppHref(event)}
+      primaryLabel={`View ${event.name} Results`}
       sections={[
         {
           title: `${event.name} Results`,

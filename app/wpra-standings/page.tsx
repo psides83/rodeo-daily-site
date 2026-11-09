@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { SeoLandingPage } from "../components/seo-landing-page";
-import { pageMetadata, wpraStandingEvents } from "../lib/seo";
+import { currentWorldStandingsSeason, pageMetadata, wpraStandingEvents, worldStandingsEventLink } from "../lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   title: "WPRA Standings & Pro Rodeo Standings",
@@ -16,7 +16,11 @@ export default function WpraStandingsPage() {
       title="WPRA Standings for Barrel Racing and Breakaway"
       description="Rodeo Daily tracks WPRA standings for barrel racing and breakaway roping with season rankings, athlete earnings, profiles, and related pro rodeo standings."
       primaryHref="/?tab=standings"
-      primaryLabel="Open Standings"
+      primaryLabel="Browse All Standings"
+      eventLinks={{
+        title: `Choose an event for ${currentWorldStandingsSeason} world standings`,
+        links: wpraStandingEvents.map(worldStandingsEventLink)
+      }}
       trustIntro="WPRA standings are part of the main Rodeo Daily standings workflow, connecting barrel racing and breakaway rankings to athlete pages, related results, and schedule context."
       sections={[
         {
@@ -44,10 +48,6 @@ export default function WpraStandingsPage() {
           body: "The standings pages are designed for quick checks on a phone, with app navigation, related links, and readable event pages for repeat visits."
         }
       ]}
-      relatedLinks={wpraStandingEvents.map((event) => ({
-        href: `/wpra-standings/2026/${event.slug}`,
-        label: `2026 WPRA ${event.name} Standings`
-      }))}
     />
   );
 }

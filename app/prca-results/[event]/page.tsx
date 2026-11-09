@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SeoLandingPage } from "../../components/seo-landing-page";
-import { pageMetadata, resultEventForSlug } from "../../lib/seo";
+import { eventResultsAppHref, pageMetadata, resultEventForSlug } from "../../lib/seo";
 
 type EventResultsPageProps = {
   params: {
@@ -29,8 +29,8 @@ export default function PrcaEventResultsPage({ params }: EventResultsPageProps) 
       eyebrow="PRCA Results"
       title={`PRCA ${event.name} Results`}
       description={`Use Rodeo Daily to follow PRCA ${event.name} results with rodeo leaders, round results, payouts, schedules, daysheets, athlete pages, and pro rodeo results.`}
-      primaryHref="/?tab=results"
-      primaryLabel="Open Results"
+      primaryHref={eventResultsAppHref(event)}
+      primaryLabel={`View ${event.name} Results`}
       sections={[
         {
           title: `${event.name} Results`,

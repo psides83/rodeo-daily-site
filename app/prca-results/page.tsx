@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { SeoLandingPage } from "../components/seo-landing-page";
-import { pageMetadata, prcaResultEvents } from "../lib/seo";
+import { eventResultsAppHref, pageMetadata, prcaResultEvents } from "../lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   title: "PRCA Results & Pro Rodeo Results",
@@ -16,12 +16,19 @@ export default function PrcaResultsPage() {
       title="PRCA Results and Rodeo Results"
       description="Rodeo Daily gives rodeo fans a fast way to follow PRCA results by event, open rodeo detail pages, review leaders, see round results, and check payouts when they are available."
       primaryHref="/?tab=results"
-      primaryLabel="Open Results"
+      primaryLabel="Browse All Results"
+      eventLinks={{
+        title: "Choose an event for results",
+        links: prcaResultEvents.map((event) => ({
+          href: eventResultsAppHref(event),
+          label: event.name
+        }))
+      }}
       trustIntro="The results experience is the center of Rodeo Daily: event pages, rodeo pages, standings links, athlete profiles, and schedule context are organized for fans who follow PRCA results throughout the season."
       sections={[
         {
           title: "Results by Event",
-          body: "Browse rodeo results for bareback riding, steer wrestling, team roping, saddle bronc riding, tie-down roping, barrel racing, bull riding, and breakaway roping."
+          body: "Select an event to see recent rodeos for that discipline, then open a rodeo to view its results."
         },
         {
           title: "Rodeo Detail Pages",

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { SeoLandingPage } from "../components/seo-landing-page";
-import { pageMetadata, wpraResultEvents } from "../lib/seo";
+import { eventResultsAppHref, pageMetadata, wpraResultEvents } from "../lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   title: "WPRA Results & Pro Rodeo Results",
@@ -16,7 +16,14 @@ export default function WpraResultsPage() {
       title="WPRA Results and Pro Rodeo Results"
       description="Rodeo Daily helps fans follow WPRA results for barrel racing and breakaway roping alongside PRCA and pro rodeo results, rodeo detail pages, leaders, payouts, and schedules."
       primaryHref="/?tab=results"
-      primaryLabel="Open Results"
+      primaryLabel="Browse All Results"
+      eventLinks={{
+        title: "Choose an event for results",
+        links: wpraResultEvents.map((event) => ({
+          href: eventResultsAppHref(event),
+          label: event.name
+        }))
+      }}
       trustIntro="Rodeo Daily treats WPRA results as part of the main rodeo workflow, connecting barrel racing and breakaway results to standings, schedules, rodeo pages, and athlete context."
       sections={[
         {

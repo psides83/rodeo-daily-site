@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { SeoLandingPage } from "../components/seo-landing-page";
-import { pageMetadata, prcaStandingEvents } from "../lib/seo";
+import { currentWorldStandingsSeason, pageMetadata, prcaStandingEvents, worldStandingsEventLink } from "../lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   title: "PRCA Standings & Pro Rodeo Standings",
@@ -16,7 +16,11 @@ export default function PrcaStandingsPage() {
       title="PRCA Standings and Rodeo Standings"
       description="Rodeo Daily helps fans follow PRCA standings by season, standings type, and event with athlete cards, earnings, rankings, profile pages, stats, results, career data, and highlights."
       primaryHref="/?tab=standings"
-      primaryLabel="Open Standings"
+      primaryLabel="Browse All Standings"
+      eventLinks={{
+        title: `Choose an event for ${currentWorldStandingsSeason} world standings`,
+        links: prcaStandingEvents.map(worldStandingsEventLink)
+      }}
       trustIntro="Rodeo Daily turns PRCA standings into a usable season reference, linking rankings to athlete pages, results pages, schedule context, NFR races, and event-specific views."
       sections={[
         {
@@ -25,7 +29,7 @@ export default function PrcaStandingsPage() {
         },
         {
           title: "Standings by Event",
-          body: "View standings for bareback riding, steer wrestling, team roping, saddle bronc riding, tie-down roping, barrel racing, bull riding, and breakaway roping."
+          body: "View all-around rankings and standings for each PRCA event, including separate rankings for team roping headers and heelers."
         },
         {
           title: "Athlete Profiles",
@@ -44,10 +48,6 @@ export default function PrcaStandingsPage() {
           body: "Readers can report confusing rankings, broken athlete links, or missing context through Rodeo Daily support with the event, year, athlete, and source details."
         }
       ]}
-      relatedLinks={prcaStandingEvents.map((event) => ({
-        href: `/prca-standings/2026/${event.slug}`,
-        label: `2026 PRCA ${event.name} Standings`
-      }))}
     />
   );
 }

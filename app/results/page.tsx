@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { SeoLandingPage } from "../components/seo-landing-page";
-import { pageMetadata, prcaResultEvents, wpraResultEvents } from "../lib/seo";
+import { eventResultsAppHref, pageMetadata, prcaResultEvents, wpraResultEvents } from "../lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   title: "PRCA Results, WPRA Results & Pro Rodeo Results",
@@ -26,7 +26,14 @@ export default function ResultsPage() {
       title="PRCA Results, WPRA Results, and Pro Rodeo Results"
       description="Use Rodeo Daily to follow PRCA results, WPRA results, pro rodeo results, rodeo standings, PRCA standings, WPRA standings, event leaders, payouts, and rodeo detail pages."
       primaryHref="/?tab=results"
-      primaryLabel="Open Results"
+      primaryLabel="Browse All Results"
+      eventLinks={{
+        title: "Choose an event for results",
+        links: [...prcaResultEvents, ...wpraResultEvents].map((event) => ({
+          href: eventResultsAppHref(event),
+          label: event.name
+        }))
+      }}
       trustIntro="Rodeo Daily organizes official rodeo result feeds and related data into a fan-friendly reference with event filters, detail pages, athlete links, and source-aware context."
       sections={[
         {

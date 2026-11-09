@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { SeoLandingPage } from "../components/seo-landing-page";
-import { pageMetadata, prcaStandingEvents, wpraStandingEvents } from "../lib/seo";
+import { currentWorldStandingsSeason, pageMetadata, prcaStandingEvents, wpraStandingEvents, worldStandingsEventLink } from "../lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   title: "PRCA Standings, WPRA Standings & Pro Rodeo Standings",
@@ -16,7 +16,11 @@ export default function StandingsPage() {
       title="PRCA Standings, WPRA Standings, and Pro Rodeo Standings"
       description="Use Rodeo Daily to follow PRCA standings, WPRA standings, pro rodeo standings, PRCA results, WPRA results, athlete rankings, season earnings, and event-specific standings pages."
       primaryHref="/?tab=standings"
-      primaryLabel="Open Standings"
+      primaryLabel="Browse All Standings"
+      eventLinks={{
+        title: `Choose an event for ${currentWorldStandingsSeason} world standings`,
+        links: [...prcaStandingEvents, ...wpraStandingEvents].map(worldStandingsEventLink)
+      }}
       trustIntro="Standings are one of the core Rodeo Daily features, with event pages, athlete profile links, earnings, hometowns, standings types, results context, and schedule navigation built for season-long use."
       sections={[
         {
@@ -46,15 +50,7 @@ export default function StandingsPage() {
       ]}
       relatedLinks={[
         { href: "/prca-standings", label: "PRCA Standings" },
-        { href: "/wpra-standings", label: "WPRA Standings" },
-        ...prcaStandingEvents.map((event) => ({
-          href: `/prca-standings/2026/${event.slug}`,
-          label: `2026 PRCA ${event.name} Standings`
-        })),
-        ...wpraStandingEvents.map((event) => ({
-          href: `/wpra-standings/2026/${event.slug}`,
-          label: `2026 WPRA ${event.name} Standings`
-        }))
+        { href: "/wpra-standings", label: "WPRA Standings" }
       ]}
     />
   );
