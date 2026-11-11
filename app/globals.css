@@ -2770,6 +2770,58 @@ html[data-theme="dark"] .app-window {
 .myrodeo-ad-cta { flex-shrink: 0; padding: 8px 12px; border-radius: 5px; background: #6b3017; color: #fff; font-size: 13px; font-weight: 700; }
 .myrodeo-ad-card:focus-visible { outline: 3px solid #6b3017; outline-offset: 3px; }
 
+html[data-theme="dark"] .house-ad-shell {
+  background: var(--app-bg);
+}
+
+html[data-theme="dark"] .house-ad-card {
+  border-color: var(--line);
+  background: var(--page-bg);
+}
+
+html[data-theme="dark"] .house-ad-cta {
+  color: #fffdf7;
+}
+
+html[data-theme="dark"] .myrodeo-ad-card {
+  border-color: #745741;
+  background: linear-gradient(135deg, #30231c, #211914);
+  color: #fcf5e3;
+}
+
+html[data-theme="dark"] .myrodeo-ad-card::before {
+  background: #4a3222;
+}
+
+html[data-theme="dark"] .myrodeo-ad-phone {
+  opacity: 0.14;
+}
+
+html[data-theme="dark"] .myrodeo-ad-header img {
+  padding: 4px 6px;
+  border-radius: 5px;
+  background: #fcf5e3;
+}
+
+html[data-theme="dark"] .myrodeo-ad-header > span {
+  background: #4a3222;
+}
+
+html[data-theme="dark"] .myrodeo-ad-header > span,
+html[data-theme="dark"] .myrodeo-ad-body,
+html[data-theme="dark"] .myrodeo-ad-footer {
+  color: #e1cbb5;
+}
+
+html[data-theme="dark"] .myrodeo-ad-cta {
+  background: #efc27e;
+  color: #30231c;
+}
+
+html[data-theme="dark"] .myrodeo-ad-card:focus-visible {
+  outline-color: #efc27e;
+}
+
 .header-card {
   display: grid;
   gap: 8px;
@@ -8769,3 +8821,43 @@ html[data-theme="dark"] .athlete-profile-hero-scrim {
 
 .site-trust-footer { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 24px; padding: 24px 16px 110px; font-size: 14px; }
 .site-trust-footer a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+
+.site-navigation {
+  background: var(--app-bg);
+  border-bottom: 1px solid var(--line);
+  padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
+}
+
+.site-navigation-inner,
+.site-navigation nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.site-navigation-inner {
+  max-width: 1180px;
+  margin-inline: auto;
+  justify-content: space-between;
+  column-gap: 16px;
+}
+
+.site-navigation a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 8px;
+  color: inherit;
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+
+.site-navigation a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.site-navigation .site-navigation-brand {
+  font-size: 1rem;
+  font-weight: 800;
+}
