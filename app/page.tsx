@@ -1,5 +1,6 @@
 "use client";
 
+import { AppStoreLink } from "./components/app-store-link";
 import { Calendar, CircleDollarSign, Download, ListOrdered, MonitorSmartphone, Newspaper, Search, Settings, ShieldCheck, Trophy, Users, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
@@ -201,9 +202,9 @@ function IosAppPromoBanner({ onDismiss }: { onDismiss: () => void }) {
           <span>Track standings, results, schedules, favorites, and athlete updates in the iOS app.</span>
         </div>
       </div>
-      <a className="app-store-badge-link" href={iosAppStoreUrl} target="_blank" rel="noreferrer" aria-label="Download Rodeo Daily on the App Store">
+      <AppStoreLink placement="home-banner" className="app-store-badge-link" href={iosAppStoreUrl} target="_blank" rel="noreferrer" aria-label="Download Rodeo Daily on the App Store">
         <Image src="/app-store-badge.svg" alt="Download on the App Store" width={120} height={40} />
-      </a>
+      </AppStoreLink>
       <button type="button" aria-label="Dismiss iOS app banner" onClick={onDismiss}>
         <X size={16} />
       </button>

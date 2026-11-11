@@ -1,5 +1,6 @@
 "use client";
 
+import { AppStoreLink } from "./app-store-link";
 import {
   ArrowLeft,
   ArrowDown,
@@ -1237,14 +1238,14 @@ export function MoreView({
             </button>
           );
         })}
-        <a className="app-card more-row more-app-store-row" href={iosAppStoreUrl} target="_blank" rel="noreferrer">
+        <AppStoreLink placement="more" className="app-card more-row more-app-store-row" href={iosAppStoreUrl} target="_blank" rel="noreferrer">
           <Image src="/app-store-badge.svg" alt="Download on the App Store" width={120} height={40} />
           <div>
             <h3>Rodeo Daily for iOS</h3>
             <p>Download on your iOS device</p>
           </div>
           <ExternalLink size={17} />
-        </a>
+        </AppStoreLink>
       </div>
     </div>
   );

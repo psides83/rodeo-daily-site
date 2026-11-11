@@ -1,3 +1,4 @@
+import { AppStoreLink } from "./app-store-link";
 import Image from "next/image";
 import Link from "next/link";
 import { RodeoDailyLogoMark } from "./rodeo-views";
@@ -484,9 +485,9 @@ export function LocalizedSupportPage({ locale }: { locale: CountryLocale }) {
             <a className="support-primary-action" href={supportMailto}>
               {content.common.supportEmail}
             </a>
-            <a className="support-secondary-action" href={appStoreUrl} target="_blank" rel="noreferrer">
+            <AppStoreLink placement={`support-${locale}`} className="support-secondary-action" href={appStoreUrl} target="_blank" rel="noreferrer">
               {content.common.viewIosApp}
-            </a>
+            </AppStoreLink>
           </div>
         </section>
         <section className="privacy-section-list" aria-label={content.support.eyebrow}>
@@ -567,9 +568,9 @@ export function LocalizedMarketingPage({ locale }: { locale: CountryLocale }) {
             <h1>{content.marketing.headline}</h1>
             <p>{content.marketing.intro}</p>
             <div className="marketing-cta-row">
-              <a href={appStoreUrl} target="_blank" rel="noreferrer" aria-label={content.common.appStoreAlt}>
+              <AppStoreLink placement={`ios-app-hero-${locale}`} href={appStoreUrl} target="_blank" rel="noreferrer" aria-label={content.common.appStoreAlt}>
                 <Image src="/app-store-badge.svg" width={162} height={54} alt={content.common.appStoreAlt} priority />
-              </a>
+              </AppStoreLink>
               <Link className="marketing-web-link" href="/">
                 {content.common.webApp}
               </Link>
@@ -600,9 +601,9 @@ export function LocalizedMarketingPage({ locale }: { locale: CountryLocale }) {
           <h2>{content.marketing.footerTitle}</h2>
           <p>{content.marketing.footerBody}</p>
           <div className="marketing-cta-row">
-            <a href={appStoreUrl} target="_blank" rel="noreferrer" aria-label={content.common.appStoreAlt}>
+            <AppStoreLink placement={`ios-app-footer-${locale}`} href={appStoreUrl} target="_blank" rel="noreferrer" aria-label={content.common.appStoreAlt}>
               <Image src="/app-store-badge.svg" width={162} height={54} alt={content.common.appStoreAlt} />
-            </a>
+            </AppStoreLink>
             <Link className="marketing-web-link" href={routes.support}>
               {content.common.contactSupport}
             </Link>

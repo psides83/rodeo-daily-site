@@ -1,3 +1,4 @@
+import { AppStoreLink } from "../components/app-store-link";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -139,9 +140,9 @@ export default function IosAppMarketingPage() {
               favorites, iPhone widgets, Apple Watch access, and rodeo reference tools into a fast iPhone experience.
             </p>
             <div className="marketing-cta-row">
-              <a href={appStoreUrl} target="_blank" rel="noreferrer" aria-label="Download Rodeo Daily on the App Store">
+              <AppStoreLink placement="ios-app-hero" href={appStoreUrl} target="_blank" rel="noreferrer" aria-label="Download Rodeo Daily on the App Store">
                 <Image src="/app-store-badge.svg" width={162} height={54} alt="Download on the App Store" priority />
-              </a>
+              </AppStoreLink>
               <Link className="marketing-web-link" href="/">
                 Open Web App
               </Link>
@@ -211,9 +212,9 @@ export default function IosAppMarketingPage() {
             or open the web app when you are on another device.
           </p>
           <div className="marketing-cta-row">
-            <a href={appStoreUrl} target="_blank" rel="noreferrer" aria-label="Download Rodeo Daily on the App Store">
+            <AppStoreLink placement="ios-app-footer" href={appStoreUrl} target="_blank" rel="noreferrer" aria-label="Download Rodeo Daily on the App Store">
               <Image src="/app-store-badge.svg" width={162} height={54} alt="Download on the App Store" />
-            </a>
+            </AppStoreLink>
             <Link className="marketing-web-link" href="/support">
               Contact Support
             </Link>

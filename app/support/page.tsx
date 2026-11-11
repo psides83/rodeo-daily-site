@@ -1,3 +1,4 @@
+import { AppStoreLink } from "../components/app-store-link";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { RodeoDailyLogoMark } from "../components/rodeo-views";
@@ -139,9 +140,9 @@ export default function SupportPage() {
             <a className="support-primary-action" href={supportMailto}>
               Email Support
             </a>
-            <a className="support-secondary-action" href={appStoreUrl} target="_blank" rel="noreferrer">
+            <AppStoreLink placement="support" className="support-secondary-action" href={appStoreUrl} target="_blank" rel="noreferrer">
               View iOS App
-            </a>
+            </AppStoreLink>
           </div>
         </section>
 
