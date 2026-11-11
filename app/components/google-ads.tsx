@@ -174,7 +174,7 @@ export function GoogleAdSlot({
   }, []);
 
   if (houseAdsEnabled) {
-    return <HouseAdSlot key={houseAd.theme} ad={houseAd} className={className} placement={placement} />;
+    return <HouseAdSlot ad={houseAd} className={className} placement={placement} />;
   }
 
   if (!slot) return null;
@@ -195,24 +195,6 @@ export function GoogleAdSlot({
 }
 
 function HouseAdSlot({ ad, className, placement }: { ad: HouseAd; className: string; placement: AdPlacement }) {
-  const adRef = useRef<HTMLElement>(null);
-  const impressionTracked = useRef(false);
-
-  useEffect(() => {
-    const element = adRef.current;
-    if (!element || impressionTracked.current || typeof IntersectionObserver === "undefined") return;
-
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry?.isIntersecting || entry.intersectionRatio < 0.5 || impressionTracked.current) return;
-      impressionTracked.current = true;
-      observer.disconnect();
-      track("House Ad Impression", { ad: ad.theme, placement });
-    }, { threshold: 0.5 });
-
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [ad.theme, placement]);
-
   function trackClick() {
     track("House Ad Click", { ad: ad.theme, placement });
     if (ad.theme === "app" || ad.theme === "myrodeo") {
@@ -229,7 +211,7 @@ function HouseAdSlot({ ad, className, placement }: { ad: HouseAd; className: str
 
   if (ad.theme === "myrodeo") {
     return (
-      <aside ref={adRef} className={`google-ad-shell house-ad-shell house-ad-myrodeo ${className}`} data-placement={placement} aria-label="Promoted rodeo link">
+      <aside className={`google-ad-shell house-ad-shell house-ad-myrodeo ${className}`} data-placement={placement} aria-label="Promoted rodeo link">
         <span>Promoted</span>
         <a className="myrodeo-ad-card" href={ad.href} onClick={trackClick} onAuxClick={trackMiddleClick} target="_blank" rel="noreferrer" aria-label="Download MyRodeo on the App Store">
           <span className="myrodeo-ad-phone" aria-hidden="true">
@@ -257,7 +239,7 @@ function HouseAdSlot({ ad, className, placement }: { ad: HouseAd; className: str
   const Icon = ad.icon;
 
   return (
-    <aside ref={adRef} className={`google-ad-shell house-ad-shell house-ad-${ad.theme} ${className}`} data-placement={placement} aria-label="Promoted rodeo link">
+    <aside className={`google-ad-shell house-ad-shell house-ad-${ad.theme} ${className}`} data-placement={placement} aria-label="Promoted rodeo link">
       <span>Promoted</span>
       <a className="house-ad-card" href={ad.href} onClick={trackClick} onAuxClick={trackMiddleClick} target="_blank" rel="noreferrer">
         <span className={ad.imageUrl ? "house-ad-icon house-ad-avatar" : "house-ad-icon"} aria-hidden="true">
