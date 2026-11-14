@@ -24,6 +24,7 @@ declare global {
 }
 
 type HouseAd = {
+  clickEvent: string;
   eyebrow: string;
   title: string;
   body: string;
@@ -36,6 +37,7 @@ type HouseAd = {
 
 const houseAds: HouseAd[] = [
   {
+    clickEvent: "House Ad Click - MyRodeo",
     eyebrow: "MyRodeo",
     title: "Track the Ride.",
     body: "Log runs, horses, records, videos and your rodeo community in one place.",
@@ -46,6 +48,7 @@ const houseAds: HouseAd[] = [
     imageUrl: "/my-rodeo-logo.png"
   },
   {
+    clickEvent: "House Ad Click - Rodeo Daily iOS App",
     eyebrow: "Rodeo Daily iOS App",
     title: "Follow standings, results, schedules, and favorites on iPhone.",
     body: "Download the iOS app for quick season checks, athlete tracking, and rodeo updates from your iPhone home screen.",
@@ -56,6 +59,7 @@ const houseAds: HouseAd[] = [
     imageUrl: "/rodeo-daily-icon.png"
   },
   {
+    clickEvent: "House Ad Click - Calf Roping Daily",
     eyebrow: "Calf Roping Daily",
     title: "Watch more calf roping clips, runs, and rodeo updates.",
     body: "Subscribe for roping-focused videos from the Calf Roping Daily channel.",
@@ -66,6 +70,7 @@ const houseAds: HouseAd[] = [
     imageUrl: "https://yt3.googleusercontent.com/HsUqv3VpRHL1o9Z_zkvRJmtCRRY5Ol1Uyp37Fqa87zeJu3jGvINpwM-jK8F-InmmSibzaaPxBw=s900-c-k-c0x00ffffff-no-rj"
   },
   {
+    clickEvent: "House Ad Click - CalfRoper6.0",
     eyebrow: "CalfRoper6.0",
     title: "Roping content for fans who like studying the run.",
     body: "Catch videos, practice looks, and rodeo-minded roping content from CalfRoper6.0.",
@@ -76,6 +81,7 @@ const houseAds: HouseAd[] = [
     imageUrl: "https://yt3.googleusercontent.com/LQfGctIbTeVamGdrf_P-sPFyR6jHFL-NaWGUYUx-ofcBNRqQQ44o-CfnwR4wsLhy32I3jyqlsA=s900-c-k-c0x00ffffff-no-rj"
   },
   {
+    clickEvent: "House Ad Click - Roping Boyz",
     eyebrow: "Roping Boyz",
     title: "Team roping videos, arena energy, and western lifestyle.",
     body: "Follow Roping Boyz for more roping action and video content from the rodeo side of YouTube.",
@@ -86,6 +92,7 @@ const houseAds: HouseAd[] = [
     imageUrl: "https://yt3.googleusercontent.com/ZTsd7WrYre57kU-7QqEeSuW2D2nMgI5oIv1RiwfUWWNFJGRV96ww69iPZP8OxnvGKI2FU19S=s900-c-k-c0x00ffffff-no-rj"
   },
   {
+    clickEvent: "House Ad Click - The Rope Cast",
     eyebrow: "The Rope Cast",
     title: "Rodeo talk, roping stories, and long-form conversation.",
     body: "Listen in with The Rope Cast for more voices, stories, and perspective from the roping world.",
@@ -196,7 +203,7 @@ export function GoogleAdSlot({
 
 function HouseAdSlot({ ad, className, placement }: { ad: HouseAd; className: string; placement: AdPlacement }) {
   function trackClick() {
-    track("House Ad Click", { ad: ad.theme, placement });
+    track(ad.clickEvent, { placement });
     if (ad.theme === "app" || ad.theme === "myrodeo") {
       track("App Store Click", {
         app: ad.theme === "app" ? "rodeo-daily" : "myrodeo",
