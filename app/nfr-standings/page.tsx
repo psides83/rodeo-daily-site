@@ -169,6 +169,7 @@ async function fetchNfrStandings(eventCode: string) {
   try {
     const url = new URL(nfrApiBaseUrl);
     url.searchParams.set("event", eventCode);
+    url.searchParams.set("year", currentNfrSeason);
     const response = await fetch(url, { next: { revalidate } });
     if (!response.ok) return [];
     const payload = (await response.json()) as ApiNfrStandingsResponse;

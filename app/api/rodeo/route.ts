@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { currentNfrSeason } from "../../lib/nfr";
 
 const baseUrl = "https://d1kfpvgfupbmyo.cloudfront.net/services/pro_rodeo.ashx/";
 const rodeoDataApiUrl = "https://rodeo-data-api.psides83.workers.dev";
@@ -184,6 +185,7 @@ function nfrStandingsUrl(searchParams: URLSearchParams) {
   const event = safeEvent(searchParams.get("event") ?? "BB");
   const url = new URL("https://d1kfpvgfupbmyo.cloudfront.net/services/nfr.ashx/standings");
   url.searchParams.set("event", event === "TRHD" || event === "TRHL" ? "TR" : event);
+  url.searchParams.set("year", currentNfrSeason);
   return url;
 }
 
