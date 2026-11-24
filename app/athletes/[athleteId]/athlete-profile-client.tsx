@@ -1,5 +1,6 @@
 "use client";
 
+import { useHasInternalBack } from "../../components/internal-navigation";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AthleteProfileScreen } from "../../components/rodeo-views";
@@ -21,6 +22,7 @@ type AthleteProfileClientProps = {
 
 export function AthleteProfileClient({ athleteId, initialBio, preferredEvent }: AthleteProfileClientProps) {
   const router = useRouter();
+  const hasInternalBack = useHasInternalBack();
   const [bio, setBio] = useState<AthleteBio | null>(initialBio);
   const [state, setState] = useState<LoadState>(initialBio ? "loaded" : "idle");
   const [favoriteAthletes, setFavoriteAthletes] = useState<Record<number, SavedAthlete>>({});
@@ -106,7 +108,7 @@ export function AthleteProfileClient({ athleteId, initialBio, preferredEvent }: 
       bio={bio}
       state={state}
       preferredEvent={preferredEvent}
-      onBack={() => router.back()}
+      onBack={hasInternalBack ? () => router.back() : undefined}
       toggleFavoriteAthlete={toggleFavoriteAthlete}
     />
   );

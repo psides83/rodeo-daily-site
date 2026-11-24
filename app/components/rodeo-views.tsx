@@ -669,7 +669,7 @@ export function RodeoDetailView({
   setEvent: (event: EventName) => void;
   source: RodeoDetailSource;
   topMoneyEarners?: TopMoneyEarner[];
-  onBack: () => void;
+  onBack?: () => void;
 }) {
   const canShowDaysheets = rodeo.hasDaysheets;
   const canShowTopMoney = source === "results";
@@ -718,10 +718,12 @@ export function RodeoDetailView({
     return (
       <div className="stack schedule-detail-view">
         <section className="app-card schedule-detail-hero">
-          <button onClick={onBack}>
-            <ArrowLeft size={16} />
-            Back
-          </button>
+          {onBack && (
+            <button onClick={onBack}>
+              <ArrowLeft size={16} />
+              Back
+            </button>
+          )}
           <div className="schedule-detail-title">
             <div>
               <h2>{rodeo.name}</h2>
@@ -795,10 +797,12 @@ export function RodeoDetailView({
   return (
     <div className="stack">
       <section className="app-card detail-screen-header results-detail-header">
-        <button onClick={onBack}>
-          <ArrowLeft size={16} />
-          Back
-        </button>
+        {onBack && (
+          <button onClick={onBack}>
+            <ArrowLeft size={16} />
+            Back
+          </button>
+        )}
         <div>
           <span>{event}</span>
           <h2>{rodeo.name}</h2>
@@ -3109,16 +3113,18 @@ export function AthleteProfileScreen({
   bio: AthleteBio | null;
   state: LoadState;
   preferredEvent?: string | null;
-  onBack: () => void;
+  onBack?: () => void;
   toggleFavoriteAthlete: (athlete: StandingRow) => void;
 }) {
   return (
     <div className="stack athlete-profile-screen">
       <section className="app-card subview-header athlete-profile-nav">
-        <button onClick={onBack}>
-          <ArrowLeft size={16} />
-          Back
-        </button>
+        {onBack && (
+          <button onClick={onBack}>
+            <ArrowLeft size={16} />
+            Back
+          </button>
+        )}
         <h2>{bio?.name || athlete.name}</h2>
       </section>
       <AthleteDetailPane

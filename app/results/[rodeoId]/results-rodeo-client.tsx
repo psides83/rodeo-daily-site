@@ -1,5 +1,6 @@
 "use client";
 
+import { useHasInternalBack } from "../../components/internal-navigation";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { RodeoDetailView } from "../../components/rodeo-views";
@@ -20,6 +21,7 @@ function eventParam(value: string | null): EventName {
 
 export function ResultsRodeoClient({ rodeoId, initialRodeo, initialEvent, initialResultsLoaded, initialTopMoneyEarners }: ResultsRodeoClientProps) {
   const router = useRouter();
+  const hasInternalBack = useHasInternalBack();
   const searchParams = useSearchParams();
   const [event, setEvent] = useState<EventName>(() => searchParams.get("event") ? eventParam(searchParams.get("event")) : initialEvent);
   const [state, setState] = useState<LoadState>(initialResultsLoaded ? "loaded" : "idle");
@@ -86,7 +88,7 @@ export function ResultsRodeoClient({ rodeoId, initialRodeo, initialEvent, initia
       setEvent={setEvent}
       source="results"
       topMoneyEarners={topMoneyEarners}
-      onBack={() => router.back()}
+      onBack={hasInternalBack ? () => router.back() : undefined}
     />
   );
 }

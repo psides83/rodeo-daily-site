@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Analytics } from "@vercel/analytics/next";
 import { ThemeSync } from "./components/theme-sync";
+import { InternalNavigationProvider } from "./components/internal-navigation";
 import { SiteNavigation } from "./components/site-navigation";
 import { appSettingsStorageKey } from "./lib/local-preferences";
 import { absoluteUrl, seoKeywords, siteDescription, siteUrl } from "./lib/seo";
@@ -141,8 +142,10 @@ export default function RootLayout({
         />
         <ThemeSync />
         <PwaRegister />
-        <SiteNavigation />
-        {children}
+        <InternalNavigationProvider>
+          <SiteNavigation />
+          {children}
+        </InternalNavigationProvider>
         <footer className="site-trust-footer" aria-label="About, contact, and privacy">
           <Link href="/about">About Rodeo Daily</Link>
           <Link href="/support">Contact & Corrections</Link>
