@@ -143,8 +143,7 @@ export default function RootLayout({
         <ThemeSync />
         <PwaRegister />
         <InternalNavigationProvider>
-          <SiteNavigation />
-          {children}
+          <SiteNavigation>{children}</SiteNavigation>
         </InternalNavigationProvider>
         <footer className="site-trust-footer" aria-label="About, contact, and privacy">
           <Link href="/about">About Rodeo Daily</Link>
